@@ -3,6 +3,7 @@
 import { useState, FormEvent, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import Image from 'next/image';
+import NavBar from '../components/NavBar';
 
 export default function SubmitVenuePage() {
     const initialFormState = {
@@ -369,838 +370,841 @@ export default function SubmitVenuePage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg rounded-xl my-10">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Submit a New Venue</h1>
+        <>
+            <NavBar />
+            <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg rounded-xl my-10">
+                <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Submit a New Venue</h1>
 
-            {/* Progress steps indicator */}
-            <div className="mb-8">
-                <div className="flex justify-between items-center mb-2">
-                    <div className="font-medium text-blue-600">Step 1 of 4: Basic Information</div>
-                    <div className="text-sm text-gray-500">All fields marked with * are required</div>
+                {/* Progress steps indicator */}
+                <div className="mb-8">
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="font-medium text-blue-600">Step 1 of 4: Basic Information</div>
+                        <div className="text-sm text-gray-500">All fields marked with * are required</div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className="bg-blue-600 h-2.5 rounded-full w-1/4"></div>
+                    </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full w-1/4"></div>
-                </div>
-            </div>
 
-            {success && (
-                <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
-                    <p className="flex items-center">
-                        <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        {success}
-                    </p>
-                </div>
-            )}
+                {success && (
+                    <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+                        <p className="flex items-center">
+                            <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            {success}
+                        </p>
+                    </div>
+                )}
 
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
-                    <p className="flex items-center">
-                        <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        {error}
-                    </p>
-                </div>
-            )}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                        <p className="flex items-center">
+                            <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {error}
+                        </p>
+                    </div>
+                )}
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Basic Info Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Basic Information</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="name">
-                                Venue Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="name"
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                className={`w-full p-3 border ${validationErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                placeholder="Enter venue name"
-                            />
-                            {validationErrors.name && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
-                            )}
-                        </div>
-
-                        <div className="col-span-2">
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="description">
-                                Description
-                            </label>
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                rows={4}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Describe your venue"
-                            />
-                            <p className="mt-1 text-sm text-gray-500">Provide details about your venue's atmosphere, features, and what makes it special.</p>
-                            {validationErrors.description && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.description}</p>
-                            )}
-                        </div>
-
-                        <div className="col-span-2">
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="website">
-                                Website
-                            </label>
-                            <input
-                                id="website"
-                                type="url"
-                                name="website"
-                                value={formData.website}
-                                onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="https://www.example.com"
-                            />
-                            <p className="mt-1 text-sm text-gray-500">Website URL for your venue (if available)</p>
-                            {validationErrors.website && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.website}</p>
-                            )}
-                        </div>
-
-                        <div className="col-span-2">
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="instagram_handle">
-                                Instagram Handle
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-500 sm:text-sm">@</span>
-                                </div>
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Basic Info Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Basic Information</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="name">
+                                    Venue Name <span className="text-red-500">*</span>
+                                </label>
                                 <input
-                                    id="instagram_handle"
+                                    id="name"
                                     type="text"
-                                    name="instagram_handle"
-                                    value={formData.instagram_handle}
+                                    name="name"
+                                    value={formData.name}
                                     onChange={handleChange}
-                                    className="w-full pl-7 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="venuename"
+                                    required
+                                    className={`w-full p-3 border ${validationErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="Enter venue name"
                                 />
+                                {validationErrors.name && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+                                )}
                             </div>
-                            <p className="mt-1 text-sm text-gray-500">Instagram handle for your venue (without the @ symbol)</p>
-                            {validationErrors.instagram_handle && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.instagram_handle}</p>
-                            )}
-                        </div>
 
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="category">
-                                Category
-                            </label>
-                            <select
-                                id="category"
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
-                            >
-                                <option value="">Select Category</option>
-                                <option value="restaurant">Restaurant</option>
-                                <option value="bar">Bar</option>
-                                <option value="rooftop">Rooftop</option>
-                                <option value="cafe">Cafe</option>
-                                <option value="event_space">Event Space</option>
-                            </select>
-                            <p className="mt-1 text-sm text-gray-500">Select the category that best describes your venue.</p>
-                            {validationErrors.category && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.category}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Rental Type (select all that apply)
-                            </label>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input
-                                        id="rental_type_full"
-                                        type="checkbox"
-                                        name="rental_type_full"
-                                        checked={formData.rental_type.includes('full')}
-                                        onChange={(e) => {
-                                            const newTypes = e.target.checked
-                                                ? [...formData.rental_type, 'full']
-                                                : formData.rental_type.filter(t => t !== 'full');
-
-                                            setFormData({ ...formData, rental_type: newTypes });
-                                        }}
-                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="rental_type_full" className="ml-2 block text-sm text-gray-700">
-                                        Full Venue
-                                    </label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        id="rental_type_private_room"
-                                        type="checkbox"
-                                        name="rental_type_private_room"
-                                        checked={formData.rental_type.includes('private_room')}
-                                        onChange={(e) => {
-                                            const newTypes = e.target.checked
-                                                ? [...formData.rental_type, 'private_room']
-                                                : formData.rental_type.filter(t => t !== 'private_room');
-
-                                            setFormData({ ...formData, rental_type: newTypes });
-                                        }}
-                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="rental_type_private_room" className="ml-2 block text-sm text-gray-700">
-                                        Private Room
-                                    </label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        id="rental_type_outside"
-                                        type="checkbox"
-                                        name="rental_type_outside"
-                                        checked={formData.rental_type.includes('outside')}
-                                        onChange={(e) => {
-                                            const newTypes = e.target.checked
-                                                ? [...formData.rental_type, 'outside']
-                                                : formData.rental_type.filter(t => t !== 'outside');
-
-                                            setFormData({ ...formData, rental_type: newTypes });
-                                        }}
-                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="rental_type_outside" className="ml-2 block text-sm text-gray-700">
-                                        Outside Space
-                                    </label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        id="rental_type_semi_private"
-                                        type="checkbox"
-                                        name="rental_type_semi_private"
-                                        checked={formData.rental_type.includes('semi_private')}
-                                        onChange={(e) => {
-                                            const newTypes = e.target.checked
-                                                ? [...formData.rental_type, 'semi_private']
-                                                : formData.rental_type.filter(t => t !== 'semi_private');
-
-                                            setFormData({ ...formData, rental_type: newTypes });
-                                        }}
-                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="rental_type_semi_private" className="ml-2 block text-sm text-gray-700">
-                                        Semi-Private Space
-                                    </label>
-                                </div>
+                            <div className="col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="description">
+                                    Description
+                                </label>
+                                <textarea
+                                    id="description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows={4}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Describe your venue"
+                                />
+                                <p className="mt-1 text-sm text-gray-500">Provide details about your venue's atmosphere, features, and what makes it special.</p>
+                                {validationErrors.description && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.description}</p>
+                                )}
                             </div>
-                            {validationErrors.rental_type && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.rental_type}</p>
-                            )}
+
+                            <div className="col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="website">
+                                    Website
+                                </label>
+                                <input
+                                    id="website"
+                                    type="url"
+                                    name="website"
+                                    value={formData.website}
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="https://www.example.com"
+                                />
+                                <p className="mt-1 text-sm text-gray-500">Website URL for your venue (if available)</p>
+                                {validationErrors.website && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.website}</p>
+                                )}
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="instagram_handle">
+                                    Instagram Handle
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-500 sm:text-sm">@</span>
+                                    </div>
+                                    <input
+                                        id="instagram_handle"
+                                        type="text"
+                                        name="instagram_handle"
+                                        value={formData.instagram_handle}
+                                        onChange={handleChange}
+                                        className="w-full pl-7 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="venuename"
+                                    />
+                                </div>
+                                <p className="mt-1 text-sm text-gray-500">Instagram handle for your venue (without the @ symbol)</p>
+                                {validationErrors.instagram_handle && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.instagram_handle}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="category">
+                                    Category
+                                </label>
+                                <select
+                                    id="category"
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
+                                >
+                                    <option value="">Select Category</option>
+                                    <option value="restaurant">Restaurant</option>
+                                    <option value="bar">Bar</option>
+                                    <option value="rooftop">Rooftop</option>
+                                    <option value="cafe">Cafe</option>
+                                    <option value="event_space">Event Space</option>
+                                </select>
+                                <p className="mt-1 text-sm text-gray-500">Select the category that best describes your venue.</p>
+                                {validationErrors.category && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.category}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Rental Type (select all that apply)
+                                </label>
+                                <div className="space-y-2">
+                                    <div className="flex items-center">
+                                        <input
+                                            id="rental_type_full"
+                                            type="checkbox"
+                                            name="rental_type_full"
+                                            checked={formData.rental_type.includes('full')}
+                                            onChange={(e) => {
+                                                const newTypes = e.target.checked
+                                                    ? [...formData.rental_type, 'full']
+                                                    : formData.rental_type.filter(t => t !== 'full');
+
+                                                setFormData({ ...formData, rental_type: newTypes });
+                                            }}
+                                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="rental_type_full" className="ml-2 block text-sm text-gray-700">
+                                            Full Venue
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <input
+                                            id="rental_type_private_room"
+                                            type="checkbox"
+                                            name="rental_type_private_room"
+                                            checked={formData.rental_type.includes('private_room')}
+                                            onChange={(e) => {
+                                                const newTypes = e.target.checked
+                                                    ? [...formData.rental_type, 'private_room']
+                                                    : formData.rental_type.filter(t => t !== 'private_room');
+
+                                                setFormData({ ...formData, rental_type: newTypes });
+                                            }}
+                                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="rental_type_private_room" className="ml-2 block text-sm text-gray-700">
+                                            Private Room
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <input
+                                            id="rental_type_outside"
+                                            type="checkbox"
+                                            name="rental_type_outside"
+                                            checked={formData.rental_type.includes('outside')}
+                                            onChange={(e) => {
+                                                const newTypes = e.target.checked
+                                                    ? [...formData.rental_type, 'outside']
+                                                    : formData.rental_type.filter(t => t !== 'outside');
+
+                                                setFormData({ ...formData, rental_type: newTypes });
+                                            }}
+                                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="rental_type_outside" className="ml-2 block text-sm text-gray-700">
+                                            Outside Space
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <input
+                                            id="rental_type_semi_private"
+                                            type="checkbox"
+                                            name="rental_type_semi_private"
+                                            checked={formData.rental_type.includes('semi_private')}
+                                            onChange={(e) => {
+                                                const newTypes = e.target.checked
+                                                    ? [...formData.rental_type, 'semi_private']
+                                                    : formData.rental_type.filter(t => t !== 'semi_private');
+
+                                                setFormData({ ...formData, rental_type: newTypes });
+                                            }}
+                                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="rental_type_semi_private" className="ml-2 block text-sm text-gray-700">
+                                            Semi-Private Space
+                                        </label>
+                                    </div>
+                                </div>
+                                {validationErrors.rental_type && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.rental_type}</p>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                {/* Location Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Location</h2>
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
-                        <p className="font-medium">Tip: Latitude and Longitude</p>
-                        <p>You can find these coordinates using Google Maps by right-clicking on your location and selecting "What's here?"</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="address">
-                                Address <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="address"
-                                type="text"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                placeholder="Street address"
-                            />
-                            {validationErrors.address && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.address}</p>
-                            )}
+                    {/* Location Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Location</h2>
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
+                            <p className="font-medium">Tip: Latitude and Longitude</p>
+                            <p>You can find these coordinates using Google Maps by right-clicking on your location and selecting "What's here?"</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="address">
+                                    Address <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="address"
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.address ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="Street address"
+                                />
+                                {validationErrors.address && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.address}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="city">
+                                    City <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="city"
+                                    type="text"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.city ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="City"
+                                />
+                                {validationErrors.city && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.city}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="state">
+                                    State
+                                </label>
+                                <select
+                                    id="state"
+                                    name="state"
+                                    value={formData.state}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.state ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
+                                >
+                                    <option value="">Select State</option>
+                                    {usStates.map((state) => (
+                                        <option key={state.value} value={state.value}>
+                                            {state.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {validationErrors.state && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.state}</p>
+                                )}
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="city">
-                                City <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="city"
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.city ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                placeholder="City"
-                            />
-                            {validationErrors.city && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.city}</p>
-                            )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="latitude">
+                                    Latitude
+                                </label>
+                                <input
+                                    id="latitude"
+                                    type="number"
+                                    step="any"
+                                    name="latitude"
+                                    value={formData.latitude}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.latitude ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="e.g. 40.7128"
+                                />
+                                {validationErrors.latitude && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.latitude}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="longitude">
+                                    Longitude
+                                </label>
+                                <input
+                                    id="longitude"
+                                    type="number"
+                                    step="any"
+                                    name="longitude"
+                                    value={formData.longitude}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.longitude ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="e.g. -74.0060"
+                                />
+                                {validationErrors.longitude && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.longitude}</p>
+                                )}
+                            </div>
                         </div>
+                    </section>
 
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="state">
-                                State
-                            </label>
-                            <select
-                                id="state"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.state ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
-                            >
-                                <option value="">Select State</option>
-                                {usStates.map((state) => (
-                                    <option key={state.value} value={state.value}>
-                                        {state.label}
-                                    </option>
-                                ))}
-                            </select>
-                            {validationErrors.state && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.state}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="latitude">
-                                Latitude
-                            </label>
-                            <input
-                                id="latitude"
-                                type="number"
-                                step="any"
-                                name="latitude"
-                                value={formData.latitude}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.latitude ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                placeholder="e.g. 40.7128"
-                            />
-                            {validationErrors.latitude && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.latitude}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="longitude">
-                                Longitude
-                            </label>
-                            <input
-                                id="longitude"
-                                type="number"
-                                step="any"
-                                name="longitude"
-                                value={formData.longitude}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.longitude ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                placeholder="e.g. -74.0060"
-                            />
-                            {validationErrors.longitude && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.longitude}</p>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                {/* Capacity Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Capacity & Booking</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_guests">
-                                Maximum Guests
-                            </label>
-                            <input
-                                id="max_guests"
-                                type="number"
-                                min="0"
-                                name="max_guests"
-                                value={formData.max_guests}
-                                onChange={handleChange}
-                                className={`w-full p-3 border ${validationErrors.max_guests ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                placeholder="e.g. 100"
-                            />
-                            <p className="mt-1 text-sm text-gray-500">The maximum number of guests your venue can accommodate.</p>
-                            {validationErrors.max_guests && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.max_guests}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_seated_guests">
-                                Maximum Seated Guests
-                            </label>
-                            <input
-                                id="max_seated_guests"
-                                type="number"
-                                min="0"
-                                name="max_seated_guests"
-                                value={formData.max_seated_guests}
-                                onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="e.g. 80"
-                            />
-                            {validationErrors.max_seated_guests && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.max_seated_guests}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_standing_guests">
-                                Maximum Standing Guests
-                            </label>
-                            <input
-                                id="max_standing_guests"
-                                type="number"
-                                min="0"
-                                name="max_standing_guests"
-                                value={formData.max_standing_guests}
-                                onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="e.g. 120"
-                            />
-                            {validationErrors.max_standing_guests && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors.max_standing_guests}</p>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                {/* Pricing Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Pricing Information</h2>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="pricing_type">
-                                Pricing Type
-                            </label>
-                            <select
-                                id="pricing_type"
-                                name="pricing_type"
-                                value={formData.pricing_type}
-                                onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                            >
-                                <option value="">Select Pricing Type</option>
-                                <option value="hourly">Hourly Rate</option>
-                                <option value="flat">Flat Fee</option>
-                                <option value="minimum_spend">Minimum Spend</option>
-                            </select>
-                            <p className="mt-1 text-sm text-gray-500">How do you charge for venue rental?</p>
-                        </div>
-
+                    {/* Capacity Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Capacity & Booking</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="price">
-                                    Price
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_guests">
+                                    Maximum Guests
                                 </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span className="text-gray-500 sm:text-sm">$</span>
-                                    </div>
-                                    <input
-                                        id="price"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        name="price"
-                                        value={formData.price}
-                                        onChange={handleChange}
-                                        className={`w-full pl-7 p-3 border ${validationErrors.price ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                        placeholder={formData.pricing_type === 'hourly' ? "e.g. 150.00 per hour" : "e.g. 1000.00"}
-                                    />
-                                </div>
-                                {validationErrors.price && (
-                                    <p className="mt-1 text-sm text-red-600">{validationErrors.price}</p>
+                                <input
+                                    id="max_guests"
+                                    type="number"
+                                    min="0"
+                                    name="max_guests"
+                                    value={formData.max_guests}
+                                    onChange={handleChange}
+                                    className={`w-full p-3 border ${validationErrors.max_guests ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                    placeholder="e.g. 100"
+                                />
+                                <p className="mt-1 text-sm text-gray-500">The maximum number of guests your venue can accommodate.</p>
+                                {validationErrors.max_guests && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.max_guests}</p>
                                 )}
-                                <p className="mt-1 text-sm text-gray-500">
-                                    {formData.pricing_type === 'hourly' && "Amount charged per hour"}
-                                    {formData.pricing_type === 'flat' && "Total flat fee amount"}
-                                    {formData.pricing_type === 'minimum_spend' && "Minimum amount customers must spend"}
-                                </p>
                             </div>
 
                             <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="overtime_fee_per_hour">
-                                    Overtime Fee Per Hour
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_seated_guests">
+                                    Maximum Seated Guests
                                 </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span className="text-gray-500 sm:text-sm">$</span>
+                                <input
+                                    id="max_seated_guests"
+                                    type="number"
+                                    min="0"
+                                    name="max_seated_guests"
+                                    value={formData.max_seated_guests}
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="e.g. 80"
+                                />
+                                {validationErrors.max_seated_guests && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.max_seated_guests}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_standing_guests">
+                                    Maximum Standing Guests
+                                </label>
+                                <input
+                                    id="max_standing_guests"
+                                    type="number"
+                                    min="0"
+                                    name="max_standing_guests"
+                                    value={formData.max_standing_guests}
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="e.g. 120"
+                                />
+                                {validationErrors.max_standing_guests && (
+                                    <p className="mt-1 text-sm text-red-600">{validationErrors.max_standing_guests}</p>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Pricing Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Pricing Information</h2>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="pricing_type">
+                                    Pricing Type
+                                </label>
+                                <select
+                                    id="pricing_type"
+                                    name="pricing_type"
+                                    value={formData.pricing_type}
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                >
+                                    <option value="">Select Pricing Type</option>
+                                    <option value="hourly">Hourly Rate</option>
+                                    <option value="flat">Flat Fee</option>
+                                    <option value="minimum_spend">Minimum Spend</option>
+                                </select>
+                                <p className="mt-1 text-sm text-gray-500">How do you charge for venue rental?</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="price">
+                                        Price
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span className="text-gray-500 sm:text-sm">$</span>
+                                        </div>
+                                        <input
+                                            id="price"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            name="price"
+                                            value={formData.price}
+                                            onChange={handleChange}
+                                            className={`w-full pl-7 p-3 border ${validationErrors.price ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                            placeholder={formData.pricing_type === 'hourly' ? "e.g. 150.00 per hour" : "e.g. 1000.00"}
+                                        />
                                     </div>
+                                    {validationErrors.price && (
+                                        <p className="mt-1 text-sm text-red-600">{validationErrors.price}</p>
+                                    )}
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        {formData.pricing_type === 'hourly' && "Amount charged per hour"}
+                                        {formData.pricing_type === 'flat' && "Total flat fee amount"}
+                                        {formData.pricing_type === 'minimum_spend' && "Minimum amount customers must spend"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="overtime_fee_per_hour">
+                                        Overtime Fee Per Hour
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span className="text-gray-500 sm:text-sm">$</span>
+                                        </div>
+                                        <input
+                                            id="overtime_fee_per_hour"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            name="overtime_fee_per_hour"
+                                            value={formData.overtime_fee_per_hour}
+                                            onChange={handleChange}
+                                            className={`w-full pl-7 p-3 border ${validationErrors.overtime_fee_per_hour ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                            placeholder="e.g. 200.00"
+                                        />
+                                    </div>
+                                    {validationErrors.overtime_fee_per_hour && (
+                                        <p className="mt-1 text-sm text-red-600">{validationErrors.overtime_fee_per_hour}</p>
+                                    )}
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        Extra fee charged for each hour beyond the scheduled booking time
+                                    </p>
+                                </div>
+                            </div>
+
+                            {formData.pricing_type === 'hourly' && (
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="min_hours">
+                                        Minimum Hours
+                                    </label>
                                     <input
-                                        id="overtime_fee_per_hour"
+                                        id="min_hours"
+                                        type="number"
+                                        min="0"
+                                        name="min_hours"
+                                        value={formData.min_hours}
+                                        onChange={handleChange}
+                                        className={`w-full p-3 border ${validationErrors.min_hours ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="e.g. 3"
+                                    />
+                                    {validationErrors.min_hours && (
+                                        <p className="mt-1 text-sm text-red-600">{validationErrors.min_hours}</p>
+                                    )}
+                                    <p className="mt-1 text-sm text-gray-500">Minimum number of hours required for booking</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Policies & Fees Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Policies & Fees</h2>
+
+                        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                            <p className="font-medium">Important Note:</p>
+                            <p>Be sure to set clear policies regarding fees, cancellations, and special requests to avoid misunderstandings with customers.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center p-3 bg-white rounded-md">
+                                <input
+                                    id="alcohol_served"
+                                    type="checkbox"
+                                    name="alcohol_served"
+                                    checked={formData.alcohol_served}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <label htmlFor="alcohol_served" className="ml-3 text-gray-700">
+                                    Alcohol Served
+                                </label>
+                            </div>
+
+                            <div className="p-4 bg-white rounded-md">
+                                <div className="flex items-center">
+                                    <input
+                                        id="byob_allowed"
+                                        type="checkbox"
+                                        name="byob_allowed"
+                                        checked={formData.byob_allowed}
+                                        onChange={handleChange}
+                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="byob_allowed" className="ml-3 text-gray-700 font-medium">
+                                        BYOB Allowed
+                                    </label>
+                                </div>
+
+                                {formData.byob_allowed && (
+                                    <div className="mt-4 ml-8 space-y-3">
+                                        <div>
+                                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="byob_pricing_type">
+                                                BYOB Fee Type
+                                            </label>
+                                            <select
+                                                id="byob_pricing_type"
+                                                name="byob_pricing_type"
+                                                value={formData.byob_pricing_type}
+                                                onChange={handleChange}
+                                                className={`w-full p-3 border ${validationErrors.byob_pricing_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
+                                            >
+                                                <option value="">Select BYOB Fee Type</option>
+                                                <option value="per_person">Per Person</option>
+                                                <option value="per_bottle">Per Bottle</option>
+                                                <option value="flat_fee">Flat Fee</option>
+                                            </select>
+                                            {validationErrors.byob_pricing_type && (
+                                                <p className="mt-1 text-sm text-red-600">{validationErrors.byob_pricing_type}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="byob_price">
+                                                BYOB Price ($)
+                                            </label>
+                                            <input
+                                                id="byob_price"
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                name="byob_price"
+                                                value={formData.byob_price}
+                                                onChange={handleChange}
+                                                className={`w-full p-3 border ${validationErrors.byob_price ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                                placeholder="e.g. 15.00"
+                                            />
+                                            {validationErrors.byob_price && (
+                                                <p className="mt-1 text-sm text-red-600">{validationErrors.byob_price}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-white rounded-md">
+                                <div className="flex items-center">
+                                    <input
+                                        id="outside_cake_allowed"
+                                        type="checkbox"
+                                        name="outside_cake_allowed"
+                                        checked={formData.outside_cake_allowed}
+                                        onChange={handleChange}
+                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="outside_cake_allowed" className="ml-3 text-gray-700 font-medium">
+                                        Outside Cake Allowed
+                                    </label>
+                                </div>
+
+                                {formData.outside_cake_allowed && (
+                                    <div className="mt-4 ml-8 space-y-3">
+                                        <div>
+                                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="cake_fee_type">
+                                                Cake Fee Type
+                                            </label>
+                                            <select
+                                                id="cake_fee_type"
+                                                name="cake_fee_type"
+                                                value={formData.cake_fee_type}
+                                                onChange={handleChange}
+                                                className={`w-full p-3 border ${validationErrors.cake_fee_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
+                                            >
+                                                <option value="">Select Cake Fee Type</option>
+                                                <option value="per_person">Per Person</option>
+                                                <option value="per_cake">Per Cake</option>
+                                                <option value="flat_fee">Flat Fee</option>
+                                            </select>
+                                            {validationErrors.cake_fee_type && (
+                                                <p className="mt-1 text-sm text-red-600">{validationErrors.cake_fee_type}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="cake_fee_amount">
+                                                Cake Fee Amount ($)
+                                            </label>
+                                            <input
+                                                id="cake_fee_amount"
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                name="cake_fee_amount"
+                                                value={formData.cake_fee_amount}
+                                                onChange={handleChange}
+                                                className={`w-full p-3 border ${validationErrors.cake_fee_amount ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                                placeholder="e.g. 25.00"
+                                            />
+                                            {validationErrors.cake_fee_amount && (
+                                                <p className="mt-1 text-sm text-red-600">{validationErrors.cake_fee_amount}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="cleaning_fee">
+                                        Cleaning Fee ($)
+                                    </label>
+                                    <input
+                                        id="cleaning_fee"
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        name="overtime_fee_per_hour"
-                                        value={formData.overtime_fee_per_hour}
+                                        name="cleaning_fee"
+                                        value={formData.cleaning_fee}
                                         onChange={handleChange}
-                                        className={`w-full pl-7 p-3 border ${validationErrors.overtime_fee_per_hour ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        className={`w-full p-3 border ${validationErrors.cleaning_fee ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="e.g. 150.00"
+                                    />
+                                    {validationErrors.cleaning_fee && (
+                                        <p className="mt-1 text-sm text-red-600">{validationErrors.cleaning_fee}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="setup_fee">
+                                        Setup Fee ($)
+                                    </label>
+                                    <input
+                                        id="setup_fee"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        name="setup_fee"
+                                        value={formData.setup_fee}
+                                        onChange={handleChange}
+                                        className={`w-full p-3 border ${validationErrors.setup_fee ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                                         placeholder="e.g. 200.00"
                                     />
+                                    {validationErrors.setup_fee && (
+                                        <p className="mt-1 text-sm text-red-600">{validationErrors.setup_fee}</p>
+                                    )}
                                 </div>
-                                {validationErrors.overtime_fee_per_hour && (
-                                    <p className="mt-1 text-sm text-red-600">{validationErrors.overtime_fee_per_hour}</p>
-                                )}
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Extra fee charged for each hour beyond the scheduled booking time
-                                </p>
                             </div>
                         </div>
+                    </section>
 
-                        {formData.pricing_type === 'hourly' && (
-                            <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="min_hours">
-                                    Minimum Hours
-                                </label>
-                                <input
-                                    id="min_hours"
-                                    type="number"
-                                    min="0"
-                                    name="min_hours"
-                                    value={formData.min_hours}
-                                    onChange={handleChange}
-                                    className={`w-full p-3 border ${validationErrors.min_hours ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                    placeholder="e.g. 3"
-                                />
-                                {validationErrors.min_hours && (
-                                    <p className="mt-1 text-sm text-red-600">{validationErrors.min_hours}</p>
-                                )}
-                                <p className="mt-1 text-sm text-gray-500">Minimum number of hours required for booking</p>
-                            </div>
-                        )}
-                    </div>
-                </section>
-
-                {/* Policies & Fees Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Policies & Fees</h2>
-
-                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-                        <p className="font-medium">Important Note:</p>
-                        <p>Be sure to set clear policies regarding fees, cancellations, and special requests to avoid misunderstandings with customers.</p>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center p-3 bg-white rounded-md">
-                            <input
-                                id="alcohol_served"
-                                type="checkbox"
-                                name="alcohol_served"
-                                checked={formData.alcohol_served}
-                                onChange={handleChange}
-                                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor="alcohol_served" className="ml-3 text-gray-700">
-                                Alcohol Served
-                            </label>
-                        </div>
-
-                        <div className="p-4 bg-white rounded-md">
-                            <div className="flex items-center">
-                                <input
-                                    id="byob_allowed"
-                                    type="checkbox"
-                                    name="byob_allowed"
-                                    checked={formData.byob_allowed}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <label htmlFor="byob_allowed" className="ml-3 text-gray-700 font-medium">
-                                    BYOB Allowed
-                                </label>
-                            </div>
-
-                            {formData.byob_allowed && (
-                                <div className="mt-4 ml-8 space-y-3">
-                                    <div>
-                                        <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="byob_pricing_type">
-                                            BYOB Fee Type
-                                        </label>
-                                        <select
-                                            id="byob_pricing_type"
-                                            name="byob_pricing_type"
-                                            value={formData.byob_pricing_type}
-                                            onChange={handleChange}
-                                            className={`w-full p-3 border ${validationErrors.byob_pricing_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
-                                        >
-                                            <option value="">Select BYOB Fee Type</option>
-                                            <option value="per_person">Per Person</option>
-                                            <option value="per_bottle">Per Bottle</option>
-                                            <option value="flat_fee">Flat Fee</option>
-                                        </select>
-                                        {validationErrors.byob_pricing_type && (
-                                            <p className="mt-1 text-sm text-red-600">{validationErrors.byob_pricing_type}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="byob_price">
-                                            BYOB Price ($)
-                                        </label>
-                                        <input
-                                            id="byob_price"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            name="byob_price"
-                                            value={formData.byob_price}
-                                            onChange={handleChange}
-                                            className={`w-full p-3 border ${validationErrors.byob_price ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                            placeholder="e.g. 15.00"
-                                        />
-                                        {validationErrors.byob_price && (
-                                            <p className="mt-1 text-sm text-red-600">{validationErrors.byob_price}</p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-4 bg-white rounded-md">
-                            <div className="flex items-center">
-                                <input
-                                    id="outside_cake_allowed"
-                                    type="checkbox"
-                                    name="outside_cake_allowed"
-                                    checked={formData.outside_cake_allowed}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <label htmlFor="outside_cake_allowed" className="ml-3 text-gray-700 font-medium">
-                                    Outside Cake Allowed
-                                </label>
-                            </div>
-
-                            {formData.outside_cake_allowed && (
-                                <div className="mt-4 ml-8 space-y-3">
-                                    <div>
-                                        <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="cake_fee_type">
-                                            Cake Fee Type
-                                        </label>
-                                        <select
-                                            id="cake_fee_type"
-                                            name="cake_fee_type"
-                                            value={formData.cake_fee_type}
-                                            onChange={handleChange}
-                                            className={`w-full p-3 border ${validationErrors.cake_fee_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
-                                        >
-                                            <option value="">Select Cake Fee Type</option>
-                                            <option value="per_person">Per Person</option>
-                                            <option value="per_cake">Per Cake</option>
-                                            <option value="flat_fee">Flat Fee</option>
-                                        </select>
-                                        {validationErrors.cake_fee_type && (
-                                            <p className="mt-1 text-sm text-red-600">{validationErrors.cake_fee_type}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="cake_fee_amount">
-                                            Cake Fee Amount ($)
-                                        </label>
-                                        <input
-                                            id="cake_fee_amount"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            name="cake_fee_amount"
-                                            value={formData.cake_fee_amount}
-                                            onChange={handleChange}
-                                            className={`w-full p-3 border ${validationErrors.cake_fee_amount ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                            placeholder="e.g. 25.00"
-                                        />
-                                        {validationErrors.cake_fee_amount && (
-                                            <p className="mt-1 text-sm text-red-600">{validationErrors.cake_fee_amount}</p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="cleaning_fee">
-                                    Cleaning Fee ($)
-                                </label>
-                                <input
-                                    id="cleaning_fee"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    name="cleaning_fee"
-                                    value={formData.cleaning_fee}
-                                    onChange={handleChange}
-                                    className={`w-full p-3 border ${validationErrors.cleaning_fee ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                    placeholder="e.g. 150.00"
-                                />
-                                {validationErrors.cleaning_fee && (
-                                    <p className="mt-1 text-sm text-red-600">{validationErrors.cleaning_fee}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="setup_fee">
-                                    Setup Fee ($)
-                                </label>
-                                <input
-                                    id="setup_fee"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    name="setup_fee"
-                                    value={formData.setup_fee}
-                                    onChange={handleChange}
-                                    className={`w-full p-3 border ${validationErrors.setup_fee ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                    placeholder="e.g. 200.00"
-                                />
-                                {validationErrors.setup_fee && (
-                                    <p className="mt-1 text-sm text-red-600">{validationErrors.setup_fee}</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Tags Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Tags</h2>
-                    <div>
-                        <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="tags">
-                            Tags (comma separated)
-                        </label>
-                        <input
-                            id="tags"
-                            type="text"
-                            name="tags"
-                            value={formData.tags}
-                            onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="e.g. outdoor, pet-friendly, live-music"
-                        />
-                        <p className="mt-1 text-sm text-gray-500">Add relevant tags to help customers find your venue. Separate with commas (e.g. rooftop, private, views)</p>
-                        {validationErrors.tags && (
-                            <p className="mt-1 text-sm text-red-600">{validationErrors.tags}</p>
-                        )}
-                    </div>
-                </section>
-
-                {/* New Images Section */}
-                <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-700">Venue Images</h2>
-
-                    <div className="space-y-4">
+                    {/* Tags Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Tags</h2>
                         <div>
-                            <label className="block text-gray-700 text-sm font-medium mb-2">
-                                Upload Photos
+                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="tags">
+                                Tags (comma separated)
                             </label>
-                            <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
-                                <p className="font-medium">Image Guidelines:</p>
-                                <ul className="list-disc pl-5 mt-1">
-                                    <li>Max 5MB per image</li>
-                                    <li>Accepted formats: JPG, PNG, WebP</li>
-                                    <li>High-quality images attract more customers</li>
-                                </ul>
-                            </div>
-
                             <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImageChange}
-                                accept="image/jpeg, image/png, image/webp"
-                                multiple
-                                className="hidden"
-                                id="venue-images"
+                                id="tags"
+                                type="text"
+                                name="tags"
+                                value={formData.tags}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="e.g. outdoor, pet-friendly, live-music"
                             />
-
-                            <div className="flex items-center space-x-4">
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
-                                >
-                                    Select Images
-                                </button>
-                                <span className="text-sm text-gray-500">
-                                    {uploadedImages.length} {uploadedImages.length === 1 ? 'image' : 'images'} selected
-                                </span>
-                            </div>
+                            <p className="mt-1 text-sm text-gray-500">Add relevant tags to help customers find your venue. Separate with commas (e.g. rooftop, private, views)</p>
+                            {validationErrors.tags && (
+                                <p className="mt-1 text-sm text-red-600">{validationErrors.tags}</p>
+                            )}
                         </div>
+                    </section>
 
-                        {/* Image preview */}
-                        {imagePreviewUrls.length > 0 && (
-                            <div className="mt-4">
-                                <h3 className="text-gray-700 text-sm font-medium mb-2">Image Previews</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
-                                    {imagePreviewUrls.map((url, index) => (
-                                        <div key={index} className="relative group">
-                                            <div className="h-24 w-full rounded-md overflow-hidden border border-gray-300">
-                                                <img
-                                                    src={url}
-                                                    alt={`Venue image ${index + 1}`}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeImage(index)}
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 focus:outline-none"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ))}
+                    {/* New Images Section */}
+                    <section className="bg-gray-50 p-6 rounded-lg shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-700">Venue Images</h2>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Upload Photos
+                                </label>
+                                <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
+                                    <p className="font-medium">Image Guidelines:</p>
+                                    <ul className="list-disc pl-5 mt-1">
+                                        <li>Max 5MB per image</li>
+                                        <li>Accepted formats: JPG, PNG, WebP</li>
+                                        <li>High-quality images attract more customers</li>
+                                    </ul>
+                                </div>
+
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/jpeg, image/png, image/webp"
+                                    multiple
+                                    className="hidden"
+                                    id="venue-images"
+                                />
+
+                                <div className="flex items-center space-x-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                                    >
+                                        Select Images
+                                    </button>
+                                    <span className="text-sm text-gray-500">
+                                        {uploadedImages.length} {uploadedImages.length === 1 ? 'image' : 'images'} selected
+                                    </span>
                                 </div>
                             </div>
-                        )}
+
+                            {/* Image preview */}
+                            {imagePreviewUrls.length > 0 && (
+                                <div className="mt-4">
+                                    <h3 className="text-gray-700 text-sm font-medium mb-2">Image Previews</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
+                                        {imagePreviewUrls.map((url, index) => (
+                                            <div key={index} className="relative group">
+                                                <div className="h-24 w-full rounded-md overflow-hidden border border-gray-300">
+                                                    <img
+                                                        src={url}
+                                                        alt={`Venue image ${index + 1}`}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 focus:outline-none"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    <div className="flex justify-between mt-8">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+                                    resetForm();
+                                }
+                            }}
+                            className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+                        >
+                            Reset Form
+                        </button>
+
+                        <button
+                            type="submit"
+                            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isLoading || isUploading}
+                        >
+                            {isLoading || isUploading ? (
+                                <span className="flex items-center">
+                                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    {isUploading ? 'Uploading Images...' : 'Submitting...'}
+                                </span>
+                            ) : 'Submit Venue'}
+                        </button>
                     </div>
-                </section>
-
-                <div className="flex justify-between mt-8">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
-                                resetForm();
-                            }
-                        }}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
-                    >
-                        Reset Form
-                    </button>
-
-                    <button
-                        type="submit"
-                        className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading || isUploading}
-                    >
-                        {isLoading || isUploading ? (
-                            <span className="flex items-center">
-                                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                {isUploading ? 'Uploading Images...' : 'Submitting...'}
-                            </span>
-                        ) : 'Submit Venue'}
-                    </button>
-                </div>
-            </form>
-        </div>
+                </form>
+            </div>
+        </>
     );
 } 

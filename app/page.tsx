@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEventDetails } from "./context/EventContext";
+import NavBar from "./components/NavBar";
 
 const options = [
   {
@@ -40,16 +41,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#FFF9F5]">
-      {/* Header */}
-      <header className="p-6 flex items-center justify-between border-b border-amber-100">
-        <div className="text-2xl font-bold text-amber-950">OffMenu</div>
-        <button
-          onClick={() => router.push('/map')}
-          className="px-4 py-2 text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-50 transition-colors"
-        >
-          Explore All Venues
-        </button>
-      </header>
+      <NavBar />
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto p-8 pt-16">

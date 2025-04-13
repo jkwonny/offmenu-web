@@ -4,6 +4,7 @@ import "./globals.css";
 import { BookingProvider } from "./lib/context";
 import QueryProvider from "./lib/query-provider";
 import { EventProvider } from "./context/EventContext";
+import { UserProvider } from "./context/UserContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,11 +32,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-          <BookingProvider>
-            <EventProvider>
-              {children}
-            </EventProvider>
-          </BookingProvider>
+          <UserProvider>
+            <BookingProvider>
+              <EventProvider>
+                {children}
+              </EventProvider>
+            </BookingProvider>
+          </UserProvider>
         </QueryProvider>
       </body>
     </html>
