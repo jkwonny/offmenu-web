@@ -1,0 +1,49 @@
+{
+    "project": "OffMenu",
+    "description": "OffMenu is a web platform to help users book restaurants, bars, and unique venues for events. Built with React (Next.js), Node.js, Supabase, and Express. The experience is optimized for ease and elegance.",
+    "design": {
+        "fonts": {
+            "primary": "Inter",
+            "accent": "Playfair Display"
+        },
+        "colors": {
+            "primary": "#FF6F59",
+            "accent": "#3C3C3C",
+            "background": "#FFF9F6",
+            "surface": "#FFFFFF",
+            "border": "#E7E0DA",
+            "success": "#4CAF50",
+            "danger": "#E63946"
+        },
+        "tailwind": {
+            "fontFamily": {
+                "sans": [
+                    "Inter",
+                    "ui-sans-serif",
+                    "system-ui"
+                ],
+                "serif": [
+                    "Playfair Display",
+                    "ui-serif",
+                    "Georgia"
+                ]
+            }
+        },
+        "preferredLibraries": {
+            "ui": "Tailwind CSS",
+            "date": "Day.js",
+            "map": "Mapbox",
+            "form": "React Hook Form + Zod"
+        },
+        "tone": "Friendly and easy-going, yet elevated. The brand should feel like a personal concierge for celebrations — confident enough for influencers and cozy enough for everyday planners.",
+        "ui": {
+            "buttons": "rounded-xl, warm coral background (#FF6F59), white text, bold, hover effects with soft shadows",
+            "cards": "rounded-xl with soft shadows and clean spacing",
+            "layout": "spacious and clean, uses warm off-white background (#FFF9F6), with plenty of room to breathe",
+            "form": "welcoming — large fields, easy labels, supportive tone"
+        }
+    },
+    "database": {
+        "files": "Look in /database/supabase.sql for the database schema"
+    }
+}
