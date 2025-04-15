@@ -1,6 +1,16 @@
 -- Step 1: Create ENUM for pricing type
 CREATE TYPE pricing_type AS ENUM ('hourly', 'flat', 'minimum_spend');
 
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  phone TEXT,
+  role TEXT DEFAULT 'user' CHECK (role IN ('user', 'venue_owner', 'admin')),
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
 -- Step 2: Create main venues table with updated structure
 CREATE TABLE venues (
   id BIGSERIAL PRIMARY KEY,

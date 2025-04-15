@@ -8,7 +8,7 @@ type UserContextType = {
     user: User | null;
     session: Session | null;
     isLoading: boolean;
-    signUp: (email: string, password: string) => Promise<{
+    signUp: (email: string, password: string, name?: string, phone?: string) => Promise<{
         success: boolean;
         error: Error | null;
     }>;
@@ -49,12 +49,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }, []);
 
     // Sign up with email and password
-    const signUp = async (email: string, password: string) => {
+    const signUp = async (email: string, password: string, name?: string, phone?: string) => {
         try {
-            const { error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
             });
+
+            if (!error && data.user) {
+                // Create a user entry in the users table with the auth user's ID
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .insert({
+                        id: data.user.id,
+                        email: email,
+                        name: name || null,
+                        phone: phone || null,
+                        role: 'user'
+                    });
+
+                if (insertError) {
+                    console.error('Error creating user in database:', insertError);
+                }
+            }
+
             return {
                 success: !error,
                 error: error,

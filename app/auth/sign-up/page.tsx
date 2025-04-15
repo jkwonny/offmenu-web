@@ -11,6 +11,8 @@ export default function SignUp() {
     const { signUp } = useUser();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export default function SignUp() {
         setError(null);
 
         if (!email || !password) {
-            setError("Please fill all fields");
+            setError("Please fill all required fields");
             setLoading(false);
             return;
         }
@@ -41,7 +43,7 @@ export default function SignUp() {
         }
 
         try {
-            const { success, error } = await signUp(email, password);
+            const { success, error } = await signUp(email, password, name, phone);
 
             if (success) {
                 setSuccessMessage("Sign-up successful! Please check your email to confirm your account.");
@@ -81,7 +83,7 @@ export default function SignUp() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                            Email
+                            Email <span className="text-red-500">*</span>
                         </label>
                         <input
                             id="email"
@@ -95,8 +97,36 @@ export default function SignUp() {
                     </div>
 
                     <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                            Full Name
+                        </label>
+                        <input
+                            id="name"
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="John Doe"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                            Phone Number
+                        </label>
+                        <input
+                            id="phone"
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="(123) 456-7890"
+                        />
+                    </div>
+
+                    <div>
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                            Password
+                            Password <span className="text-red-500">*</span>
                         </label>
                         <input
                             id="password"
