@@ -43,22 +43,22 @@ export default function BookingStep1() {
     return (
         <>
             <NavBar />
-            <main className="min-h-screen bg-[#FFF9F5] py-12">
-                <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-amber-100">
-                    <h1 className="text-3xl font-bold text-amber-950 mb-6 text-center">
+            <main className="min-h-screen bg-gradient-to-br from-[#FFF9F5] py-12 ">
+                <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border">
+                    <h1 className="text-3xl font-bold mb-6 text-center">
                         {eventType} Booking
                     </h1>
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6">
-                            <label htmlFor="eventType" className="block text-amber-900 mb-2 font-medium">
+                            <label htmlFor="eventType" className="block mb-2 font-semibold">
                                 Event Type
                             </label>
                             <select
                                 id="eventType"
                                 value={eventType}
                                 onChange={(e) => setEventType(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-black"
+                                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
                                 required
                             >
                                 <option value="Pop Up">Pop Up</option>
@@ -70,7 +70,7 @@ export default function BookingStep1() {
                         </div>
 
                         <div className="mb-6">
-                            <label htmlFor="guestCount" className="block text-amber-900 mb-2 font-medium">
+                            <label htmlFor="guestCount" className="block mb-2 font-semibold">
                                 How many people are you expecting?
                             </label>
                             <input
@@ -78,7 +78,7 @@ export default function BookingStep1() {
                                 id="guestCount"
                                 value={guestCount}
                                 onChange={(e) => setGuestCount(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-black"
+                                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
                                 placeholder="Number of guests"
                                 min="1"
                                 required
@@ -86,7 +86,7 @@ export default function BookingStep1() {
                         </div>
 
                         <div className="mb-6">
-                            <label htmlFor="eventDate" className="block text-amber-900 mb-2 font-medium">
+                            <label htmlFor="eventDate" className="block mb-2 font-semibold">
                                 When is your event?
                             </label>
                             <input
@@ -94,21 +94,21 @@ export default function BookingStep1() {
                                 id="eventDate"
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-black"
+                                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
                                 required
                             />
                         </div>
 
                         {isPopUpOrEvent && (
                             <div className="mb-6">
-                                <label htmlFor="pitch" className="block text-amber-900 mb-2 font-medium">
+                                <label htmlFor="pitch" className="block mb-2 font-semibold">
                                     Tell us more about your event concept and requirements
                                 </label>
                                 <textarea
                                     id="pitch"
                                     value={pitch}
                                     onChange={(e) => setPitch(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-black min-h-[120px] resize-y"
+                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013] min-h-[120px] resize-y"
                                     placeholder="Describe your event concept in detail..."
                                     rows={4}
                                 />
@@ -116,14 +116,14 @@ export default function BookingStep1() {
                         )}
 
                         <div className="mb-6">
-                            <label htmlFor="budget" className="block text-amber-900 mb-2 font-medium">
+                            <label htmlFor="budget" className="block mb-2 font-semibold">
                                 What's your budget?
                             </label>
                             <select
                                 id="budget"
                                 value={budget}
                                 onChange={(e) => setBudget(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-black"
+                                className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
                                 required
                             >
                                 <option value="">Select budget range</option>
@@ -140,14 +140,14 @@ export default function BookingStep1() {
                             <button
                                 type="button"
                                 onClick={() => router.back()}
-                                className="px-6 py-3 text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-50 transition-colors"
+                                className="px-6 py-3 border rounded-lg transition-colors bg-white"
                             >
                                 Back
                             </button>
 
                             <button
                                 type="submit"
-                                className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                                className="px-6 py-3 text-white rounded-lg transition-colors shadow-md font-semibold"
                             >
                                 Find Venues
                             </button>

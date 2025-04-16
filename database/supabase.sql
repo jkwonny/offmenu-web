@@ -52,6 +52,8 @@ CREATE TABLE venues (
   avg_rating NUMERIC(2,1),
   review_count INTEGER DEFAULT 0,
 
+  featured BOOLEAN DEFAULT FALSE,
+
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );

@@ -20,6 +20,7 @@ export interface Venue {
   description: string;
   capacity: number;
   tags: string[];
+  venue_images: string[];
 }
 
 // Function to fetch venues from Supabase
@@ -36,8 +37,6 @@ async function fetchVenues() {
     console.error('Supabase error:', error);
     throw error;
   }
-
-  console.log('Received venue data:', data);
 
   if (data) {
     // Transform data to match our Venue interface
@@ -64,6 +63,7 @@ async function fetchVenues() {
         description: venue.description || '',
         capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
         tags: venue.rental_type || [],
+        venue_images: venue.venue_images || [],
       };
     });
   }
@@ -91,5 +91,64 @@ export function useVenue(venueId: string) {
       return venues.find(venue => venue.id === venueId) || null;
     },
     enabled: !!venueId,
+  });
+}
+
+// Function to fetch featured venues from Supabase
+async function fetchFeaturedVenues() {
+  const { data, error } = await supabase
+    .from('venues')
+    .select(`
+      *,
+      venue_images(image_url, sort_order)
+    `)
+    .eq('featured', true);
+
+  if (error) {
+    console.error('Supabase error:', error);
+    throw error;
+  }
+
+  if (data) {
+    // Transform data to match our Venue interface
+    return data.map(venue => {
+      // Find the image with the lowest sort_order (primary image)
+      const primaryImage = venue.venue_images && venue.venue_images.length > 0
+        ? venue.venue_images.sort((a: { sort_order: number }, b: { sort_order: number }) =>
+          a.sort_order - b.sort_order)[0]
+        : null;
+
+      return {
+        id: venue.id.toString(),
+        name: venue.name,
+        latitude: parseFloat(venue.latitude) || 0,
+        longitude: parseFloat(venue.longitude) || 0,
+        category: venue.category || 'Venue',
+        image_url: primaryImage ? primaryImage.image_url : '/venue-placeholder.jpg',
+        city: venue.city,
+        address: venue.address,
+        state: venue.state,
+        price: venue.price ? parseFloat(venue.price) : undefined,
+        pricing_type: venue.pricing_type,
+        min_hours: venue.min_hours ? parseInt(venue.min_hours) : undefined,
+        description: venue.description || '',
+        capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
+        tags: venue.rental_type || [],
+        venue_images: venue.venue_images || [],
+      };
+    });
+  }
+
+  return [];
+}
+
+// Hook to use the featured venue data with React Query
+export function useFeaturedVenues() {
+  return useQuery({
+    queryKey: ['featuredVenues'],
+    queryFn: fetchFeaturedVenues,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 0
   });
 } 
