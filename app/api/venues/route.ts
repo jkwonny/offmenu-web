@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 async function checkSupabaseConnection() {
     try {
         // A simple query to check connection
-        const { data, error } = await supabase.from('venues').select('id').limit(1);
+        const { error } = await supabase.from('venues').select('id').limit(1);
         
         if (error) {
             console.error('Supabase connection error:', error);

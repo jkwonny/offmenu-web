@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, FormEvent, useRef } from 'react';
-import { supabase } from '../lib/supabase';
-import Image from 'next/image';
 import NavBar from '../components/NavBar';
 
 export default function SubmitVenuePage() {

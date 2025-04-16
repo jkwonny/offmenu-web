@@ -4,6 +4,7 @@ import { useFeaturedVenues } from "./lib/queries";
 import type { Venue } from "../types/Venue";
 import { useRouter } from "next/navigation";
 import NavBar from "./components/NavBar";
+import Image from "next/image";
 
 // Placeholder icons (replace with real icons as needed)
 const IconPopUp = () => (
@@ -159,9 +160,11 @@ function VenueImageCarousel({ images }: { images?: string[] }) {
   };
   return (
     <div className="relative w-full h-48 bg-gray-100">
-      <img
+      <Image
         src={validImages[current]}
         alt="Venue image"
+        width={400}
+        height={250}
         className="w-full h-48 object-cover"
         style={{ transition: 'opacity 0.3s' }}
       />

@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEventDetails } from "../../context/EventContext";
 import NavBar from "../../components/NavBar";
 
+type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
+
 export default function BookingStep1() {
     const router = useRouter();
     const { eventDetails, setEventDetails } = useEventDetails();
-    const [eventType, setEventType] = useState<string>(eventDetails.type);
+    const [eventType, setEventType] = useState<EventType>(eventDetails.type);
     const [guestCount, setGuestCount] = useState<string>(eventDetails.guestCount.toString());
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [pitch, setPitch] = useState<string>("");
@@ -31,7 +33,7 @@ export default function BookingStep1() {
 
         // Update the event details in context
         setEventDetails({
-            type: eventType as any,
+            type: eventType,
             guestCount: parseInt(guestCount, 10),
             date: formattedDate
         });
@@ -57,7 +59,7 @@ export default function BookingStep1() {
                             <select
                                 id="eventType"
                                 value={eventType}
-                                onChange={(e) => setEventType(e.target.value)}
+                                onChange={(e) => setEventType(e.target.value as EventType)}
                                 className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
                                 required
                             >
@@ -117,7 +119,7 @@ export default function BookingStep1() {
 
                         <div className="mb-6">
                             <label htmlFor="budget" className="block mb-2 font-semibold">
-                                What's your budget?
+                                What&apos;s your budget?
                             </label>
                             <select
                                 id="budget"

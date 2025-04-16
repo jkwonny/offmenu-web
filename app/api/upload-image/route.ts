@@ -68,53 +68,17 @@ export async function POST(request: Request) {
             if (error.message.includes('bucket') || error.message.includes('row-level security policy')) {
                 console.error('Storage bucket error:', error);
                 return NextResponse.json({ 
-                    error: 'Storage bucket configuration error. Please make sure the "venue-images" bucket exists and has proper permissions.',
-                    details: error.message
+                    error: 'Storage bucket error. Please contact support.' 
                 }, { status: 500 });
             }
-            
-            console.error('Error uploading file:', error);
-            return NextResponse.json({ error: `Failed to upload: ${error.message}` }, { status: 500 });
+            return NextResponse.json({ error: error.message }, { status: 500 });
         }
-        
-        // Get the public URL
-        const { data: { publicUrl } } = supabaseAdmin.storage
-            .from('venue-images')
-            .getPublicUrl(fileName);
-            
-        // Determine sort order - default to 1 if not provided
-        const sortOrder = sortOrderStr ? parseInt(sortOrderStr, 10) : 1;
-        
-        // Store image info in venue_images table
-        const { error: insertError } = await supabaseAdmin
-            .from('venue_images')
-            .insert({
-                venue_id: parseInt(venueId),
-                image_url: publicUrl,
-                sort_order: sortOrder
-            });
-            
-        if (insertError) {
-            console.error('Error inserting image record:', insertError);
-            
-            if (insertError.message.includes('row-level security policy')) {
-                return NextResponse.json({ 
-                    error: 'Database permission error. Please check RLS policies for venue_images table.',
-                    url: publicUrl,
-                    details: insertError.message
-                }, { status: 500 });
-            }
-            
-            return NextResponse.json({ 
-                error: `File uploaded but failed to save record: ${insertError.message}`,
-                url: publicUrl 
-            }, { status: 207 }); // Partial success
-        }
-        
+
+        // Return the file path
         return NextResponse.json({ 
-            success: true, 
-            url: publicUrl 
-        }, { status: 200 });
+            success: true,
+            path: data.path
+        });
         
     } catch (error: unknown) {
         console.error('Upload error:', error);
