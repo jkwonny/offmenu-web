@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, useRef } from 'react';
 import NavBar from '../components/NavBar';
+import Image from 'next/image';
 
 export default function SubmitVenuePage() {
     const initialFormState = {
@@ -431,9 +432,9 @@ export default function SubmitVenuePage() {
                                         onChange={handleChange}
                                         rows={4}
                                         className="w-full p-3 border border-[#e0d8c3] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent"
-                                        placeholder="Describe your venue"
+                                        placeholder="Describe your venue&apos;s atmosphere, features, and what makes it special."
                                     />
-                                    <p className="mt-1 text-sm text-[#ca0013]">Provide details about your venue's atmosphere, features, and what makes it special.</p>
+                                    <p className="mt-1 text-sm text-[#ca0013]">Provide details about your venue&apos;s atmosphere, features, and what makes it special.</p>
                                     {validationErrors.description && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.description}</p>
                                     )}
@@ -600,7 +601,7 @@ export default function SubmitVenuePage() {
                             <h2 className="text-xl font-semibold mb-4 text-[#ca0013]">Location</h2>
                             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
                                 <p className="font-medium">Tip: Latitude and Longitude</p>
-                                <p>You can find these coordinates using Google Maps by right-clicking on your location and selecting "What's here?"</p>
+                                <p>You can find these coordinates using Google Maps by right-clicking on your location and selecting &quot;What&apos;s here?&quot;</p>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="col-span-2">
@@ -1139,10 +1140,12 @@ export default function SubmitVenuePage() {
                                             {imagePreviewUrls.map((url, index) => (
                                                 <div key={index} className="relative group">
                                                     <div className="h-24 w-full rounded-md overflow-hidden border border-[#e0d8c3]">
-                                                        <img
+                                                        <Image
                                                             src={url}
                                                             alt={`Venue image ${index + 1}`}
                                                             className="h-full w-full object-cover"
+                                                            width={100}
+                                                            height={100}
                                                         />
                                                     </div>
                                                     <button
