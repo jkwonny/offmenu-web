@@ -203,6 +203,29 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         }
     }, []);
 
+    // Helper function to create a popup for a venue
+    const createVenuePopup = useCallback((venue: Venue) => {
+        // Format price display for popup
+        let priceDisplay = 'Price upon request';
+        if (venue.price) {
+            if (venue.pricing_type === 'hourly' && venue.min_hours) {
+                // For hourly pricing, calculate total cost
+                const totalCost = venue.price * venue.min_hours;
+                priceDisplay = `$${totalCost.toFixed(0)} for ${venue.min_hours} hour${venue.min_hours > 1 ? 's' : ''}`;
+            } else if (venue.pricing_type === 'flat') {
+                priceDisplay = `$${venue.price} flat rate`;
+            }
+        }
+
+        return new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+                <div class="p-2">
+                    <h3 class="font-bold">${venue.name}</h3>
+                    <p class="text-sm">${priceDisplay}</p>
+                </div>
+            `);
+    }, []);
+
     // Function to update markers
     const updateMarkers = useCallback((venues: Venue[]) => {
         console.log('Updating markers for', venues.length, 'venues');
@@ -295,104 +318,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
 
         console.log('Created', Object.keys(markers).length, 'new markers');
         markersRef.current = markers;
-    }, [selectedVenueId, onMarkerClick]);
-
-    // Helper function to create a popup for a venue
-    const createVenuePopup = useCallback((venue: Venue) => {
-        // Format price display for popup
-        let priceDisplay = 'Price upon request';
-        if (venue.price) {
-            if (venue.pricing_type === 'hourly' && venue.min_hours) {
-                // For hourly pricing, calculate total cost
-                const totalCost = venue.price * venue.min_hours;
-                priceDisplay = `$${totalCost.toFixed(0)} for ${venue.min_hours} hour${venue.min_hours > 1 ? 's' : ''}`;
-            } else if (venue.pricing_type === 'flat') {
-                priceDisplay = `$${venue.price} flat rate`;
-            } else if (venue.pricing_type === 'minimum_spend') {
-                priceDisplay = `$${venue.price} minimum spend`;
-            } else {
-                priceDisplay = `$${venue.price}`;
-            }
-        }
-
-        // Create the popup content
-        const popupHTML = `
-            <div class="relative bg-white rounded-lg overflow-hidden">
-                <!-- Close and heart buttons -->
-                <div class="absolute right-2 flex gap-2 z-10">
-                    <button class="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md hover:bg-amber-50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    </button>
-                    <button id="popup-close-btn-${venue.id}" class="close-popup w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md hover:bg-amber-50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Image -->
-                <div class="w-full">
-                    <img src="${venue.image_url}" alt="${venue.name}" class="h-full w-full object-cover">
-                </div>
-                
-                <!-- Content -->
-                <div class="p-4">
-                    <!-- Ratings -->
-                    <div class="flex items-center mb-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                        </svg>
-                        <span class="ml-1 font-semibold text-black">${venue.avg_rating || '5.0'}</span>
-                        <span class="ml-1 text-black">(${venue.review_count || 'New'})</span>
-                    </div>
-                    
-                    <!-- Venue name -->
-                    <h3 class="font-medium text-base text-amber-950">${venue.name}</h3>
-                    
-                    <!-- Location -->
-                    <p class="text-sm text-gray-600 mb-2">
-                        ${venue.city}${venue.state ? ', ' + venue.state : ''}
-                    </p>
-                    
-                    <!-- Price -->
-                    <div class="mt-2">
-                        <span class="font-semibold text-amber-800">${priceDisplay}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Create popup with custom options
-        const popup = new mapboxgl.Popup({
-            closeOnClick: true,
-            closeButton: false,
-            className: 'airbnb-style-popup',
-            offset: [0, -30],
-        });
-
-        // Set popup content
-        popup.setHTML(popupHTML);
-
-        // Add event listener to close button once the popup is added to DOM
-        popup.on('open', () => {
-            setTimeout(() => {
-                const closeBtn = document.getElementById(`popup-close-btn-${venue.id}`);
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        popup.remove();
-                        if (popupRef.current === popup) {
-                            popupRef.current = null;
-                        }
-                    });
-                }
-            }, 10);
-        });
-
-        return popup;
-    }, []);
+    }, [selectedVenueId, onMarkerClick, createVenuePopup]);
 
     // Effect to initialize markers when map and venues are available
     useEffect(() => {

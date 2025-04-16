@@ -49,7 +49,7 @@ export default function VenueList({
         return `$${venue.price}`;
     };
 
-    const handleWebsiteClick = (e: React.MouseEvent<HTMLAnchorElement>, website: string) => {
+    const handleWebsiteClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.stopPropagation(); // Prevent the venue card click event from firing
     };
 
@@ -96,7 +96,7 @@ export default function VenueList({
                                                     href={`https://instagram.com/${venue.instagram_handle}/`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    onClick={(e) => handleWebsiteClick(e, `https://instagram.com/${venue.instagram_handle}/`)}
+                                                    onClick={handleWebsiteClick}
                                                     className="text-amber-600 hover:text-amber-800"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -109,7 +109,7 @@ export default function VenueList({
                                                     href={venue.website}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    onClick={(e) => handleWebsiteClick(e, venue.website!)}
+                                                    onClick={handleWebsiteClick}
                                                     className="text-amber-600 hover:text-amber-800"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

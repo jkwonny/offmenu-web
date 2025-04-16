@@ -34,7 +34,7 @@ export default function Page() {
             Venues, meet popups.
           </h1>
           <p className="text-lg md:text-xl mb-8" style={{ color: '#a80010' }}>
-            Find a space to host, or discover who's looking for one.
+            Find a space to host, or discover who&apos;s looking for one.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
@@ -98,7 +98,7 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {featuredListings.map((listing: Venue, idx: number) => (
                 <div key={listing.id || idx} className="rounded-xl shadow-sm border flex flex-col overflow-hidden" style={{ background: 'var(--background)', borderColor: '#e0d8c3' }}>
-                  <VenueImageCarousel images={Array.isArray(listing.venue_images) ? listing.venue_images.map((img: any) => img.image_url) : undefined} />
+                  <VenueImageCarousel images={Array.isArray(listing.venue_images) ? listing.venue_images.map((img: { image_url: string }) => img.image_url) : undefined} />
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>{listing.name}</h3>
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -132,7 +132,7 @@ export default function Page() {
             <div className="rounded-xl shadow-sm border p-8 flex flex-col items-center text-center cursor-pointer transition-transform hover:shadow-lg hover:scale-105" style={{ background: '#fff', borderColor: '#e0d8c3' }}>
               <IconVenue />
               <div className="text-lg font-bold mt-4 mb-2" style={{ color: 'var(--foreground)' }}>Venue Owners</div>
-              <div className="text-base" style={{ color: '#a80010' }}>Connect with pop-up organizers and maximize your space's potential.</div>
+              <div className="text-base" style={{ color: '#a80010' }}>Connect with pop-up organizers and maximize your space&apos;s potential.</div>
             </div>
             <div className="rounded-xl shadow-sm border p-8 flex flex-col items-center text-center cursor-pointer transition-transform hover:shadow-lg hover:scale-105" style={{ background: '#fff', borderColor: '#e0d8c3' }}>
               <IconEvent />

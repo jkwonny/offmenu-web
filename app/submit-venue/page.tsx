@@ -1098,7 +1098,7 @@ export default function SubmitVenuePage() {
                                     <label className="block text-[#ca0013] text-sm font-medium mb-2">
                                         Upload Photos
                                     </label>
-                                    <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
+                                    <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-[#ca0013] text-sm mb-4">
                                         <p className="font-medium">Image Guidelines:</p>
                                         <ul className="list-disc pl-5 mt-1">
                                             <li>Max 5MB per image</li>
