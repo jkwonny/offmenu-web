@@ -151,4 +151,29 @@ export function useFeaturedVenues() {
     refetchOnWindowFocus: true,
     staleTime: 0
   });
+}
+
+// Function to fetch events from Supabase
+async function fetchEvents() {
+  const response = await fetch('/api/events');
+  if (!response.ok) {
+    throw new Error('Failed to fetch events');
+  }
+  const data = await response.json();
+  return data.map((event: any) => ({
+    ...event,
+    start_date: new Date(event.start_date),
+    end_date: event.end_date ? new Date(event.end_date) : null,
+  }));
+}
+
+// Hook to use the events data with React Query
+export function useEvents<T = any>() {
+  return useQuery<T>({
+    queryKey: ['events'],
+    queryFn: fetchEvents,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 0
+  });
 } 

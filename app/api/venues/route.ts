@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '../../lib/supabase';
 
 // Helper function to check Supabase connection
-async function checkSupabaseConnection() {
+export async function checkSupabaseConnection() {
     try {
         // A simple query to check connection
         const { error } = await supabase.from('venues').select('id').limit(1);

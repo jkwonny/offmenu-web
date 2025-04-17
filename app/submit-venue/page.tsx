@@ -372,7 +372,7 @@ export default function SubmitVenuePage() {
         <>
             <NavBar />
             <div className="min-h-screen bg-[#FFF9F5]">
-                <div className="max-w-4xl mx-auto p-8 mt-8">
+                <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
                     <h1 className="text-3xl font-bold text-[#ca0013] mb-6 border-b pb-4">Submit a New Venue</h1>
 
                     {success && (

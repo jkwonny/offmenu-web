@@ -20,10 +20,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const mapInitializedRef = useRef<boolean>(false);
 
-    useEffect(() => {
-        console.log('MapboxMap received venues data:', venues?.length || 0, 'venues');
-    }, [venues]);
-
     // Function to center the map on a venue
     const centerMapOnVenue = useCallback((venue: Venue) => {
         if (!mapRef.current || typeof venue.latitude !== 'number' || typeof venue.longitude !== 'number') {
@@ -41,7 +37,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
 
     // Effect to handle selectedVenueId changes
     useEffect(() => {
-        console.log('selectedVenueId effect triggered:', selectedVenueId);
 
         if (!mapRef.current) {
             console.log('Map not initialized yet');
@@ -217,13 +212,112 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             }
         }
 
-        return new mapboxgl.Popup({ offset: 25 })
+        // Get venue images for carousel
+        const venueImages = Array.isArray(venue.venue_images)
+            ? venue.venue_images.map(img => img.image_url)
+            : undefined;
+
+        // Create a unique ID for this popup's carousel
+        const carouselId = `carousel-${venue.id}-${Date.now()}`;
+
+        return new mapboxgl.Popup({ offset: 25, closeButton: false, maxWidth: '400px' })
             .setHTML(`
-                <div class="p-2">
-                    <h3 class="font-bold">${venue.name}</h3>
-                    <p class="text-sm">${priceDisplay}</p>
+                <div class="p-0 w-64">
+                    <div class="relative w-full h-64 bg-gray-100 overflow-hidden">
+                        ${venueImages && venueImages.length > 0 ? `
+                            <div id="${carouselId}" class="relative w-full h-full">
+                                ${venueImages.map((img, index) => `
+                                    <img
+                                        src="${img}"
+                                        alt="${venue.name}"
+                                        class="absolute w-full h-full object-cover transition-opacity duration-300 ${index === 0 ? 'opacity-100' : 'opacity-0'}"
+                                        data-index="${index}"
+                                        loading="eager"
+                                    />
+                                `).join('')}
+                            </div>
+                            ${venueImages.length > 1 ? `
+                                <button class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10" onclick="handleCarouselNavigation('${carouselId}', 'prev')">
+                                    &#8592;
+                                </button>
+                                <button class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10" onclick="handleCarouselNavigation('${carouselId}', 'next')">
+                                    &#8594;
+                                </button>
+                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                                    ${venueImages.map((_, i) => `
+                                        <span class="inline-block w-2 h-2 rounded-full ${i === 0 ? 'bg-amber-600' : 'bg-white border border-amber-600'}" data-index="${i}"></span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        ` : `
+                            <div class="w-full h-full bg-amber-100 flex items-center justify-center">
+                                <span class="text-amber-800">No Image</span>
+                            </div>
+                        `}
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-bold text-lg mb-1">${venue.name}</h3>
+                        <p class="text-sm text-amber-700 mb-2">${priceDisplay}</p>
+                        <a href="/venue/${venue.id}" target="_blank" rel="noopener noreferrer" 
+                           class="text-sm text-amber-600 hover:text-amber-700 underline">
+                            View Details
+                        </a>
+                    </div>
                 </div>
-            `);
+            `)
+            .on('open', () => {
+                // Add the carousel navigation handler when popup opens
+                const script = document.createElement('script');
+                script.textContent = `
+                    function handleCarouselNavigation(carouselId, direction) {
+                        const carousel = document.getElementById(carouselId);
+                        if (!carousel) return;
+                        
+                        const images = carousel.querySelectorAll('img');
+                        const dots = carousel.parentElement.querySelectorAll('.rounded-full');
+                        let currentIndex = 0;
+                        
+                        // Find current active image
+                        images.forEach((img, index) => {
+                            if (img.style.opacity === '1') {
+                                currentIndex = index;
+                            }
+                        });
+                        
+                        // Calculate new index
+                        let newIndex;
+                        if (direction === 'next') {
+                            newIndex = (currentIndex + 1) % images.length;
+                        } else {
+                            newIndex = (currentIndex - 1 + images.length) % images.length;
+                        }
+                        
+                        // Update images
+                        images[currentIndex].style.opacity = '0';
+                        images[newIndex].style.opacity = '1';
+                        
+                        // Update dots
+                        dots.forEach((dot, index) => {
+                            if (index === newIndex) {
+                                dot.classList.add('bg-amber-600');
+                                dot.classList.remove('bg-white', 'border', 'border-amber-600');
+                            } else {
+                                dot.classList.remove('bg-amber-600');
+                                dot.classList.add('bg-white', 'border', 'border-amber-600');
+                            }
+                        });
+                    }
+                `;
+                document.head.appendChild(script);
+
+                // Preload all images
+                if (venueImages && venueImages.length > 1) {
+                    venueImages.forEach(img => {
+                        const preloadImg = new Image();
+                        preloadImg.src = img;
+                    });
+                }
+            });
     }, []);
 
     // Function to update markers
@@ -360,7 +454,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 padding: 0;
                 border-radius: 12px;
                 overflow: hidden;
-                width: 280px;
+                width: 400px;
                 box-shadow: 0 2px 20px rgba(0,0,0,0.2);
                 pointer-events: auto !important;
             }

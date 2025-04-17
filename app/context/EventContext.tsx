@@ -8,6 +8,7 @@ interface EventDetails {
     type: EventType;
     guestCount: number;
     date: string;
+    tags?: string[];
 }
 
 interface EventContextType {
@@ -19,6 +20,7 @@ const defaultEventDetails: EventDetails = {
     type: 'Pop Up',
     guestCount: 50,
     date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+    tags: []
 };
 
 const EventContext = createContext<EventContextType | undefined>(undefined);

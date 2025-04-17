@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import MapboxMap from '../components/MapboxMap';
 import { useVenues } from '../lib/queries';
 import EventHeader from '../components/EventHeader';
@@ -10,6 +11,7 @@ import NavBar from '../components/NavBar';
 
 export default function ExplorePage() {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+    const router = useRouter();
 
     // Use React Query to fetch venues
     const { data: venues = [], isLoading, error } = useVenues();
@@ -17,6 +19,11 @@ export default function ExplorePage() {
     const handleExploreMoreClick = () => {
         // This would typically navigate to a more comprehensive venue listing page
         alert('This would take you to an expanded venue listing page');
+    };
+
+    const handleVenueClick = (venueId: string) => {
+        setSelectedVenueId(venueId);
+        window.open(`/venue/${venueId}`, '_blank');
     };
 
     return (
@@ -40,7 +47,7 @@ export default function ExplorePage() {
                         <MapboxMap
                             venues={venues}
                             selectedVenueId={selectedVenueId}
-                            onMarkerClick={setSelectedVenueId}
+                            onMarkerClick={setSelectedVenueId} // Empty handler since we're using popup links
                         />
                     )}
 
@@ -50,7 +57,7 @@ export default function ExplorePage() {
                             <VenueCarousel
                                 venues={venues}
                                 selectedVenueId={selectedVenueId}
-                                onVenueClick={setSelectedVenueId}
+                                onVenueClick={handleVenueClick}
                             />
                         </div>
                     )}

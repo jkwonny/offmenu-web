@@ -57,3 +57,24 @@ CREATE TABLE venues (
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );
+
+CREATE TABLE events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+
+  title text NOT NULL,
+  description text,
+  event_type text NOT NULL,
+  
+  start_date date NOT NULL,
+  end_date date, -- optional
+
+  expected_capacity_min integer,
+  expected_capacity_max integer,
+
+  assets_needed text[],
+  is_active boolean DEFAULT true,
+
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
