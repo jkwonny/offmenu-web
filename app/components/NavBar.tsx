@@ -5,8 +5,8 @@ export default function NavBar() {
     const { user, signOut, isLoading } = useUser();
 
     return (
-        <nav className="bg-white border-b border-gray-200 w-full py-3 px-4 md:px-6">
-            <div className="max-w-6xl mx-auto flex justify-between items-center">
+        <nav className="bg-white border-b border-gray-200 w-full py-3">
+            <div className="flex justify-between px-10 py-2 items-center">
                 <Link href="/" className="text-xl font-semibold">
                     OffMenu
                 </Link>
