@@ -160,7 +160,18 @@ async function fetchEvents() {
     throw new Error('Failed to fetch events');
   }
   const data = await response.json();
-  return data.map((event: any) => ({
+  return data.map((event: {
+    id: string;
+    title: string;
+    description: string;
+    start_date: string;
+    end_date: string | null;
+    expected_capacity_min: number;
+    expected_capacity_max: number;
+    assets_needed: string[];
+    is_active: boolean;
+    user_id: string;
+  }) => ({
     ...event,
     start_date: new Date(event.start_date),
     end_date: event.end_date ? new Date(event.end_date) : null,
@@ -168,7 +179,18 @@ async function fetchEvents() {
 }
 
 // Hook to use the events data with React Query
-export function useEvents<T = any>() {
+export function useEvents<T = {
+  id: string;
+  title: string;
+  description: string;
+  start_date: Date;
+  end_date: Date | null;
+  expected_capacity_min: number;
+  expected_capacity_max: number;
+  assets_needed: string[];
+  is_active: boolean;
+  user_id: string;
+}>() {
   return useQuery<T>({
     queryKey: ['events'],
     queryFn: fetchEvents,

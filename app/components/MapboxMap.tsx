@@ -199,7 +199,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
     }, []);
 
     // Helper function to create a popup for a venue
-    const createVenuePopup = useCallback((venue: Venue) => {
+    const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
         // Format price display for popup
         let priceDisplay = 'Price upon request';
         if (venue.price) {
@@ -321,7 +321,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
     }, []);
 
     // Function to update markers
-    const updateMarkers = useCallback((venues: Venue[]) => {
+    const updateMarkers = useCallback((venues: Venue[]): void => {
         console.log('Updating markers for', venues.length, 'venues');
         if (!mapRef.current) {
             console.log('Map not initialized yet, cannot update markers');

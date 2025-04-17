@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import MapboxMap from '../components/MapboxMap';
 import { useVenues } from '../lib/queries';
 import EventHeader from '../components/EventHeader';
@@ -11,7 +10,6 @@ import NavBar from '../components/NavBar';
 
 export default function ExplorePage() {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-    const router = useRouter();
 
     // Use React Query to fetch venues
     const { data: venues = [], isLoading, error } = useVenues();
