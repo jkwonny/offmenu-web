@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabase } from '@/app/lib/supabase';
-// import { checkSupabaseConnection } from '../route';
 
 async function checkSupabaseConnection() {
   try {

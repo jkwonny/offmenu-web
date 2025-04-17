@@ -148,17 +148,20 @@ export default function Page() {
 
 function VenueImageCarousel({ images }: { images?: string[] }) {
   const [current, setCurrent] = React.useState(0);
-  const [loaded, setLoaded] = React.useState<{ [key: number]: boolean }>({ 0: false });
   const [isTransitioning, setIsTransitioning] = React.useState(false);
-  const validImages = Array.isArray(images) && images.length > 0 ? images : ["https://placehold.co/400x250?text=Venue"];
+
+  // Use useMemo to prevent validImages from being recreated on each render
+  const validImages = React.useMemo(() => {
+    return Array.isArray(images) && images.length > 0 ? images : ["https://placehold.co/400x250?text=Venue"];
+  }, [images]);
+
   const total = validImages.length;
 
   // Preload images
   React.useEffect(() => {
-    validImages.forEach((src, index) => {
+    validImages.forEach((src) => {
       const img = new window.Image();
       img.src = src;
-      img.onload = () => setLoaded(prev => ({ ...prev, [index]: true }));
     });
   }, [validImages]);
 
@@ -196,7 +199,6 @@ function VenueImageCarousel({ images }: { images?: string[] }) {
             className={`w-full h-48 object-cover transition-opacity duration-300 ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
             priority={index === 0 || index === current || index === (current + 1) % total || index === (current - 1 + total) % total}
-            onLoad={() => setLoaded(prev => ({ ...prev, [index]: true }))}
           />
         </div>
       ))}

@@ -20,184 +20,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const mapInitializedRef = useRef<boolean>(false);
 
-    // Function to center the map on a venue
-    const centerMapOnVenue = useCallback((venue: Venue) => {
-        if (!mapRef.current || typeof venue.latitude !== 'number' || typeof venue.longitude !== 'number') {
-            return;
-        }
-
-        console.log('Centering map on venue:', venue.id, 'at', [venue.longitude, venue.latitude]);
-
-        mapRef.current.flyTo({
-            center: [venue.longitude, venue.latitude],
-            zoom: 14,
-            duration: 1000
-        });
-    }, []);
-
-    // Effect to handle selectedVenueId changes
-    useEffect(() => {
-
-        if (!mapRef.current) {
-            console.log('Map not initialized yet');
-            return;
-        }
-
-        if (!selectedVenueId) {
-            console.log('No venue selected, clearing popup');
-            // Clear popup if no venue is selected
-            if (popupRef.current) {
-                popupRef.current.remove();
-                popupRef.current = null;
-            }
-            return;
-        }
-
-        // Find the selected venue
-        const selectedVenue = venues.find(venue => venue.id === selectedVenueId);
-        if (!selectedVenue) {
-            console.log('Selected venue not found in venues list');
-            return;
-        }
-
-        console.log('Found selected venue:', selectedVenue);
-
-        // Ensure latitude and longitude are defined
-        if (typeof selectedVenue.latitude !== 'number' || typeof selectedVenue.longitude !== 'number') {
-            console.error('Selected venue has invalid coordinates:', selectedVenue);
-            return;
-        }
-
-        // Center map on the selected venue
-        centerMapOnVenue(selectedVenue);
-
-        // Find the marker for the selected venue
-        const marker = markersRef.current[selectedVenueId];
-
-        if (marker) {
-            console.log('Found marker for selected venue, toggling popup');
-
-            // Close existing popup if it's not for this marker
-            if (popupRef.current) {
-                popupRef.current.remove();
-                popupRef.current = null;
-            }
-
-            // Show the popup for this marker
-            marker.togglePopup();
-
-            // Store reference to the active popup
-            const popup = marker.getPopup();
-            if (popup) {
-                popupRef.current = popup;
-            }
-
-            console.log('Popup toggled for marker');
-        } else {
-            console.log('No marker found for selected venue');
-        }
-
-        // Update all marker styles
-        venues.forEach(venue => {
-            const marker = markersRef.current[venue.id];
-            if (marker) {
-                const element = marker.getElement();
-                const priceTag = element.querySelector('.price-tag');
-
-                if (priceTag) {
-                    if (venue.id === selectedVenueId) {
-                        priceTag.classList.add('selected');
-                    } else {
-                        priceTag.classList.remove('selected');
-                    }
-                }
-            }
-        });
-    }, [selectedVenueId, venues, centerMapOnVenue]);
-
-    const mapContainer = useCallback((node: HTMLDivElement | null) => {
-        nodeRef.current = node;
-
-        if (node === null || mapInitializedRef.current) return;
-
-        console.log('MapContainer callback triggered:', { node, venuesLength: venues?.length || 0 });
-
-        // Set the mapbox token
-        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-        console.log('Mapbox token available:', !!token);
-
-        if (!token) {
-            setError('Mapbox token is not configured');
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            mapboxgl.accessToken = token;
-
-            // Create the map
-            const map = new mapboxgl.Map({
-                container: node,
-                // style: 'mapbox://styles/mapbox/light-v11',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [-73.9880154, 40.7209735],
-                zoom: 12,
-                attributionControl: false,
-            });
-
-            // Add custom controls
-            map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
-            map.addControl(new mapboxgl.AttributionControl({
-                compact: true
-            }), 'bottom-left');
-
-            // Store map reference
-            mapRef.current = map;
-
-            map.on('load', () => {
-                // Add a warm filter to the map
-                map.addLayer({
-                    id: 'warm-overlay',
-                    type: 'background',
-                    paint: {
-                        'background-color': '#FBBF24',
-                        'background-opacity': 0.1
-                    }
-                });
-
-                console.log('Map loaded successfully with warm overlay. Ready for markers when venue data arrives.');
-                setIsLoading(false);
-                mapInitializedRef.current = true;
-
-                // If venues are already available when map loads, update markers
-                if (venues && venues.length > 0) {
-                    console.log('Venues already available when map loaded, adding markers');
-                    updateMarkers(venues);
-                }
-            });
-
-            map.on('error', (e) => {
-                console.error('Map error:', e);
-                setError('Error loading map: ' + e.error.message);
-                setIsLoading(false);
-            });
-
-            // Cleanup on unmount
-            return () => {
-                map.remove();
-                mapRef.current = null;
-                markersRef.current = {};
-                mapInitializedRef.current = false;
-                setError(null);
-                setIsLoading(true);
-            };
-        } catch (err) {
-            console.error('Map initialization error:', err);
-            setError('Failed to initialize map: ' + (err instanceof Error ? err.message : String(err)));
-            setIsLoading(false);
-        }
-    }, []);
-
     // Helper function to create a popup for a venue
     const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
         // Format price display for popup
@@ -414,6 +236,184 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         markersRef.current = markers;
     }, [selectedVenueId, onMarkerClick, createVenuePopup]);
 
+    // Function to center the map on a venue
+    const centerMapOnVenue = useCallback((venue: Venue) => {
+        if (!mapRef.current || typeof venue.latitude !== 'number' || typeof venue.longitude !== 'number') {
+            return;
+        }
+
+        console.log('Centering map on venue:', venue.id, 'at', [venue.longitude, venue.latitude]);
+
+        mapRef.current.flyTo({
+            center: [venue.longitude, venue.latitude],
+            zoom: 14,
+            duration: 1000
+        });
+    }, []);
+
+    const mapContainer = useCallback((node: HTMLDivElement | null) => {
+        nodeRef.current = node;
+
+        if (node === null || mapInitializedRef.current) return;
+
+        console.log('MapContainer callback triggered:', { node, venuesLength: venues?.length || 0 });
+
+        // Set the mapbox token
+        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+        console.log('Mapbox token available:', !!token);
+
+        if (!token) {
+            setError('Mapbox token is not configured');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            mapboxgl.accessToken = token;
+
+            // Create the map
+            const map = new mapboxgl.Map({
+                container: node,
+                // style: 'mapbox://styles/mapbox/light-v11',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [-73.9880154, 40.7209735],
+                zoom: 12,
+                attributionControl: false,
+            });
+
+            // Add custom controls
+            map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
+            map.addControl(new mapboxgl.AttributionControl({
+                compact: true
+            }), 'bottom-left');
+
+            // Store map reference
+            mapRef.current = map;
+
+            map.on('load', () => {
+                // Add a warm filter to the map
+                map.addLayer({
+                    id: 'warm-overlay',
+                    type: 'background',
+                    paint: {
+                        'background-color': '#FBBF24',
+                        'background-opacity': 0.1
+                    }
+                });
+
+                console.log('Map loaded successfully with warm overlay. Ready for markers when venue data arrives.');
+                setIsLoading(false);
+                mapInitializedRef.current = true;
+
+                // If venues are already available when map loads, update markers
+                if (venues && venues.length > 0) {
+                    console.log('Venues already available when map loaded, adding markers');
+                    updateMarkers(venues);
+                }
+            });
+
+            map.on('error', (e) => {
+                console.error('Map error:', e);
+                setError('Error loading map: ' + e.error.message);
+                setIsLoading(false);
+            });
+
+            // Cleanup on unmount
+            return () => {
+                map.remove();
+                mapRef.current = null;
+                markersRef.current = {};
+                mapInitializedRef.current = false;
+                setError(null);
+                setIsLoading(true);
+            };
+        } catch (err) {
+            console.error('Map initialization error:', err);
+            setError('Failed to initialize map: ' + (err instanceof Error ? err.message : String(err)));
+            setIsLoading(false);
+        }
+    }, [venues, updateMarkers]);
+
+    // Effect to handle selectedVenueId changes
+    useEffect(() => {
+
+        if (!mapRef.current) {
+            console.log('Map not initialized yet');
+            return;
+        }
+
+        if (!selectedVenueId) {
+            console.log('No venue selected, clearing popup');
+            // Clear popup if no venue is selected
+            if (popupRef.current) {
+                popupRef.current.remove();
+                popupRef.current = null;
+            }
+            return;
+        }
+
+        // Find the selected venue
+        const selectedVenue = venues.find(venue => venue.id === selectedVenueId);
+        if (!selectedVenue) {
+            console.log('Selected venue not found in venues list');
+            return;
+        }
+
+        console.log('Found selected venue:', selectedVenue);
+
+        // Ensure latitude and longitude are defined
+        if (typeof selectedVenue.latitude !== 'number' || typeof selectedVenue.longitude !== 'number') {
+            console.error('Selected venue has invalid coordinates:', selectedVenue);
+            return;
+        }
+
+        // Center map on the selected venue
+        centerMapOnVenue(selectedVenue);
+
+        // Find the marker for the selected venue
+        const marker = markersRef.current[selectedVenueId];
+
+        if (marker) {
+            console.log('Found marker for selected venue, toggling popup');
+
+            // Close existing popup if it's not for this marker
+            if (popupRef.current) {
+                popupRef.current.remove();
+                popupRef.current = null;
+            }
+
+            // Show the popup for this marker
+            marker.togglePopup();
+
+            // Store reference to the active popup
+            const popup = marker.getPopup();
+            if (popup) {
+                popupRef.current = popup;
+            }
+
+            console.log('Popup toggled for marker');
+        } else {
+            console.log('No marker found for selected venue');
+        }
+
+        // Update all marker styles
+        venues.forEach(venue => {
+            const marker = markersRef.current[venue.id];
+            if (marker) {
+                const element = marker.getElement();
+                const priceTag = element.querySelector('.price-tag');
+
+                if (priceTag) {
+                    if (venue.id === selectedVenueId) {
+                        priceTag.classList.add('selected');
+                    } else {
+                        priceTag.classList.remove('selected');
+                    }
+                }
+            }
+        });
+    }, [selectedVenueId, venues, centerMapOnVenue]);
+
     // Effect to initialize markers when map and venues are available
     useEffect(() => {
         console.log('Markers effect triggered:', {
@@ -425,7 +425,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
 
         console.log('Updating markers with', venues.length, 'venues');
         updateMarkers(venues);
-    }, [venues, selectedVenueId, onMarkerClick, updateMarkers]);
+    }, [venues, updateMarkers]);
 
     // Add debugging for when markers are clicked in VenueList component
     useEffect(() => {
