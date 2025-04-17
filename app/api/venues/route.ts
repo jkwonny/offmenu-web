@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '../../lib/supabase';
 
 // Helper function to check Supabase connection
-export async function checkSupabaseConnection() {
+async function checkSupabaseConnection() {
     try {
         // A simple query to check connection
         const { error } = await supabase.from('venues').select('id').limit(1);
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             }, { status: 503 });
         }
 
-        const venueData = await request.json();
+    const venueData = await request.json();
 
         // Validate required fields based on SQL schema
         if (!venueData.name) {

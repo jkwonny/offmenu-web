@@ -1,11 +1,35 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabase } from '@/app/lib/supabase';
-import { checkSupabaseConnection } from '../route';
+// import { checkSupabaseConnection } from '../route';
+
+async function checkSupabaseConnection() {
+  try {
+      // A simple query to check connection
+      const { error } = await supabase.from('venues').select('id').limit(1);
+      
+      if (error) {
+          console.error('Supabase connection error:', error);
+          return { ok: false, error: error.message };
+      }
+      
+      return { ok: true };
+  } catch (err) {
+      console.error('Failed to connect to Supabase:', err);
+      return { 
+          ok: false, 
+          error: err instanceof Error ? err.message : 'Unknown connection error' 
+      };
+  }
+}
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params } : { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
+
+
   try {
     const connectionCheck = await checkSupabaseConnection();
     if (!connectionCheck.ok) {
@@ -21,7 +45,7 @@ export async function GET(
         *,
         venue_images(image_url, sort_order)
       `)
-      .eq('id', context.params.id)
+      .eq('id', id)
       .single();
 
     if (error) {

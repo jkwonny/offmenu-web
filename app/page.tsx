@@ -148,43 +148,78 @@ export default function Page() {
 
 function VenueImageCarousel({ images }: { images?: string[] }) {
   const [current, setCurrent] = React.useState(0);
+  const [loaded, setLoaded] = React.useState<{ [key: number]: boolean }>({ 0: false });
+  const [isTransitioning, setIsTransitioning] = React.useState(false);
   const validImages = Array.isArray(images) && images.length > 0 ? images : ["https://placehold.co/400x250?text=Venue"];
   const total = validImages.length;
+
+  // Preload images
+  React.useEffect(() => {
+    validImages.forEach((src, index) => {
+      const img = new window.Image();
+      img.src = src;
+      img.onload = () => setLoaded(prev => ({ ...prev, [index]: true }));
+    });
+  }, [validImages]);
+
   const goLeft = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrent((prev) => (prev - 1 + total) % total);
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrent((prev) => {
+      const newIndex = (prev - 1 + total) % total;
+      return newIndex;
+    });
+    setTimeout(() => setIsTransitioning(false), 300);
   };
+
   const goRight = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrent((prev) => (prev + 1) % total);
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrent((prev) => {
+      const newIndex = (prev + 1) % total;
+      return newIndex;
+    });
+    setTimeout(() => setIsTransitioning(false), 300);
   };
+
   return (
     <div className="relative w-full h-48 bg-gray-100">
-      <Image
-        src={validImages[current]}
-        alt="Venue image"
-        width={400}
-        height={250}
-        className="w-full h-48 object-cover"
-        style={{ transition: 'opacity 0.3s' }}
-      />
+      {validImages.map((src, index) => (
+        <div key={index} className="absolute inset-0">
+          <Image
+            src={src}
+            alt="Venue image"
+            width={400}
+            height={250}
+            className={`w-full h-48 object-cover transition-opacity duration-300 ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
+            priority={index === 0 || index === current || index === (current + 1) % total || index === (current - 1 + total) % total}
+            onLoad={() => setLoaded(prev => ({ ...prev, [index]: true }))}
+          />
+        </div>
+      ))}
+
       {total > 1 && (
         <>
           <button
             onClick={goLeft}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-20 disabled:opacity-50"
             aria-label="Previous image"
+            disabled={isTransitioning}
           >
             &#8592;
           </button>
           <button
             onClick={goRight}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-20 disabled:opacity-50"
             aria-label="Next image"
+            disabled={isTransitioning}
           >
             &#8594;
           </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
             {validImages.map((_, i) => (
               <span key={i} className={`inline-block w-2 h-2 rounded-full ${i === current ? 'bg-amber-600' : 'bg-white border border-amber-600'}`}></span>
             ))}
