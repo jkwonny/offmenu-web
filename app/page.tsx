@@ -4,7 +4,6 @@ import { useFeaturedVenues } from "./lib/queries";
 import type { Venue } from "../types/Venue";
 import { useRouter } from "next/navigation";
 import NavBar from "./components/NavBar";
-import Image from "next/image";
 import ImageCarousel from "./components/ImageCarousel";
 
 // Placeholder icons (replace with real icons as needed)
