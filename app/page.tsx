@@ -5,6 +5,7 @@ import type { Venue } from "../types/Venue";
 import { useRouter } from "next/navigation";
 import NavBar from "./components/NavBar";
 import Image from "next/image";
+import ImageCarousel from "./components/ImageCarousel";
 
 // Placeholder icons (replace with real icons as needed)
 const IconPopUp = () => (
@@ -98,7 +99,11 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {featuredListings.map((listing: Venue, idx: number) => (
                 <div key={listing.id || idx} className="rounded-xl shadow-sm border flex flex-col overflow-hidden" style={{ background: 'var(--background)', borderColor: '#e0d8c3' }}>
-                  <VenueImageCarousel images={Array.isArray(listing.venue_images) ? listing.venue_images.map((img: { image_url: string }) => img.image_url) : undefined} />
+                  <ImageCarousel
+                    images={Array.isArray(listing.venue_images) ? listing.venue_images.map((img: { image_url: string }) => img.image_url) : undefined}
+                    height={192}
+                    alt={`${listing.name} image`}
+                  />
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>{listing.name}</h3>
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -108,7 +113,11 @@ export default function Page() {
                         </span>
                       ))}
                     </div>
-                    <button className="mt-auto px-5 py-2 rounded-full font-semibold transition-colors cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', border: '1px solid var(--foreground)' }}>
+                    <button
+                      onClick={() => router.push(`/venue/${listing.id}`)}
+                      className="mt-auto px-5 py-2 rounded-full font-semibold transition-colors cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105"
+                      style={{ background: '#fff', color: 'var(--foreground)', border: '1px solid var(--foreground)' }}
+                    >
                       View
                     </button>
                   </div>
@@ -129,12 +138,12 @@ export default function Page() {
               <div className="text-lg font-bold mt-4 mb-2" style={{ color: 'var(--foreground)' }}>Pop-Up Organizers</div>
               <div className="text-base" style={{ color: '#a80010' }}>Find unique venues to bring your creative ideas to life.</div>
             </div>
-            <div className="rounded-xl shadow-sm border p-8 flex flex-col items-center text-center cursor-pointer transition-transform hover:shadow-lg hover:scale-105" style={{ background: '#fff', borderColor: '#e0d8c3' }}>
+            <div className="rounded-xl shadow-sm border p-8 flex flex-col items-center text-center cursor-pointer transition-transform hover:shadow-lg hover:scale-105">
               <IconVenue />
               <div className="text-lg font-bold mt-4 mb-2" style={{ color: 'var(--foreground)' }}>Venue Owners</div>
               <div className="text-base" style={{ color: '#a80010' }}>Connect with pop-up organizers and maximize your space&apos;s potential.</div>
             </div>
-            <div className="rounded-xl shadow-sm border p-8 flex flex-col items-center text-center cursor-pointer transition-transform hover:shadow-lg hover:scale-105" style={{ background: '#fff', borderColor: '#e0d8c3' }}>
+            <div className="rounded-xl shadow-sm border p-8 flex flex-col items-center text-center cursor-pointer transition-transform hover:shadow-lg hover:scale-105">
               <IconEvent />
               <div className="text-lg font-bold mt-4 mb-2" style={{ color: 'var(--foreground)' }}>Event Seekers</div>
               <div className="text-base" style={{ color: '#a80010' }}>Discover exciting pop-ups and events happening near you.</div>
@@ -142,92 +151,6 @@ export default function Page() {
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-function VenueImageCarousel({ images }: { images?: string[] }) {
-  const [current, setCurrent] = React.useState(0);
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
-
-  // Use useMemo to prevent validImages from being recreated on each render
-  const validImages = React.useMemo(() => {
-    return Array.isArray(images) && images.length > 0 ? images : ["https://placehold.co/400x250?text=Venue"];
-  }, [images]);
-
-  const total = validImages.length;
-
-  // Preload images
-  React.useEffect(() => {
-    validImages.forEach((src) => {
-      const img = new window.Image();
-      img.src = src;
-    });
-  }, [validImages]);
-
-  const goLeft = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setCurrent((prev) => {
-      const newIndex = (prev - 1 + total) % total;
-      return newIndex;
-    });
-    setTimeout(() => setIsTransitioning(false), 300);
-  };
-
-  const goRight = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setCurrent((prev) => {
-      const newIndex = (prev + 1) % total;
-      return newIndex;
-    });
-    setTimeout(() => setIsTransitioning(false), 300);
-  };
-
-  return (
-    <div className="relative w-full h-48 bg-gray-100">
-      {validImages.map((src, index) => (
-        <div key={index} className="absolute inset-0">
-          <Image
-            src={src}
-            alt="Venue image"
-            width={400}
-            height={250}
-            className={`w-full h-48 object-cover transition-opacity duration-300 ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-            priority={index === 0 || index === current || index === (current + 1) % total || index === (current - 1 + total) % total}
-          />
-        </div>
-      ))}
-
-      {total > 1 && (
-        <>
-          <button
-            onClick={goLeft}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-20 disabled:opacity-50"
-            aria-label="Previous image"
-            disabled={isTransitioning}
-          >
-            &#8592;
-          </button>
-          <button
-            onClick={goRight}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-20 disabled:opacity-50"
-            aria-label="Next image"
-            disabled={isTransitioning}
-          >
-            &#8594;
-          </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
-            {validImages.map((_, i) => (
-              <span key={i} className={`inline-block w-2 h-2 rounded-full ${i === current ? 'bg-amber-600' : 'bg-white border border-amber-600'}`}></span>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 } 

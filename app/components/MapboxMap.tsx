@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Venue } from '@/types/Venue';
+import { createRoot } from 'react-dom/client';
+import ImageCarousel from './ImageCarousel';
 
 interface MapboxMapProps {
     venues: Venue[];
@@ -39,107 +41,52 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             ? venue.venue_images.map(img => img.image_url)
             : undefined;
 
-        // Create a unique ID for this popup's carousel
-        const carouselId = `carousel-${venue.id}-${Date.now()}`;
+        // Create a new popup with custom content rendered with React
+        const popup = new mapboxgl.Popup({
+            offset: 25,
+            closeButton: false,
+            maxWidth: '400px',
+            className: 'venue-popup'
+        });
 
-        return new mapboxgl.Popup({ offset: 25, closeButton: false, maxWidth: '400px' })
-            .setHTML(`
-                <div class="p-0 w-64">
-                    <div class="relative w-full h-64 bg-gray-100 overflow-hidden">
-                        ${venueImages && venueImages.length > 0 ? `
-                            <div id="${carouselId}" class="relative w-full h-full">
-                                ${venueImages.map((img, index) => `
-                                    <img
-                                        src="${img}"
-                                        alt="${venue.name}"
-                                        class="absolute w-full h-full object-cover transition-opacity duration-300 ${index === 0 ? 'opacity-100' : 'opacity-0'}"
-                                        data-index="${index}"
-                                        loading="eager"
-                                    />
-                                `).join('')}
-                            </div>
-                            ${venueImages.length > 1 ? `
-                                <button class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10" onclick="handleCarouselNavigation('${carouselId}', 'prev')">
-                                    &#8592;
-                                </button>
-                                <button class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10" onclick="handleCarouselNavigation('${carouselId}', 'next')">
-                                    &#8594;
-                                </button>
-                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                                    ${venueImages.map((_, i) => `
-                                        <span class="inline-block w-2 h-2 rounded-full ${i === 0 ? 'bg-amber-600' : 'bg-white border border-amber-600'}" data-index="${i}"></span>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        ` : `
-                            <div class="w-full h-full bg-amber-100 flex items-center justify-center">
-                                <span class="text-amber-800">No Image</span>
-                            </div>
-                        `}
-                    </div>
-                    <div class="p-3">
-                        <h3 class="font-bold text-lg mb-1">${venue.name}</h3>
-                        <p class="text-sm text-amber-700 mb-2">${priceDisplay}</p>
-                        <a href="/venue/${venue.id}" target="_blank" rel="noopener noreferrer" 
-                           class="text-sm text-amber-600 hover:text-amber-700 underline">
-                            View Details
-                        </a>
-                    </div>
+        // Create a DOM element for the popup content
+        const popupContainer = document.createElement('div');
+
+        // Set inner HTML with a container for React to render into
+        popupContainer.innerHTML = `
+            <div class="p-0 w-64">
+                <div id="carousel-container-${venue.id}" class="relative w-full h-64"></div>
+                <div class="p-3">
+                    <h3 class="font-bold text-lg mb-1">${venue.name}</h3>
+                    <p class="text-sm text-amber-700 mb-2">${priceDisplay}</p>
+                    <a href="/venue/${venue.id}" target="_blank" rel="noopener noreferrer" 
+                       class="text-sm text-amber-600 hover:text-amber-700 underline">
+                        View Details
+                    </a>
                 </div>
-            `)
-            .on('open', () => {
-                // Add the carousel navigation handler when popup opens
-                const script = document.createElement('script');
-                script.textContent = `
-                    function handleCarouselNavigation(carouselId, direction) {
-                        const carousel = document.getElementById(carouselId);
-                        if (!carousel) return;
-                        
-                        const images = carousel.querySelectorAll('img');
-                        const dots = carousel.parentElement.querySelectorAll('.rounded-full');
-                        let currentIndex = 0;
-                        
-                        // Find current active image
-                        images.forEach((img, index) => {
-                            if (img.style.opacity === '1') {
-                                currentIndex = index;
-                            }
-                        });
-                        
-                        // Calculate new index
-                        let newIndex;
-                        if (direction === 'next') {
-                            newIndex = (currentIndex + 1) % images.length;
-                        } else {
-                            newIndex = (currentIndex - 1 + images.length) % images.length;
-                        }
-                        
-                        // Update images
-                        images[currentIndex].style.opacity = '0';
-                        images[newIndex].style.opacity = '1';
-                        
-                        // Update dots
-                        dots.forEach((dot, index) => {
-                            if (index === newIndex) {
-                                dot.classList.add('bg-amber-600');
-                                dot.classList.remove('bg-white', 'border', 'border-amber-600');
-                            } else {
-                                dot.classList.remove('bg-amber-600');
-                                dot.classList.add('bg-white', 'border', 'border-amber-600');
-                            }
-                        });
-                    }
-                `;
-                document.head.appendChild(script);
+            </div>
+        `;
 
-                // Preload all images
-                if (venueImages && venueImages.length > 1) {
-                    venueImages.forEach(img => {
-                        const preloadImg = new Image();
-                        preloadImg.src = img;
-                    });
-                }
-            });
+        // Add the popup element to the DOM so React can render into it
+        popup.setDOMContent(popupContainer);
+
+        // When the popup opens, render the React ImageCarousel component into the container
+        popup.on('open', () => {
+            const carouselContainer = popupContainer.querySelector(`#carousel-container-${venue.id}`);
+            if (carouselContainer) {
+                const root = createRoot(carouselContainer);
+                root.render(
+                    <ImageCarousel
+                        images={venueImages}
+                        height={256}
+                        width={256}
+                        alt={venue.name}
+                    />
+                );
+            }
+        });
+
+        return popup;
     }, []);
 
     // Function to update markers
@@ -438,28 +385,14 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         // Add custom CSS for the popup and markers
         const style = document.createElement('style');
         style.textContent = `
-            .airbnb-style-popup {
-                z-index: 999 !important;
-                pointer-events: auto !important;
-            }
-            
-            .mapboxgl-popup {
-                z-index: 999 !important;
-                display: block !important;
-                visibility: visible !important;
-                pointer-events: auto !important;
-            }
-            
-            .airbnb-style-popup .mapboxgl-popup-content {
+            .venue-popup .mapboxgl-popup-content {
                 padding: 0;
                 border-radius: 12px;
                 overflow: hidden;
-                width: 400px;
                 box-shadow: 0 2px 20px rgba(0,0,0,0.2);
-                pointer-events: auto !important;
             }
             
-            .airbnb-style-popup .mapboxgl-popup-tip {
+            .venue-popup .mapboxgl-popup-tip {
                 display: none;
             }
             
@@ -501,10 +434,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 border: none;
             }
             
-            .close-popup:focus, .close-popup:active {
-                outline: none;
-            }
-            
             /* Ensure the popup container is properly positioned */
             .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
                 border-top-color: white;
@@ -513,11 +442,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             /* Fix z-index stacking for markers and overlay */
             .mapboxgl-marker {
                 z-index: 1 !important;
-            }
-            
-            /* Make the venue carousel overlay have a higher z-index */
-            .venue-carousel-overlay {
-                z-index: 5;
             }
         `;
         document.head.appendChild(style);
