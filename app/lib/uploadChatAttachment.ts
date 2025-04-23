@@ -56,6 +56,7 @@ export async function uploadChatAttachment(
     url = urlData.signedUrl;
   } catch (error) {
     // Fallback to public URL if signed URL creation fails
+    console.error('Signed URL creation failed:', error);
     console.log('Falling back to public URL');
     const { data: publicUrlData } = supabase.storage
       .from('chat-attachments')

@@ -7,6 +7,12 @@ import { supabase } from '../lib/supabase';
 import { format } from 'date-fns';
 import NavBar from '../components/NavBar';
 
+interface User {
+    id: string;
+    email?: string;
+    user_metadata?: Record<string, unknown>;
+}
+
 interface ChatRoom {
     id: string;
     created_at: string;
@@ -42,9 +48,25 @@ interface ChatRequest {
     recipient_id: string;
 }
 
+// Type for the Supabase response data
+interface SupabaseRequestData {
+    id: string;
+    created_at: string;
+    message: string;
+    status: string;
+    venue_id: number;
+    event_id: string;
+    sender_id: string;
+    recipient_id: string;
+    venue: { name: string; }[];
+    event: { title: string; }[];
+    sender: { name: string; }[];
+    recipient: { name: string; }[];
+}
+
 export default function ChatHomePage() {
     const router = useRouter();
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
     const [pendingChats, setPendingChats] = useState<ChatRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +78,7 @@ export default function ChatHomePage() {
             try {
                 // Get current authenticated user
                 const { data: { user } } = await supabase.auth.getUser();
-                setUser(user);
+                setUser(user as User);
 
                 if (!user) {
                     setLoading(false);
@@ -116,7 +138,7 @@ export default function ChatHomePage() {
 
                 // Fetch the latest message for each room
                 const roomsWithMessages = await Promise.all(
-                    rooms.map(async (room: any) => {
+                    rooms.map(async (room) => {
                         const { data: messages } = await supabase
                             .from('chat_messages')
                             .select(`
@@ -139,8 +161,8 @@ export default function ChatHomePage() {
 
                                         // Use type assertion
                                         const senderData = Array.isArray(sender)
-                                            ? (sender as any[])[0]
-                                            : sender as any;
+                                            ? (sender as { name?: string }[])[0]
+                                            : sender as { name?: string };
 
                                         return senderData?.name || 'Unknown';
                                     })()
@@ -155,10 +177,10 @@ export default function ChatHomePage() {
                             venue_id: room.venue_id,
                             event_id: room.event_id,
                             venue: {
-                                name: room.venue ? room.venue.name : 'Unknown Venue'
+                                name: room.venue && Array.isArray(room.venue) && room.venue[0]?.name ? room.venue[0].name : 'Unknown Venue'
                             },
                             event: {
-                                title: room.event ? room.event.title : 'Unknown Event'
+                                title: room.event && Array.isArray(room.event) && room.event[0]?.title ? room.event[0].title : 'Unknown Event'
                             },
                             latest_message: latestMessage
                         };
@@ -190,7 +212,7 @@ export default function ChatHomePage() {
                 if (pendingError) throw pendingError;
 
                 // Process pending chat requests with proper type handling
-                const formattedPendingRequests = (pendingRequests || []).map((req: any) => ({
+                const formattedPendingRequests = (pendingRequests || []).map((req: SupabaseRequestData) => ({
                     id: req.id,
                     created_at: req.created_at,
                     message: req.message,
@@ -199,17 +221,18 @@ export default function ChatHomePage() {
                     event_id: req.event_id,
                     sender_id: req.sender_id,
                     recipient_id: req.recipient_id,
-                    venue_name: req.venue ? req.venue.name : 'Unknown Venue',
-                    event_title: req.event ? req.event.title : 'Unknown Event',
-                    sender_name: req.sender ? req.sender.name : 'Unknown',
-                    recipient_name: req.recipient ? req.recipient.name : 'Unknown'
+                    venue_name: req.venue?.[0]?.name || 'Unknown Venue',
+                    event_title: req.event?.[0]?.title || 'Unknown Event',
+                    sender_name: req.sender?.[0]?.name || 'Unknown',
+                    recipient_name: req.recipient?.[0]?.name || 'Unknown'
                 }));
 
                 setPendingChats(formattedPendingRequests);
 
                 setChatRooms(roomsWithMessages);
-            } catch (err: any) {
-                setError(err.message || 'Failed to load chat rooms');
+            } catch (err: Error | unknown) {
+                const errorMessage = err instanceof Error ? err.message : 'Failed to load chat rooms';
+                setError(errorMessage);
                 console.error('Error fetching chat rooms:', err);
             } finally {
                 setLoading(false);
@@ -268,8 +291,9 @@ export default function ChatHomePage() {
 
             // Refresh the chat rooms list
             router.refresh();
-        } catch (err: any) {
-            setError(err.message || 'Failed to accept request');
+        } catch (err: Error | unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to accept request';
+            setError(errorMessage);
             console.error('Error accepting chat request:', err);
         } finally {
             setActionLoading(null);
@@ -288,8 +312,9 @@ export default function ChatHomePage() {
 
             // Update the local state to remove the rejected request
             setPendingChats(prev => prev.filter(chat => chat.id !== requestId));
-        } catch (err: any) {
-            setError(err.message || 'Failed to reject request');
+        } catch (err: Error | unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to reject request';
+            setError(errorMessage);
             console.error('Error rejecting chat request:', err);
         } finally {
             setActionLoading(null);
@@ -333,7 +358,7 @@ export default function ChatHomePage() {
                                                 Event: {request.event_title}
                                             </p>
                                             <p className="text-sm mt-2">
-                                                {request.sender_id === user.id
+                                                {request.sender_id === user?.id
                                                     ? `To: ${request.recipient_name}`
                                                     : `From: ${request.sender_name}`}
                                             </p>
@@ -344,7 +369,7 @@ export default function ChatHomePage() {
                                         </span>
                                     </div>
 
-                                    {request.recipient_id === user.id && (
+                                    {request.recipient_id === user?.id && (
                                         <div className="mt-3 flex space-x-2">
                                             <button
                                                 onClick={() => handleAcceptRequest(request.id)}

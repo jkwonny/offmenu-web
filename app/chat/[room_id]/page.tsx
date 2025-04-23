@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { uploadChatAttachment } from '../../lib/uploadChatAttachment';
 import { refreshAttachmentUrl } from '../../lib/refreshAttachmentUrl';
 import { formatInTimeZone } from 'date-fns-tz';
 import NavBar from '../../components/NavBar';
+import Image from 'next/image';
 
 interface Message {
     id: string;
@@ -45,13 +46,20 @@ interface RoomData {
     };
 }
 
+// User interface for authentication data
+interface User {
+    id: string;
+    name?: string;
+    email?: string;
+}
+
 export default function ChatRoomPage() {
     const params = useParams();
     const router = useRouter();
     const roomId = params.room_id as string;
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
     const [loading, setLoading] = useState(true);
@@ -65,7 +73,7 @@ export default function ChatRoomPage() {
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadProgress] = useState(0);
 
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,7 +81,7 @@ export default function ChatRoomPage() {
     const [refreshingUrls, setRefreshingUrls] = useState<Record<string, boolean>>({});
 
     // Store the channel reference for typing indicator
-    const channelRef = useRef<any>(null);
+    const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
     useEffect(() => {
         async function setup() {
@@ -172,9 +180,9 @@ export default function ChatRoomPage() {
                 const channel = setupRealtimeSubscription(roomId, user.id);
                 channelRef.current = channel;
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('Error setting up chat room:', err);
-                setError(err.message || 'Failed to load chat room');
+                setError(err instanceof Error ? err.message : 'Failed to load chat room');
             } finally {
                 setLoading(false);
             }
@@ -236,17 +244,21 @@ export default function ChatRoomPage() {
                 // Get list of users who are typing
                 Object.keys(presenceState).forEach((presenceId) => {
                     const presence = presenceState[presenceId];
-                    presence.forEach((p: any) => {
-                        if (p.typing && p.user_id !== userId) {
-                            typingUsers.push(p.user_id);
+                    // Use type assertion to handle complex presence structure
+                    presence.forEach((p) => {
+                        // Type narrowing check to ensure properties exist
+                        if (p && typeof p === 'object' && 'typing' in p && 'user_id' in p) {
+                            if (p.typing && p.user_id !== userId) {
+                                typingUsers.push(p.user_id as string);
+                            }
                         }
                     });
                 });
 
                 setTypingUsers(typingUsers);
             })
-            .subscribe((status) => {
-
+            .subscribe(() => {
+                // Subscription status handling can be added here if needed
             });
 
         return channel;
@@ -268,22 +280,22 @@ export default function ChatRoomPage() {
             clearTimeout(typingTimeoutRef.current);
         }
 
-        if (!channelRef.current) return;
+        if (!channelRef.current || !user) return;
 
         // Update presence with typing: true
         channelRef.current.track({
-            user_id: user?.id,
+            user_id: user.id,
             typing: true,
-            username: user?.name || user?.email,
+            username: user.name || user.email,
         });
 
         // Set timeout to clear typing indicator
         typingTimeoutRef.current = setTimeout(() => {
-            if (channelRef.current) {
+            if (channelRef.current && user) {
                 channelRef.current.track({
-                    user_id: user?.id,
+                    user_id: user.id,
                     typing: false,
-                    username: user?.name || user?.email,
+                    username: user.name || user.email,
                 });
             }
         }, 2000);
@@ -292,7 +304,7 @@ export default function ChatRoomPage() {
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if ((!newMessage.trim() && !fileToUpload) || sending) {
+        if ((!newMessage.trim() && !fileToUpload) || sending || !user) {
             return;
         }
 
@@ -336,9 +348,9 @@ export default function ChatRoomPage() {
 
             // Clear the input
             setNewMessage('');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error sending message:', err);
-            setError(err.message || 'Failed to send message');
+            setError(err instanceof Error ? err.message : 'Failed to send message');
         } finally {
             setSending(false);
         }
@@ -391,7 +403,7 @@ export default function ChatRoomPage() {
     };
 
     // Function to handle image load errors (e.g., expired JWT)
-    const handleImageError = async (messageId: string, originalUrl: string) => {
+    const handleImageError = useCallback(async (messageId: string, originalUrl: string) => {
         // Prevent multiple refreshes for the same URL
         if (refreshingUrls[messageId]) return;
 
@@ -415,7 +427,7 @@ export default function ChatRoomPage() {
         } finally {
             setRefreshingUrls(prev => ({ ...prev, [messageId]: false }));
         }
-    };
+    }, [refreshingUrls]);
 
     // Check for and refresh soon-to-expire attachment URLs
     useEffect(() => {
@@ -481,7 +493,7 @@ export default function ChatRoomPage() {
         const interval = setInterval(checkAndRefreshExpiringUrls, 30 * 60 * 1000);
 
         return () => clearInterval(interval);
-    }, [messages, user]);
+    }, [messages, user, handleImageError, refreshingUrls]);
 
     if (!user && !loading) {
         return (
@@ -571,11 +583,13 @@ export default function ChatRoomPage() {
                                         {/* Attachment handling */}
                                         {message.attachment_url && message.attachment_type === 'image' && (
                                             <div className="mb-2">
-                                                <img
+                                                <Image
                                                     src={message.attachment_url}
                                                     alt="Attachment"
                                                     className="rounded-md max-w-full max-h-64 object-contain"
                                                     onError={() => handleImageError(message.id, message.attachment_url || '')}
+                                                    width={300}
+                                                    height={200}
                                                 />
                                                 {refreshingUrls[message.id] && (
                                                     <p className="text-xs mt-1 text-amber-100">Refreshing image...</p>
