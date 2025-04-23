@@ -76,5 +76,73 @@ CREATE TABLE events (
   is_active boolean DEFAULT true,
 
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  owner_id UUID REFERENCES users(id)
 );
+
+
+-- Chat functionality
+CREATE TABLE chat_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  venue_id BIGINT REFERENCES venues(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT,
+  status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT now()
+);
+
+
+CREATE TABLE chat_rooms (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  request_id UUID REFERENCES chat_requests(id),
+  event_id UUID REFERENCES events(id),
+  venue_id BIGINT REFERENCES venues(id),
+  created_at TIMESTAMP DEFAULT now()
+);
+
+-- Chat messages table
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id UUID REFERENCES chat_rooms(id) ON DELETE CASCADE NOT NULL,
+  sender_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  content TEXT,
+  attachment_url TEXT,
+  attachment_type TEXT,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT now()
+);
+
+-- Enable row-level security
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for chat_messages
+CREATE POLICY "Users can view messages in their rooms" ON chat_messages
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM chat_rooms cr
+      JOIN chat_requests req ON cr.request_id = req.id
+      WHERE 
+        chat_messages.room_id = cr.id AND
+        (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Users can insert messages in their rooms" ON chat_messages
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM chat_rooms cr
+      JOIN chat_requests req ON cr.request_id = req.id
+      WHERE 
+        chat_messages.room_id = cr.id AND
+        (req.sender_id = auth.uid() OR req.recipient_id = auth.uid()) AND
+        chat_messages.sender_id = auth.uid()
+    )
+  );
+
+-- Enable Realtime for chat_messages table
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+

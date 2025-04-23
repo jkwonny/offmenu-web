@@ -10,6 +10,12 @@ export const storageConfig = {
       public: true,
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
       fileSizeLimit: 5242880 // 5MB
+    },
+    {
+      name: 'chat-attachments',
+      public: false, // Private bucket
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'application/pdf'],
+      fileSizeLimit: 10485760 // 10MB
     }
   ],
   policies: [
@@ -23,6 +29,20 @@ export const storageConfig = {
     {
       name: 'Allow authenticated users to upload to venue-images',
       bucket: 'venue-images',
+      statement: 'insert',
+      effect: 'allow',
+      principal: 'authenticated'
+    },
+    {
+      name: 'Allow authenticated users to access chat-attachments',
+      bucket: 'chat-attachments',
+      statement: 'select',
+      effect: 'allow',
+      principal: 'authenticated'
+    },
+    {
+      name: 'Allow authenticated users to upload to chat-attachments',
+      bucket: 'chat-attachments',
       statement: 'insert',
       effect: 'allow',
       principal: 'authenticated'

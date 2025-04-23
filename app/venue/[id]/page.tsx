@@ -1,19 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import NavBar from '@/app/components/NavBar';
 import { Venue } from '@/types/Venue';
 
 export default function VenuePage() {
     const params = useParams();
+    const router = useRouter();
     const [venue, setVenue] = useState<Venue | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-    console.log('venue', venue);
     useEffect(() => {
         const fetchVenue = async () => {
             try {
@@ -250,7 +250,10 @@ export default function VenuePage() {
                             <div className="text-2xl font-semibold text-amber-950 mb-4">
                                 {formatPrice()}
                             </div>
-                            <button className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors">
+                            <button
+                                className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors"
+                                onClick={() => router.push(`/chat/request/${params.id}`)}
+                            >
                                 Contact Venue
                             </button>
                         </div>

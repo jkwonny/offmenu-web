@@ -13,7 +13,15 @@ export default function NavBar() {
 
                 <div className="flex items-center gap-6">
                     <Link href="/explore" className="text-gray-700 hover:text-black">
-                        Explore
+                        Explore Venues
+                    </Link>
+
+                    <Link href="/events" className="text-gray-700 hover:text-black">
+                        Explore Events
+                    </Link>
+
+                    <Link href="/chat" className="text-gray-700 hover:text-black">
+                        Messages
                     </Link>
 
                     {isLoading ? (
