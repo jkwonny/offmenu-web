@@ -5,18 +5,17 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Use service role to bypass RLS policies (only for server operations)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-// Type definitions are for documentation purposes
-interface ChatRequest {
+interface ChatParticipant {
   sender_id: string;
   recipient_id: string;
 }
 
+// Use service role to bypass RLS policies (only for server operations)
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
 export async function POST(request: NextRequest) {
   try {
-    const { room_id, sender_id, content, attachment_url, attachment_type, sender_name } = await request.json();
+    const { room_id, sender_id, content, attachment_url, attachment_type } = await request.json();
     // Validate required fields
     if (!room_id || !sender_id) {
       return NextResponse.json(
@@ -67,30 +66,26 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    console.log('chatRoom', chatRoom);
     
     // Verify user is a participant
     // Based on the console output provided, we know chat_requests looks like:
     // { sender_id: string, recipient_id: string }
-    const requestData = chatRoom.chat_requests;
+    const requestData = chatRoom.chat_requests as unknown as ChatParticipant;
     
     // Extract participant IDs with type safety
     let participants: string[] = [];
     
     // Use the known structure based on console output
     if (requestData && typeof requestData === 'object') {
-      const senderID = (requestData as any).sender_id;
-      const recipientID = (requestData as any).recipient_id;
+      console.log('requestData', requestData);
+      const senderID = (requestData as ChatParticipant).sender_id;
+      const recipientID = (requestData as ChatParticipant).recipient_id;
       
       if (typeof senderID === 'string' && typeof recipientID === 'string') {
         participants = [senderID, recipientID];
       }
     }
-    
-    console.log('participants', participants);
-    console.log('sender_id', sender_id);
-    
+
     if (participants.length === 0) {
       return NextResponse.json(
         { error: 'Failed to extract participant information' },

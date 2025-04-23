@@ -40,12 +40,12 @@ export async function uploadChatAttachment(
     throw new Error(`Error uploading file: ${error.message}`);
   }
 
-  // Try to get a signed URL (1 hour expiration)
+  // Try to get a signed URL (24 hour expiration instead of 1 hour)
   let url;
   try {
     const { data: urlData, error: urlError } = await supabase.storage
       .from('chat-attachments')
-      .createSignedUrl(data.path, 3600);
+      .createSignedUrl(data.path, 86400);
 
     if (urlError) {
       console.error('Signed URL error:', urlError);

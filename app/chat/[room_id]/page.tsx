@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { uploadChatAttachment } from '../../lib/uploadChatAttachment';
-import { format, formatInTimeZone } from 'date-fns-tz';
+import { refreshAttachmentUrl } from '../../lib/refreshAttachmentUrl';
+import { formatInTimeZone } from 'date-fns-tz';
+import NavBar from '../../components/NavBar';
 
 interface Message {
     id: string;
@@ -65,10 +67,10 @@ export default function ChatRoomPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // For typing indicator
-    const [isTyping, setIsTyping] = useState(false);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const [refreshingUrls, setRefreshingUrls] = useState<Record<string, boolean>>({});
 
     // Store the channel reference for typing indicator
     const channelRef = useRef<any>(null);
@@ -388,248 +390,367 @@ export default function ChatRoomPage() {
         return formatInTimeZone(utcDate, nyTimeZone, 'MMM d, h:mm a');
     };
 
+    // Function to handle image load errors (e.g., expired JWT)
+    const handleImageError = async (messageId: string, originalUrl: string) => {
+        // Prevent multiple refreshes for the same URL
+        if (refreshingUrls[messageId]) return;
+
+        setRefreshingUrls(prev => ({ ...prev, [messageId]: true }));
+
+        try {
+            const result = await refreshAttachmentUrl(originalUrl);
+
+            if (result.success) {
+                // Update the message with the refreshed URL
+                setMessages(prevMessages =>
+                    prevMessages.map(msg =>
+                        msg.id === messageId
+                            ? { ...msg, attachment_url: result.url }
+                            : msg
+                    )
+                );
+            }
+        } catch (error) {
+            console.error('Failed to refresh image URL:', error);
+        } finally {
+            setRefreshingUrls(prev => ({ ...prev, [messageId]: false }));
+        }
+    };
+
+    // Check for and refresh soon-to-expire attachment URLs
+    useEffect(() => {
+        if (messages.length === 0 || !user) return;
+
+        const checkAndRefreshExpiringUrls = async () => {
+            const now = new Date();
+            const urlsToRefresh: { messageId: string, url: string }[] = [];
+
+            // Find messages with attachment URLs containing JWT tokens
+            for (const message of messages) {
+                if (!message.attachment_url) continue;
+
+                // If URL contains a JWT token
+                if (message.attachment_url.includes('token=')) {
+                    try {
+                        // Extract token expiry by parsing JWT (token is after 'token=' in the URL)
+                        const tokenPart = message.attachment_url.split('token=')[1]?.split('&')[0];
+                        if (!tokenPart) continue;
+
+                        // Decode the JWT payload (middle part)
+                        const payloadBase64 = tokenPart.split('.')[1];
+                        if (!payloadBase64) continue;
+
+                        // Decode the base64 payload
+                        const payloadJson = atob(payloadBase64);
+                        const payload = JSON.parse(payloadJson);
+
+                        // Check if token expires within the next hour
+                        if (payload.exp) {
+                            const expiryTime = new Date(payload.exp * 1000);
+                            const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+
+                            if (expiryTime < oneHourFromNow) {
+                                urlsToRefresh.push({
+                                    messageId: message.id,
+                                    url: message.attachment_url
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Error parsing JWT from URL:', error);
+                    }
+                }
+            }
+
+            // Refresh URLs that will expire soon
+            for (const { messageId, url } of urlsToRefresh) {
+                try {
+                    // Don't refresh if already refreshing
+                    if (refreshingUrls[messageId]) continue;
+
+                    console.log(`Proactively refreshing soon-to-expire URL for message ${messageId}`);
+                    await handleImageError(messageId, url);
+                } catch (error) {
+                    console.error('Error refreshing URL:', error);
+                }
+            }
+        };
+
+        // Check for expiring URLs on load and every 30 minutes
+        checkAndRefreshExpiringUrls();
+        const interval = setInterval(checkAndRefreshExpiringUrls, 30 * 60 * 1000);
+
+        return () => clearInterval(interval);
+    }, [messages, user]);
+
     if (!user && !loading) {
         return (
-            <div className="max-w-4xl mx-auto p-6 text-center">
-                <p>Please sign in to view this conversation.</p>
-            </div>
+            <>
+                <NavBar />
+                <div className="max-w-4xl mx-auto p-6 text-center">
+                    <p>Please sign in to view this conversation.</p>
+                </div>
+            </>
         );
     }
 
     if (error) {
         return (
-            <div className="max-w-4xl mx-auto p-6">
-                <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
-                <button
-                    onClick={() => router.push('/chat')}
-                    className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-md"
-                >
-                    Back to Conversations
-                </button>
-            </div>
+            <>
+                <NavBar />
+                <div className="max-w-4xl mx-auto p-6">
+                    <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
+                    <button
+                        onClick={() => router.push('/chat')}
+                        className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-md"
+                    >
+                        Back to Conversations
+                    </button>
+                </div>
+            </>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-4 flex flex-col h-[calc(100vh-64px)]">
-            {/* Header with venue/event info */}
-            <div className="bg-white rounded-t-lg shadow-sm p-4 border-b flex justify-between items-center">
-                <div>
-                    <h1 className="font-semibold text-lg">{roomDetails.venue_name || 'Chat'}</h1>
-                    {roomDetails.event_title && (
-                        <p className="text-sm text-gray-600">Event: {roomDetails.event_title}</p>
-                    )}
+        <>
+            <NavBar />
+            <div className="max-w-4xl mx-auto px-4 pt-4 pb-4 flex flex-col h-[calc(100vh-128px)]">
+                {/* Header with venue/event info */}
+                <div className="bg-white rounded-t-lg shadow-sm p-4 border-b flex justify-between items-center">
+                    <div>
+                        <h1 className="font-semibold text-lg">{roomDetails.venue_name || 'Chat'}</h1>
+                        {roomDetails.event_title && (
+                            <p className="text-sm text-gray-600">Event: {roomDetails.event_title}</p>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => router.push('/chat')}
+                        className="text-sm text-amber-600 hover:text-amber-700"
+                    >
+                        Back
+                    </button>
                 </div>
-                <button
-                    onClick={() => router.push('/chat')}
-                    className="text-sm text-amber-600 hover:text-amber-700"
-                >
-                    Back
-                </button>
-            </div>
 
-            {/* Messages Section */}
-            <div className="flex-1 overflow-y-auto bg-white p-4 space-y-4">
-                {loading ? (
-                    <div className="flex justify-center items-center h-full">
-                        <p>Loading messages...</p>
-                    </div>
-                ) : messages.length === 0 ? (
-                    <div className="flex justify-center items-center h-full text-center text-gray-500">
-                        <div>
-                            <p className="mb-2">No messages yet</p>
-                            <p className="text-sm">Send a message to start the conversation</p>
+                {/* Messages Section */}
+                <div className="flex-1 overflow-y-auto bg-white p-4 space-y-4">
+                    {loading ? (
+                        <div className="flex justify-center items-center h-full">
+                            <p>Loading messages...</p>
                         </div>
-                    </div>
-                ) : (
-                    messages.map((message) => {
-                        const isCurrentUser = message.sender_id === user?.id;
+                    ) : messages.length === 0 ? (
+                        <div className="flex justify-center items-center h-full text-center text-gray-500">
+                            <div>
+                                <p className="mb-2">No messages yet</p>
+                                <p className="text-sm">Send a message to start the conversation</p>
+                            </div>
+                        </div>
+                    ) : (
+                        messages.map((message) => {
+                            const isCurrentUser = message.sender_id === user?.id;
 
-                        return (
-                            <div
-                                key={message.id}
-                                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                            >
+                            return (
                                 <div
-                                    className={`max-w-[75%] rounded-lg p-3 ${isCurrentUser
-                                        ? 'bg-amber-600 text-white rounded-tr-none'
-                                        : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                                        }`}
+                                    key={message.id}
+                                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                                 >
-                                    {!isCurrentUser && (
-                                        <p className="text-xs font-semibold mb-1">
-                                            {message.sender?.name || 'Unknown'}
-                                        </p>
-                                    )}
-
-                                    {/* Message content */}
-                                    {message.content && <p className="mb-2">{message.content}</p>}
-
-                                    {/* Attachment handling */}
-                                    {message.attachment_url && message.attachment_type === 'image' && (
-                                        <div className="mb-2">
-                                            <img
-                                                src={message.attachment_url}
-                                                alt="Attachment"
-                                                className="rounded-md max-w-full max-h-64 object-contain"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {message.attachment_url && message.attachment_type === 'video' && (
-                                        <div className="mb-2">
-                                            <video
-                                                src={message.attachment_url}
-                                                controls
-                                                className="rounded-md max-w-full max-h-64"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {message.attachment_url && message.attachment_type === 'document' && (
-                                        <div className="mb-2">
-                                            <a
-                                                href={message.attachment_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center space-x-2 p-2 bg-white rounded-md border text-amber-600"
-                                            >
-                                                <span>View Document</span>
-                                            </a>
-                                        </div>
-                                    )}
-
-                                    {/* Timestamp */}
-                                    <p
-                                        className={`text-xs ${isCurrentUser ? 'text-amber-100' : 'text-gray-500'
-                                            } text-right`}
+                                    <div
+                                        className={`max-w-[75%] rounded-lg p-3 ${isCurrentUser
+                                            ? 'bg-amber-600 text-white rounded-tr-none'
+                                            : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                                            }`}
                                     >
-                                        {formatMessageDate(message.created_at)}
+                                        {!isCurrentUser && (
+                                            <p className="text-xs font-semibold mb-1">
+                                                {message.sender?.name || 'Unknown'}
+                                            </p>
+                                        )}
+
+                                        {/* Message content */}
+                                        {message.content && <p className="mb-2">{message.content}</p>}
+
+                                        {/* Attachment handling */}
+                                        {message.attachment_url && message.attachment_type === 'image' && (
+                                            <div className="mb-2">
+                                                <img
+                                                    src={message.attachment_url}
+                                                    alt="Attachment"
+                                                    className="rounded-md max-w-full max-h-64 object-contain"
+                                                    onError={() => handleImageError(message.id, message.attachment_url || '')}
+                                                />
+                                                {refreshingUrls[message.id] && (
+                                                    <p className="text-xs mt-1 text-amber-100">Refreshing image...</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {message.attachment_url && message.attachment_type === 'video' && (
+                                            <div className="mb-2">
+                                                <video
+                                                    src={message.attachment_url}
+                                                    controls
+                                                    className="rounded-md max-w-full max-h-64"
+                                                    onError={() => handleImageError(message.id, message.attachment_url || '')}
+                                                />
+                                                {refreshingUrls[message.id] && (
+                                                    <p className="text-xs mt-1 text-amber-100">Refreshing video...</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {message.attachment_url && message.attachment_type === 'document' && (
+                                            <div className="mb-2">
+                                                <a
+                                                    href={message.attachment_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center space-x-2 p-2 bg-white rounded-md border text-amber-600"
+                                                    onClick={(e) => {
+                                                        if (message.attachment_url?.includes('jwt expired')) {
+                                                            e.preventDefault();
+                                                            handleImageError(message.id, message.attachment_url);
+                                                        }
+                                                    }}
+                                                >
+                                                    <span>View Document</span>
+                                                </a>
+                                                {refreshingUrls[message.id] && (
+                                                    <p className="text-xs mt-1 text-amber-100">Refreshing document...</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Timestamp */}
+                                        <p
+                                            className={`text-xs ${isCurrentUser ? 'text-amber-100' : 'text-gray-500'
+                                                } text-right`}
+                                        >
+                                            {formatMessageDate(message.created_at)}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+
+                    {/* Typing indicator */}
+                    {typingUsers.length > 0 && (
+                        <div className="flex items-center text-sm text-gray-500 mt-2">
+                            <div className="flex space-x-1 mr-2">
+                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
+                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
+                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-200"></div>
+                            </div>
+                            {typingUsers.length === 1
+                                ? `${participants.find(p => p.id === typingUsers[0])?.name || 'Someone'} is typing...`
+                                : 'Multiple people are typing...'}
+                        </div>
+                    )}
+
+                    {/* Auto-scroll anchor */}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Message Input */}
+                <div className="bg-white rounded-b-lg shadow-sm p-4 border-t">
+                    {/* File preview */}
+                    {fileToUpload && (
+                        <div className="mb-3 p-2 border rounded-md bg-gray-50 flex justify-between items-center">
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 bg-amber-100 rounded-md flex items-center justify-center mr-2">
+                                    {fileToUpload.type.startsWith('image/') ? '🖼️' :
+                                        fileToUpload.type.startsWith('video/') ? '🎥' : '📄'}
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="truncate text-sm font-medium">{fileToUpload.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                        {(fileToUpload.size / 1024).toFixed(1)} KB
                                     </p>
                                 </div>
                             </div>
-                        );
-                    })
-                )}
-
-                {/* Typing indicator */}
-                {typingUsers.length > 0 && (
-                    <div className="flex items-center text-sm text-gray-500 mt-2">
-                        <div className="flex space-x-1 mr-2">
-                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
-                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-200"></div>
+                            <button
+                                onClick={cancelFileUpload}
+                                className="text-red-500 hover:text-red-700 ml-2"
+                            >
+                                ✕
+                            </button>
                         </div>
-                        {typingUsers.length === 1
-                            ? `${participants.find(p => p.id === typingUsers[0])?.name || 'Someone'} is typing...`
-                            : 'Multiple people are typing...'}
-                    </div>
-                )}
+                    )}
 
-                {/* Auto-scroll anchor */}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Message Input */}
-            <div className="bg-white rounded-b-lg shadow-sm p-4 border-t">
-                {/* File preview */}
-                {fileToUpload && (
-                    <div className="mb-3 p-2 border rounded-md bg-gray-50 flex justify-between items-center">
-                        <div className="flex items-center">
-                            <div className="w-10 h-10 bg-amber-100 rounded-md flex items-center justify-center mr-2">
-                                {fileToUpload.type.startsWith('image/') ? '🖼️' :
-                                    fileToUpload.type.startsWith('video/') ? '🎥' : '📄'}
+                    {/* Upload progress */}
+                    {isUploading && (
+                        <div className="mb-3">
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div
+                                    className="bg-amber-600 h-2.5 rounded-full"
+                                    style={{ width: `${uploadProgress}%` }}
+                                ></div>
                             </div>
-                            <div className="overflow-hidden">
-                                <p className="truncate text-sm font-medium">{fileToUpload.name}</p>
-                                <p className="text-xs text-gray-500">
-                                    {(fileToUpload.size / 1024).toFixed(1)} KB
-                                </p>
-                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Uploading file...</p>
                         </div>
-                        <button
-                            onClick={cancelFileUpload}
-                            className="text-red-500 hover:text-red-700 ml-2"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                )}
+                    )}
 
-                {/* Upload progress */}
-                {isUploading && (
-                    <div className="mb-3">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                                className="bg-amber-600 h-2.5 rounded-full"
-                                style={{ width: `${uploadProgress}%` }}
-                            ></div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Uploading file...</p>
-                    </div>
-                )}
-
-                <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-                    <label
-                        htmlFor="file-upload"
-                        className="p-2 text-gray-500 hover:text-amber-600 cursor-pointer"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                    <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+                        <label
+                            htmlFor="file-upload"
+                            className="p-2 text-gray-500 hover:text-amber-600 cursor-pointer"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-6 w-6"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                                />
+                            </svg>
+                            <input
+                                id="file-upload"
+                                type="file"
+                                className="hidden"
+                                onChange={handleFileChange}
+                                disabled={sending || isUploading}
+                                accept="image/jpeg,image/png,image/gif,video/mp4,application/pdf"
                             />
-                        </svg>
+                        </label>
+
                         <input
-                            id="file-upload"
-                            type="file"
-                            className="hidden"
-                            onChange={handleFileChange}
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => {
+                                setNewMessage(e.target.value);
+                                handleTyping();
+                            }}
+                            placeholder="Type a message..."
+                            className="flex-1 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
                             disabled={sending || isUploading}
-                            accept="image/jpeg,image/png,image/gif,video/mp4,application/pdf"
                         />
-                    </label>
 
-                    <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => {
-                            setNewMessage(e.target.value);
-                            handleTyping();
-                        }}
-                        placeholder="Type a message..."
-                        className="flex-1 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        disabled={sending || isUploading}
-                    />
-
-                    <button
-                        type="submit"
-                        disabled={(!newMessage.trim() && !fileToUpload) || sending || isUploading}
-                        className="p-3 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
+                        <button
+                            type="submit"
+                            disabled={(!newMessage.trim() && !fileToUpload) || sending || isUploading}
+                            className="p-3 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
                         >
-                            <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                    </button>
-                </form>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
+        </>
     );
 } 
