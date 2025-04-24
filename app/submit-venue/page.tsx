@@ -3,6 +3,8 @@
 import { useState, FormEvent, useRef } from 'react';
 import NavBar from '../components/NavBar';
 import Image from 'next/image';
+import { USStates } from '@/constants/USStates';
+import Footer from '../components/Footer';
 
 export default function SubmitVenuePage() {
     const initialFormState = {
@@ -36,61 +38,6 @@ export default function SubmitVenuePage() {
         rules: '',
         tags: '',
     };
-
-    // US States array for dropdown
-    const usStates = [
-        { value: 'AL', label: 'Alabama' },
-        { value: 'AK', label: 'Alaska' },
-        { value: 'AZ', label: 'Arizona' },
-        { value: 'AR', label: 'Arkansas' },
-        { value: 'CA', label: 'California' },
-        { value: 'CO', label: 'Colorado' },
-        { value: 'CT', label: 'Connecticut' },
-        { value: 'DE', label: 'Delaware' },
-        { value: 'FL', label: 'Florida' },
-        { value: 'GA', label: 'Georgia' },
-        { value: 'HI', label: 'Hawaii' },
-        { value: 'ID', label: 'Idaho' },
-        { value: 'IL', label: 'Illinois' },
-        { value: 'IN', label: 'Indiana' },
-        { value: 'IA', label: 'Iowa' },
-        { value: 'KS', label: 'Kansas' },
-        { value: 'KY', label: 'Kentucky' },
-        { value: 'LA', label: 'Louisiana' },
-        { value: 'ME', label: 'Maine' },
-        { value: 'MD', label: 'Maryland' },
-        { value: 'MA', label: 'Massachusetts' },
-        { value: 'MI', label: 'Michigan' },
-        { value: 'MN', label: 'Minnesota' },
-        { value: 'MS', label: 'Mississippi' },
-        { value: 'MO', label: 'Missouri' },
-        { value: 'MT', label: 'Montana' },
-        { value: 'NE', label: 'Nebraska' },
-        { value: 'NV', label: 'Nevada' },
-        { value: 'NH', label: 'New Hampshire' },
-        { value: 'NJ', label: 'New Jersey' },
-        { value: 'NM', label: 'New Mexico' },
-        { value: 'NY', label: 'New York' },
-        { value: 'NC', label: 'North Carolina' },
-        { value: 'ND', label: 'North Dakota' },
-        { value: 'OH', label: 'Ohio' },
-        { value: 'OK', label: 'Oklahoma' },
-        { value: 'OR', label: 'Oregon' },
-        { value: 'PA', label: 'Pennsylvania' },
-        { value: 'RI', label: 'Rhode Island' },
-        { value: 'SC', label: 'South Carolina' },
-        { value: 'SD', label: 'South Dakota' },
-        { value: 'TN', label: 'Tennessee' },
-        { value: 'TX', label: 'Texas' },
-        { value: 'UT', label: 'Utah' },
-        { value: 'VT', label: 'Vermont' },
-        { value: 'VA', label: 'Virginia' },
-        { value: 'WA', label: 'Washington' },
-        { value: 'WV', label: 'West Virginia' },
-        { value: 'WI', label: 'Wisconsin' },
-        { value: 'WY', label: 'Wyoming' },
-        { value: 'DC', label: 'District of Columbia' },
-    ];
 
     // New state for image uploads
     const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -373,7 +320,7 @@ export default function SubmitVenuePage() {
             <NavBar />
             <div className="min-h-screen bg-[#FFF9F5]">
                 <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-                    <h1 className="text-3xl font-bold text-[#ca0013] mb-6 border-b pb-4">Submit a New Venue</h1>
+                    <h1 className="text-3xl font-bold font-heading text-[#ca0013] mb-2 pb-4">Submit Your Venue</h1>
 
                     {success && (
                         <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
@@ -434,7 +381,6 @@ export default function SubmitVenuePage() {
                                         className="w-full p-3 border border-[#e0d8c3] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent"
                                         placeholder="Describe your venue&apos;s atmosphere, features, and what makes it special."
                                     />
-                                    <p className="mt-1 text-sm text-[#ca0013]">Provide details about your venue&apos;s atmosphere, features, and what makes it special.</p>
                                     {validationErrors.description && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.description}</p>
                                     )}
@@ -453,7 +399,6 @@ export default function SubmitVenuePage() {
                                         className="w-full p-3 border border-[#e0d8c3] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent"
                                         placeholder="https://www.example.com"
                                     />
-                                    <p className="mt-1 text-sm text-[#ca0013]">Website URL for your venue (if available)</p>
                                     {validationErrors.website && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.website}</p>
                                     )}
@@ -461,7 +406,7 @@ export default function SubmitVenuePage() {
 
                                 <div className="col-span-2">
                                     <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="instagram_handle">
-                                        Instagram Handle
+                                        Instagram Handle (without the @ symbol)
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -477,7 +422,6 @@ export default function SubmitVenuePage() {
                                             placeholder="venuename"
                                         />
                                     </div>
-                                    <p className="mt-1 text-sm text-[#ca0013]">Instagram handle for your venue (without the @ symbol)</p>
                                     {validationErrors.instagram_handle && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.instagram_handle}</p>
                                     )}
@@ -501,7 +445,6 @@ export default function SubmitVenuePage() {
                                         <option value="cafe">Cafe</option>
                                         <option value="event_space">Event Space</option>
                                     </select>
-                                    <p className="mt-1 text-sm text-[#ca0013]">Select the category that best describes your venue.</p>
                                     {validationErrors.category && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.category}</p>
                                     )}
@@ -652,7 +595,7 @@ export default function SubmitVenuePage() {
                                         className={`w-full p-3 border ${validationErrors.state ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent bg-white`}
                                     >
                                         <option value="">Select State</option>
-                                        {usStates.map((state) => (
+                                        {USStates.map((state) => (
                                             <option key={state.value} value={state.value}>
                                                 {state.label}
                                             </option>
@@ -886,8 +829,8 @@ export default function SubmitVenuePage() {
                                 <p>Be sure to set clear policies regarding fees, cancellations, and special requests to avoid misunderstandings with customers.</p>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center p-3 bg-white rounded-md">
+                            <div className="space-y-1.5">
+                                <div className="flex items-center py-1">
                                     <input
                                         id="alcohol_served"
                                         type="checkbox"
@@ -896,13 +839,13 @@ export default function SubmitVenuePage() {
                                         onChange={handleChange}
                                         className="h-5 w-5 text-[#ca0013] focus:ring-[#ca0013] border-[#e0d8c3] rounded"
                                     />
-                                    <label htmlFor="alcohol_served" className="ml-3 text-[#ca0013]">
+                                    <label htmlFor="alcohol_served" className="ml-3 text-[#ca0013] font-medium">
                                         Alcohol Served
                                     </label>
                                 </div>
 
-                                <div className="p-4 bg-white rounded-md">
-                                    <div className="flex items-center">
+                                <div>
+                                    <div className="flex items-center py-1">
                                         <input
                                             id="byob_allowed"
                                             type="checkbox"
@@ -917,9 +860,9 @@ export default function SubmitVenuePage() {
                                     </div>
 
                                     {formData.byob_allowed && (
-                                        <div className="mt-4 ml-8 space-y-3">
+                                        <div className="mt-2 ml-8 space-y-2">
                                             <div>
-                                                <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="byob_pricing_type">
+                                                <label className="block text-[#ca0013] text-sm font-medium mb-1" htmlFor="byob_pricing_type">
                                                     BYOB Fee Type
                                                 </label>
                                                 <select
@@ -927,7 +870,7 @@ export default function SubmitVenuePage() {
                                                     name="byob_pricing_type"
                                                     value={formData.byob_pricing_type}
                                                     onChange={handleChange}
-                                                    className={`w-full p-3 border ${validationErrors.byob_pricing_type ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent bg-white`}
+                                                    className={`w-full p-2 border ${validationErrors.byob_pricing_type ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent bg-white`}
                                                 >
                                                     <option value="">Select BYOB Fee Type</option>
                                                     <option value="per_person">Per Person</option>
@@ -940,7 +883,7 @@ export default function SubmitVenuePage() {
                                             </div>
 
                                             <div>
-                                                <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="byob_price">
+                                                <label className="block text-[#ca0013] text-sm font-medium mb-1" htmlFor="byob_price">
                                                     BYOB Price ($)
                                                 </label>
                                                 <input
@@ -951,7 +894,7 @@ export default function SubmitVenuePage() {
                                                     name="byob_price"
                                                     value={formData.byob_price}
                                                     onChange={handleChange}
-                                                    className={`w-full p-3 border ${validationErrors.byob_price ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
+                                                    className={`w-full p-2 border ${validationErrors.byob_price ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
                                                     placeholder="e.g. 15.00"
                                                 />
                                                 {validationErrors.byob_price && (
@@ -962,8 +905,8 @@ export default function SubmitVenuePage() {
                                     )}
                                 </div>
 
-                                <div className="p-4 bg-white rounded-md">
-                                    <div className="flex items-center">
+                                <div>
+                                    <div className="flex items-center py-1">
                                         <input
                                             id="outside_cake_allowed"
                                             type="checkbox"
@@ -978,9 +921,9 @@ export default function SubmitVenuePage() {
                                     </div>
 
                                     {formData.outside_cake_allowed && (
-                                        <div className="mt-4 ml-8 space-y-3">
+                                        <div className="mt-2 ml-8 space-y-2">
                                             <div>
-                                                <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="cake_fee_type">
+                                                <label className="block text-[#ca0013] text-sm font-medium mb-1" htmlFor="cake_fee_type">
                                                     Cake Fee Type
                                                 </label>
                                                 <select
@@ -988,7 +931,7 @@ export default function SubmitVenuePage() {
                                                     name="cake_fee_type"
                                                     value={formData.cake_fee_type}
                                                     onChange={handleChange}
-                                                    className={`w-full p-3 border ${validationErrors.cake_fee_type ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent bg-white`}
+                                                    className={`w-full p-2 border ${validationErrors.cake_fee_type ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent bg-white`}
                                                 >
                                                     <option value="">Select Cake Fee Type</option>
                                                     <option value="per_person">Per Person</option>
@@ -1001,7 +944,7 @@ export default function SubmitVenuePage() {
                                             </div>
 
                                             <div>
-                                                <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="cake_fee_amount">
+                                                <label className="block text-[#ca0013] text-sm font-medium mb-1" htmlFor="cake_fee_amount">
                                                     Cake Fee Amount ($)
                                                 </label>
                                                 <input
@@ -1012,7 +955,7 @@ export default function SubmitVenuePage() {
                                                     name="cake_fee_amount"
                                                     value={formData.cake_fee_amount}
                                                     onChange={handleChange}
-                                                    className={`w-full p-3 border ${validationErrors.cake_fee_amount ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
+                                                    className={`w-full p-2 border ${validationErrors.cake_fee_amount ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
                                                     placeholder="e.g. 25.00"
                                                 />
                                                 {validationErrors.cake_fee_amount && (
@@ -1023,9 +966,9 @@ export default function SubmitVenuePage() {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
                                     <div>
-                                        <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="cleaning_fee">
+                                        <label className="block text-[#ca0013] text-sm font-medium mb-1" htmlFor="cleaning_fee">
                                             Cleaning Fee ($)
                                         </label>
                                         <input
@@ -1036,7 +979,7 @@ export default function SubmitVenuePage() {
                                             name="cleaning_fee"
                                             value={formData.cleaning_fee}
                                             onChange={handleChange}
-                                            className={`w-full p-3 border ${validationErrors.cleaning_fee ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
+                                            className={`w-full p-2 border ${validationErrors.cleaning_fee ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
                                             placeholder="e.g. 150.00"
                                         />
                                         {validationErrors.cleaning_fee && (
@@ -1045,7 +988,7 @@ export default function SubmitVenuePage() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="setup_fee">
+                                        <label className="block text-[#ca0013] text-sm font-medium mb-1" htmlFor="setup_fee">
                                             Setup Fee ($)
                                         </label>
                                         <input
@@ -1056,7 +999,7 @@ export default function SubmitVenuePage() {
                                             name="setup_fee"
                                             value={formData.setup_fee}
                                             onChange={handleChange}
-                                            className={`w-full p-3 border ${validationErrors.setup_fee ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
+                                            className={`w-full p-2 border ${validationErrors.setup_fee ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
                                             placeholder="e.g. 200.00"
                                         />
                                         {validationErrors.setup_fee && (
@@ -1122,7 +1065,7 @@ export default function SubmitVenuePage() {
                                         <button
                                             type="button"
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer border-2 border-blue-700"
+                                            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer border-1 "
                                         >
                                             Select Images
                                         </button>
@@ -1173,14 +1116,14 @@ export default function SubmitVenuePage() {
                                         resetForm();
                                     }
                                 }}
-                                className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer border-2 border-gray-300"
+                                className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 cursor-pointer border-1"
                             >
                                 Reset Form
                             </button>
 
                             <button
                                 type="submit"
-                                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-2 border-blue-700"
+                                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-1"
                                 disabled={isLoading || isUploading}
                             >
                                 {isLoading || isUploading ? (
@@ -1196,7 +1139,10 @@ export default function SubmitVenuePage() {
                         </div>
                     </form>
                 </div>
-            </div>
+                <div className='mt-10 border-t border-[#e0d8c3]'>
+                    <Footer />
+                </div>
+            </div >
         </>
     );
 } 

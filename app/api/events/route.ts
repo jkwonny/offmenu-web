@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // First check if Supabase is accessible
     const connectionCheck = await checkSupabaseConnection();
@@ -93,11 +93,22 @@ export async function GET() {
       }, { status: 503 });
     }
     
-    const { data, error } = await supabase
+    // Get URL params to check if we want to include inquiries
+    const { searchParams } = new URL(request.url);
+    const includeInquiries = searchParams.get('includeInquiries') === 'true';
+    
+    // Start building the query
+    let query = supabase
       .from('events')
       .select('*')
-      .eq('is_active', true)
-      .order('start_date', { ascending: true });
+      .eq('is_active', true);
+    
+    // Filter out inquiries unless specifically requested
+    if (!includeInquiries) {
+      query = query.not('event_type', 'eq', 'Inquiry');
+    }
+    
+    const { data, error } = await query.order('start_date', { ascending: true });
 
     if (error) {
       console.error('Supabase fetch error:', error);

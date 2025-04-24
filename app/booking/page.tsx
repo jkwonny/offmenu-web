@@ -2,9 +2,9 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createEvent } from "../../lib/react-query/mutations/events";
-import NavBar from "../../components/NavBar";
-import { useUser } from "../../context/UserContext";
+import { createEvent } from "../lib/react-query/mutations/events";
+import NavBar from "../components/NavBar";
+import { useUser } from "../context/UserContext";
 
 type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
 
@@ -87,7 +87,7 @@ export default function BookingStep1() {
             <main className="min-h-screen bg-gradient-to-br from-[#FFF9F5] py-12">
                 <div className="max-w-2xl mx-auto px-4 md:px-6">
                     <div className="bg-white p-8 rounded-xl shadow-sm border">
-                        <h1 className="text-3xl font-bold mb-6 text-center">
+                        <h1 className="text-3xl font-bold font-heading mb-6 text-center">
                             Create Your Event
                         </h1>
 

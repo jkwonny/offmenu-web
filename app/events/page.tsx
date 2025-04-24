@@ -29,7 +29,7 @@ export default function EventsPage() {
         <>
             <NavBar />
             <main className="container mx-auto px-4 md:px-6 py-8">
-                <h1 className="text-4xl font-bold mb-8">Events Around New York</h1>
+                <h1 className="text-4xl font-bold mb-8 font-heading">Events Around New York</h1>
 
                 {isLoading ? (
                     <div className="flex items-center justify-center h-64">
