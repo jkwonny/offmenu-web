@@ -57,7 +57,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             <div class="p-0 w-64">
                 <div id="carousel-container-${venue.id}" class="relative w-full h-64"></div>
                 <div class="p-3">
-                    <h3 class="font-bold text-lg mb-1">${venue.name}</h3>
+                    <h3 class="font-bold text-lg mb-1 font-heading">${venue.name}</h3>
                     <p class="text-sm text-amber-700 mb-2">${priceDisplay}</p>
                     <a href="/venue/${venue.id}" target="_blank" rel="noopener noreferrer" 
                        class="text-sm text-amber-600 hover:text-amber-700 underline">
@@ -406,7 +406,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 border-radius: 24px;
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                 color: #222;
-                font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 font-size: 14px;
                 font-weight: 600;
                 padding: 6px 12px;

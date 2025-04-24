@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Playfair_Display, Heebo } from "next/font/google";
 import "./globals.css";
 import { BookingProvider } from "./lib/context";
 import QueryProvider from "./lib/query-provider";
 import { EventProvider } from "./context/EventContext";
 import { UserProvider } from "./context/UserContext";
 
-const inter = Inter({
-  variable: "--font-inter",
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const heebo = Heebo({
+  variable: "--font-heebo",
   subsets: ["latin"],
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${geistMono.variable} antialiased`}
+        className={`${playfairDisplay.variable} ${heebo.variable} antialiased`}
       >
         <QueryProvider>
           <UserProvider>
