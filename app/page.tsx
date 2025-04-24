@@ -169,7 +169,7 @@ export default function Page() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {featuredListings.map((listing: Venue, idx: number) => (
-                <div key={listing.id || idx} className="rounded-xl shadow-sm border flex flex-col overflow-hidden" style={{ background: 'var(--background)', borderColor: '#e0d8c3' }}>
+                <div key={listing.id || idx} className="rounded-xl shadow-sm flex flex-col overflow-hidden" style={{ background: 'var(--background)', borderColor: '#e0d8c3' }}>
                   <ImageCarousel
                     images={Array.isArray(listing.venue_images) ? listing.venue_images.map((img: { image_url: string }) => img.image_url) : undefined}
                     height={192}

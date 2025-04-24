@@ -7,13 +7,13 @@ import NavBar from "../components/NavBar";
 import { useUser } from "../context/UserContext";
 
 type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
+type GuestRange = '1-15' | '16-30' | '31-50' | '51-75' | '75+';
 
 export default function BookingStep1() {
     const router = useRouter();
     const { user, isLoading } = useUser();
     const [eventType, setEventType] = useState<EventType>('Pop Up');
-    const [guestCountMin, setGuestCountMin] = useState<string>("");
-    const [guestCountMax, setGuestCountMax] = useState<string>("");
+    const [guestRange, setGuestRange] = useState<GuestRange>('1-15');
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState<string>("");
     const [title, setTitle] = useState<string>("");
@@ -48,14 +48,35 @@ export default function BookingStep1() {
         setIsSubmitting(true);
 
         try {
+            // Parse guest range to get min and max values
+            let expectedCapacityMin = 0;
+            let expectedCapacityMax = 0;
+
+            if (guestRange === '1-15') {
+                expectedCapacityMin = 1;
+                expectedCapacityMax = 15;
+            } else if (guestRange === '16-30') {
+                expectedCapacityMin = 16;
+                expectedCapacityMax = 30;
+            } else if (guestRange === '31-50') {
+                expectedCapacityMin = 31;
+                expectedCapacityMax = 50;
+            } else if (guestRange === '51-75') {
+                expectedCapacityMin = 51;
+                expectedCapacityMax = 75;
+            } else if (guestRange === '75+') {
+                expectedCapacityMin = 75;
+                expectedCapacityMax = 500; // Setting a reasonable max for 75+
+            }
+
             const formData = {
                 title: title,
                 event_type: eventType,
                 description,
                 start_date: selectedDate,
                 end_date: endDate || undefined,
-                expected_capacity_min: parseInt(guestCountMin, 10),
-                expected_capacity_max: parseInt(guestCountMax, 10),
+                expected_capacity_min: expectedCapacityMin,
+                expected_capacity_max: expectedCapacityMax,
                 assets_needed: assetsNeeded
             };
 
@@ -127,35 +148,22 @@ export default function BookingStep1() {
                             </div>
 
                             <div className="mb-6">
-                                <label className="block mb-2 font-semibold">
+                                <label htmlFor="guestRange" className="block mb-2 font-semibold">
                                     Expected Guests
                                 </label>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <input
-                                            type="number"
-                                            id="guestCountMin"
-                                            value={guestCountMin}
-                                            onChange={(e) => setGuestCountMin(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
-                                            placeholder="Minimum guests"
-                                            min="1"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="flex-1">
-                                        <input
-                                            type="number"
-                                            id="guestCountMax"
-                                            value={guestCountMax}
-                                            onChange={(e) => setGuestCountMax(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
-                                            placeholder="Maximum guests"
-                                            min="1"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                                <select
+                                    id="guestRange"
+                                    value={guestRange}
+                                    onChange={(e) => setGuestRange(e.target.value as GuestRange)}
+                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
+                                    required
+                                >
+                                    <option value="1-15">1-15 guests</option>
+                                    <option value="16-30">16-30 guests</option>
+                                    <option value="31-50">31-50 guests</option>
+                                    <option value="51-75">51-75 guests</option>
+                                    <option value="75+">75+ guests</option>
+                                </select>
                             </div>
 
                             <div className="mb-6">
