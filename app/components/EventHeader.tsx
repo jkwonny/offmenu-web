@@ -11,7 +11,7 @@ export default function EventHeader() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div>
                         <h1 className="text-xl font-medium text-amber-900">
-                            Planning a <span className="font-semibold">{eventDetails.type}</span> for <span className="font-semibold">{eventDetails.guestCount} People</span> on <span className="font-semibold">{eventDetails.date}</span>
+                            Planning a <span className="font-semibold">{eventDetails.type}</span> for <span className="font-semibold">{eventDetails.guestCount} guests</span> on <span className="font-semibold">{eventDetails.date}</span>
                         </h1>
                     </div>
 

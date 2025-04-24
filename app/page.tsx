@@ -1,15 +1,141 @@
 'use client'
-import React from "react";
+import React, { useState } from "react";
 import { useFeaturedVenues } from "./lib/queries";
 import type { Venue } from "../types/Venue";
 import { useRouter } from "next/navigation";
 import NavBar from "./components/NavBar";
 import ImageCarousel from "./components/ImageCarousel";
 import Footer from "./components/Footer";
+import { useEventDetails } from "./context/EventContext";
+
+// Define the EventType as it appears in the context
+type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
 
 export default function Page() {
   const router = useRouter();
   const { data: featuredListings = [], isLoading: loading, error } = useFeaturedVenues();
+  const { setEventDetails } = useEventDetails();
+  const [eventType, setEventType] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [guestRange, setGuestRange] = useState("1-15");
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const handleDateClick = () => {
+    setShowDatePicker(!showDatePicker);
+    setShowTimePicker(false);
+  };
+
+  const handleTimeClick = () => {
+    setShowTimePicker(!showTimePicker);
+    setShowDatePicker(false);
+  };
+
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+    setShowDatePicker(false);
+    setShowTimePicker(true);
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setShowTimePicker(false);
+  };
+
+  const handleSearch = () => {
+    if (eventType && selectedDate && selectedTime) {
+      // Parse guest range to get an approximate guest count
+      let guestCount = 15; // Default to max of first range
+      if (guestRange === '16-30') guestCount = 30;
+      if (guestRange === '31-50') guestCount = 50;
+      if (guestRange === '51-75') guestCount = 75;
+      if (guestRange === '75+') guestCount = 100;
+
+      // Set event details in context
+      setEventDetails({
+        type: eventType as EventType,
+        guestCount,
+        date: `${selectedDate} at ${selectedTime}`,
+        tags: [`${guestRange} guests`]
+      });
+
+      // Navigate to explore page with parameters
+      router.push(`/explore?eventType=${encodeURIComponent(eventType)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&guests=${encodeURIComponent(guestRange)}`);
+    }
+  };
+
+  // Calendar navigation
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  // Generate calendar grid for current month
+  const generateCalendarMonth = () => {
+    const month = currentMonth.getMonth();
+    const year = currentMonth.getFullYear();
+
+    // First day of month
+    const firstDay = new Date(year, month, 1);
+    // Last day of month
+    const lastDay = new Date(year, month + 1, 0);
+
+    // Day of week of first day (0 = Sunday, 6 = Saturday)
+    const startDayOfWeek = firstDay.getDay();
+
+    // Total days in month
+    const daysInMonth = lastDay.getDate();
+
+    // Create array for calendar grid (max 6 weeks * 7 days = 42 cells)
+    const calendarDays = [];
+
+    // Add empty cells for days before first of month
+    for (let i = 0; i < startDayOfWeek; i++) {
+      calendarDays.push(null);
+    }
+
+    // Add days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      calendarDays.push({
+        date,
+        dateString: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        isToday: date.getTime() === today.getTime(),
+        isPast: date < today,
+        isAvailable: date >= today
+      });
+    }
+
+    return calendarDays;
+  };
+
+  // Generate time slots from 12PM to 2AM in 30-minute increments
+  const generateTimeSlots = () => {
+    const slots = [];
+    // 12PM to 11:30PM
+    for (let hour = 12; hour < 24; hour++) {
+      const hour12 = hour > 12 ? hour - 12 : hour;
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      slots.push(`${hour12}:00 ${ampm}`);
+      slots.push(`${hour12}:30 ${ampm}`);
+    }
+    // 12AM to 2AM
+    slots.push(`12:00 AM`);
+    slots.push(`12:30 AM`);
+    slots.push(`1:00 AM`);
+    slots.push(`1:30 AM`);
+    slots.push(`2:00 AM`);
+
+    return slots;
+  };
 
   console.log(featuredListings);
   return (
@@ -38,6 +164,143 @@ export default function Page() {
             >
               Explore Venues
             </button>
+          </div>
+
+          {/* Mini Search Function */}
+          <div className="mt-8 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="text-base font-medium">I want to host a</span>
+              <input
+                type="text"
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+                placeholder="dinner, party, pop-up..."
+                className="px-2 py-1 border-b border-gray-300 focus:border-amber-400 focus:outline-none text-center"
+                style={{ minWidth: '150px' }}
+              />
+
+              <span className="text-base font-medium">on</span>
+              <div className="relative">
+                <button
+                  onClick={handleDateClick}
+                  className="px-2 py-1 border-b border-gray-300 text-center flex items-center gap-1"
+                  style={{ minWidth: '120px' }}
+                >
+                  {selectedDate ? new Date(selectedDate).toLocaleDateString() : "Select date"}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDatePicker ? "rotate-180" : ""}>
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {showDatePicker && (
+                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" style={{ width: '330px', left: '50%', transform: 'translateX(-50%)' }}>
+                    <div className="flex justify-between items-center p-3 border-b">
+                      <button onClick={prevMonth} className="p-1">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      <div className="font-medium">
+                        {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                      </div>
+                      <button onClick={nextMonth} className="p-1">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 mb-1 border-b">
+                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                        <div key={day} className="text-center py-2 text-sm font-medium">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 p-2">
+                      {generateCalendarMonth().map((day, index) => (
+                        <div key={index} className="p-1 text-center">
+                          {day ? (
+                            <button
+                              onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
+                                ${day.isToday ? 'border border-amber-500' : ''}
+                                ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
+                                ${day.isAvailable && !day.isToday ? 'bg-green-100 hover:bg-green-200 cursor-pointer' : ''}
+                              `}
+                              disabled={!day.isAvailable}
+                            >
+                              {day.date.getDate()}
+                            </button>
+                          ) : (
+                            <div className="w-8 h-8"></div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t p-3 text-center text-sm">
+                      Select a date
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <span className="text-base font-medium">at</span>
+              <div className="relative">
+                <button
+                  onClick={handleTimeClick}
+                  className="px-2 py-1 border-b border-gray-300 text-center flex items-center gap-1"
+                  style={{ minWidth: '100px' }}
+                >
+                  {selectedTime || "Select time"}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showTimePicker ? "rotate-180" : ""}>
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {showTimePicker && (
+                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-60 overflow-auto" style={{ width: '160px' }}>
+                    <div className="flex flex-col gap-1">
+                      {generateTimeSlots().map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => handleTimeSelect(time)}
+                          className="text-sm py-2 px-3 rounded hover:bg-amber-100 text-left"
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <span className="text-base font-medium">for</span>
+              <div className="relative">
+                <select
+                  value={guestRange}
+                  onChange={(e) => setGuestRange(e.target.value)}
+                  className="px-2 py-1 border-b border-gray-300 focus:border-amber-400 focus:outline-none text-center appearance-none"
+                  style={{ minWidth: '120px' }}
+                >
+                  <option value="1-15">1-15 guests</option>
+                  <option value="16-30">16-30 guests</option>
+                  <option value="31-50">31-50 guests</option>
+                  <option value="51-75">51-75 guests</option>
+                  <option value="75+">75+ guests</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 ml-2 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg"
+                style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
+              >
+                Find my venue
+              </button>
+            </div>
           </div>
         </div>
       </section>
