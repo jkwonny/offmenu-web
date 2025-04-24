@@ -54,8 +54,19 @@ CREATE TABLE venues (
 
   featured BOOLEAN DEFAULT FALSE,
 
+  owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
+);
+
+-- Step 3: Create venue_images table to store images for each venue
+CREATE TABLE venue_images (
+  id BIGSERIAL PRIMARY KEY,
+  venue_id BIGINT REFERENCES venues(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE events (

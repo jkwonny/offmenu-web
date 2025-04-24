@@ -1,12 +1,18 @@
 'use client';
 
-import { useState, FormEvent, useRef } from 'react';
+import { useState, FormEvent, useRef, useEffect } from 'react';
 import NavBar from '../components/NavBar';
 import Image from 'next/image';
 import { USStates } from '@/constants/USStates';
 import Footer from '../components/Footer';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 export default function SubmitVenuePage() {
+    const router = useRouter();
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
     const initialFormState = {
         name: '',
         description: '',
@@ -50,6 +56,21 @@ export default function SubmitVenuePage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+    // Get the current authenticated user
+    useEffect(() => {
+        async function getUser() {
+            const { data } = await supabase.auth.getUser();
+            setCurrentUser(data.user);
+
+            // If no user is logged in, redirect to sign in
+            if (!data.user) {
+                router.push('/auth/signin?redirect=/submit-venue');
+            }
+        }
+
+        getUser();
+    }, [router]);
 
     const resetForm = () => {
         setFormData(initialFormState);
@@ -221,7 +242,13 @@ export default function SubmitVenuePage() {
                     continue;
                 }
 
-                imageUrls.push(result.url);
+                // Use the url from the response instead of expecting a 'url' property
+                if (result.url) {
+                    imageUrls.push(result.url);
+                } else {
+                    console.error('Image upload succeeded but no URL was returned:', result);
+                    failedUploads.push(file.name);
+                }
             } catch (error) {
                 console.error('Error uploading image:', error);
                 failedUploads.push(file.name);
@@ -246,6 +273,13 @@ export default function SubmitVenuePage() {
             return;
         }
 
+        // Check if user is logged in
+        if (!currentUser) {
+            setError('You must be logged in to submit a venue');
+            router.push('/auth/signin?redirect=/submit-venue');
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         setSuccess(null);
@@ -253,6 +287,8 @@ export default function SubmitVenuePage() {
         // Prepare data for submission (e.g., convert numbers, handle tags)
         const submissionData = {
             ...formData,
+            // Include owner_id from the current user
+            owner_id: currentUser.id,
             // Convert rental_type to string format if needed by the API
             rental_type: formData.rental_type,
             pricing_type: formData.pricing_type || null,
@@ -305,6 +341,9 @@ export default function SubmitVenuePage() {
             setSuccess(`Venue "${result.name}" submitted successfully!`);
             // Reset form on successful submission
             resetForm();
+
+            // Redirect to events page after successful submission
+            router.push('/events');
 
         } catch (err) {
             const message = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -732,6 +771,7 @@ export default function SubmitVenuePage() {
                                         <option value="hourly">Hourly Rate</option>
                                         <option value="flat">Flat Fee</option>
                                         <option value="minimum_spend">Minimum Spend</option>
+                                        <option value="no_minimum_spend">No Minimum Spend</option>
                                     </select>
                                     <p className="mt-1 text-sm text-[#ca0013]">How do you charge for venue rental?</p>
                                 </div>

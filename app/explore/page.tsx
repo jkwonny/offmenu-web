@@ -26,9 +26,18 @@ export default function ExplorePage() {
         alert('This would take you to an expanded venue listing page');
     };
 
+    console.log(venues);
+
     const handleVenueClick = (venueId: string) => {
+        // Set the selected venue ID
         setSelectedVenueId(venueId);
+        // Open the venue detail page in a new tab
         window.open(`/venue/${venueId}`, '_blank');
+    };
+
+    const handleMarkerClick = (venueId: string) => {
+        // Only update the selected venue ID, without navigating away
+        setSelectedVenueId(venueId);
     };
 
     const handleImageNav = (
@@ -70,7 +79,7 @@ export default function ExplorePage() {
                                 {error instanceof Error ? error.message : 'An error occurred while fetching venues'}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {venues.map((venue) => {
                                     const venueImages = venue.venue_images && venue.venue_images.length > 0
                                         ? venue.venue_images
@@ -137,10 +146,14 @@ export default function ExplorePage() {
                                             <div className="mt-2">
                                                 <h3 className="font-medium text-base">{venue.name}</h3>
                                                 <p className="text-gray-500 text-sm mt-0.5">{venue.address}</p>
-                                                <p className="text-sm mt-1 font-medium">
-                                                    ${venue.price}
-                                                    {venue.pricing_type === 'hourly' && ' / hour'}
-                                                </p>
+                                                {venue.pricing_type === 'no_minimum_spend' ? (
+                                                    <p className="text-sm mt-1 font-medium">No Minimum Spend</p>
+                                                ) : (
+                                                    <p className="text-sm mt-1 font-medium">
+                                                        ${venue.price}
+                                                        {venue.pricing_type === 'hourly' && ' / hour'}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -164,7 +177,7 @@ export default function ExplorePage() {
                                 <MapboxMap
                                     venues={venues}
                                     selectedVenueId={selectedVenueId}
-                                    onMarkerClick={setSelectedVenueId}
+                                    onMarkerClick={handleMarkerClick}
                                 />
                             </div>
                         )}

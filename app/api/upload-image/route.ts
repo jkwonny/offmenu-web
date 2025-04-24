@@ -23,6 +23,7 @@ export async function POST(request: Request) {
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const venueId = formData.get('venueId') as string;
+        const sortOrder = formData.get('sortOrder') as string;
         
         if (!file) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -73,10 +74,35 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Return the file path
+        // Get the public URL for the uploaded file
+        const { data: publicUrlData } = supabaseAdmin.storage
+            .from('venue-images')
+            .getPublicUrl(data.path);
+
+        const publicUrl = publicUrlData.publicUrl;
+
+        // Insert the image record into the venue_images table
+        const { error: insertError } = await supabaseAdmin
+            .from('venue_images')
+            .insert({
+                venue_id: venueId,
+                image_url: publicUrl,
+                sort_order: parseInt(sortOrder) || 1
+            });
+
+        if (insertError) {
+            console.error('Failed to insert image record:', insertError);
+            return NextResponse.json({ 
+                error: 'Image uploaded but failed to save reference in database',
+                details: insertError.message
+            }, { status: 500 });
+        }
+
+        // Return the public URL
         return NextResponse.json({ 
             success: true,
-            path: data.path
+            path: data.path,
+            url: publicUrl
         });
         
     } catch (error: unknown) {
