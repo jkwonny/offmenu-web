@@ -1,12 +1,12 @@
 'use client'
-import React, { useState } from "react";
 import { useFeaturedVenues } from "./lib/queries";
-import type { Venue } from "../types/Venue";
 import { useRouter } from "next/navigation";
+import { useEventDetails } from "./context/EventContext";
+import React, { useState } from "react";
+import type { Venue } from "../types/Venue";
 import NavBar from "./components/NavBar";
 import ImageCarousel from "./components/ImageCarousel";
 import Footer from "./components/Footer";
-import { useEventDetails } from "./context/EventContext";
 
 // Define the EventType as it appears in the context
 type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
@@ -16,32 +16,36 @@ export default function Page() {
   const { data: featuredListings = [], isLoading: loading, error } = useFeaturedVenues();
   const { setEventDetails } = useEventDetails();
   const [eventType, setEventType] = useState("");
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState("");
-  const [guestRange, setGuestRange] = useState("1-15");
+  const [guestRange, setGuestRange] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const handleDateClick = () => {
-    setShowDatePicker(!showDatePicker);
-    setShowTimePicker(false);
+  // Format date without timezone issues
+  const formatSelectedDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString();
   };
 
-  const handleTimeClick = () => {
-    setShowTimePicker(!showTimePicker);
-    setShowDatePicker(false);
+  const handleDateTimeClick = () => {
+    setShowDateTimePicker(!showDateTimePicker);
   };
 
   const handleDateSelect = (date: string) => {
+    console.log('Selected date:', date);
     setSelectedDate(date);
-    setShowDatePicker(false);
-    setShowTimePicker(true);
   };
 
   const handleTimeSelect = (time: string) => {
+    console.log('Selected time:', time);
     setSelectedTime(time);
-    setShowTimePicker(false);
+  };
+
+  const handleDateTimeConfirm = () => {
+    if (selectedDate && selectedTime) {
+      setShowDateTimePicker(false);
+    }
   };
 
   const handleSearch = () => {
@@ -137,6 +141,8 @@ export default function Page() {
     return slots;
   };
 
+  console.log('selectedTime', selectedTime);
+
   console.log(featuredListings);
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
@@ -182,96 +188,111 @@ export default function Page() {
               <span className="text-base font-medium">on</span>
               <div className="relative">
                 <button
-                  onClick={handleDateClick}
-                  className="px-2 py-1 border-b border-gray-300 text-center flex items-center gap-1"
-                  style={{ minWidth: '120px' }}
+                  onClick={handleDateTimeClick}
+                  className="px-2 py-1 border-b border-gray-300 text-center flex items-center gap-1 justify-center"
+                  style={{ minWidth: '180px' }}
                 >
-                  {selectedDate ? new Date(selectedDate).toLocaleDateString() : "Select date"}
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDatePicker ? "rotate-180" : ""}>
+                  {selectedDate && selectedTime ?
+                    `${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}` :
+                    "when"}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDateTimePicker ? "rotate-180" : ""}>
                     <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
 
-                {showDatePicker && (
-                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" style={{ width: '330px', left: '50%', transform: 'translateX(-50%)' }}>
-                    <div className="flex justify-between items-center p-3 border-b">
-                      <button onClick={prevMonth} className="p-1">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                      <div className="font-medium">
-                        {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                {showDateTimePicker && (
+                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" style={{ width: '520px', left: '50%', transform: 'translateX(-50%)' }}>
+                    <div className="flex border-b">
+                      <div className="w-3/5 border-r">
+                        <div className="flex justify-between items-center p-3 border-b">
+                          <button onClick={prevMonth} className="p-1">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                          <div className="font-medium">
+                            {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                          </div>
+                          <button onClick={nextMonth} className="p-1">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-7 mb-1 border-b">
+                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                            <div key={day} className="text-center py-2 text-sm font-medium">
+                              {day}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-7 p-2">
+                          {generateCalendarMonth().map((day, index) => (
+                            <div key={index} className="p-1 text-center">
+                              {day ? (
+                                <button
+                                  onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
+                                    ${day.isToday ? 'border border-amber-500' : ''}
+                                    ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
+                                    ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
+                                    ${day.dateString === selectedDate ? 'bg-[#a80010] text-white border-2 border-[#a80010]' :
+                                      (day.isAvailable && !day.isToday ? 'hover:bg-[#f5d6d8]' : '')}
+                                  `}
+                                  disabled={!day.isAvailable}
+                                >
+                                  {day.date.getDate()}
+                                </button>
+                              ) : (
+                                <div className="w-8 h-8"></div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <button onClick={nextMonth} className="p-1">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+
+                      <div className="w-2/5 flex flex-col">
+                        <div className="p-3 border-b font-medium text-center">
+                          Select Time
+                        </div>
+                        <div className="flex-1 overflow-y-auto max-h-[300px] p-2">
+                          <div className="flex flex-col gap-1">
+                            {generateTimeSlots().map((time) => (
+                              <button
+                                key={time}
+                                onClick={() => handleTimeSelect(time)}
+                                className={`text-sm py-2 px-3 rounded text-left
+                                  ${selectedTime === time ? 'bg-[#a80010] text-white font-medium' : 'hover:bg-[#f5d6d8]'}
+                                `}
+                              >
+                                {time}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t p-3 flex justify-between items-center">
+                      <div className="text-sm">
+                        {selectedDate ?
+                          selectedTime ?
+                            `Selected: ${formatSelectedDate(selectedDate)} at ${selectedTime}` :
+                            `Selected: ${formatSelectedDate(selectedDate)} - Please select a time`
+                          : "Please select a date and time"}
+                      </div>
+                      <button
+                        onClick={handleDateTimeConfirm}
+                        disabled={!selectedDate || !selectedTime}
+                        className={`px-4 py-1 rounded-full text-sm font-medium ${selectedDate && selectedTime ?
+                          'bg-[#a80010] text-white hover:bg-[#880010]' :
+                          'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          }`}
+                      >
+                        Confirm
                       </button>
-                    </div>
-
-                    <div className="grid grid-cols-7 mb-1 border-b">
-                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                        <div key={day} className="text-center py-2 text-sm font-medium">
-                          {day}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-7 p-2">
-                      {generateCalendarMonth().map((day, index) => (
-                        <div key={index} className="p-1 text-center">
-                          {day ? (
-                            <button
-                              onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
-                                ${day.isToday ? 'border border-amber-500' : ''}
-                                ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
-                                ${day.isAvailable && !day.isToday ? 'bg-green-100 hover:bg-green-200 cursor-pointer' : ''}
-                              `}
-                              disabled={!day.isAvailable}
-                            >
-                              {day.date.getDate()}
-                            </button>
-                          ) : (
-                            <div className="w-8 h-8"></div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t p-3 text-center text-sm">
-                      Select a date
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <span className="text-base font-medium">at</span>
-              <div className="relative">
-                <button
-                  onClick={handleTimeClick}
-                  className="px-2 py-1 border-b border-gray-300 text-center flex items-center gap-1"
-                  style={{ minWidth: '100px' }}
-                >
-                  {selectedTime || "Select time"}
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showTimePicker ? "rotate-180" : ""}>
-                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-
-                {showTimePicker && (
-                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-60 overflow-auto" style={{ width: '160px' }}>
-                    <div className="flex flex-col gap-1">
-                      {generateTimeSlots().map((time) => (
-                        <button
-                          key={time}
-                          onClick={() => handleTimeSelect(time)}
-                          className="text-sm py-2 px-3 rounded hover:bg-amber-100 text-left"
-                        >
-                          {time}
-                        </button>
-                      ))}
                     </div>
                   </div>
                 )}
@@ -285,21 +306,33 @@ export default function Page() {
                   className="px-2 py-1 border-b border-gray-300 focus:border-amber-400 focus:outline-none text-center appearance-none"
                   style={{ minWidth: '120px' }}
                 >
+                  <option value="" disabled hidden>who</option>
                   <option value="1-15">1-15 guests</option>
                   <option value="16-30">16-30 guests</option>
                   <option value="31-50">31-50 guests</option>
                   <option value="51-75">51-75 guests</option>
                   <option value="75+">75+ guests</option>
                 </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
               </div>
 
-              <button
+              <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105 mt-2" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
                 onClick={handleSearch}
-                className="px-4 py-2 ml-2 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg"
-                style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
+              // className="px-6 py-2 ml-2 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg mt-4"
+              // style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
               >
                 Find my venue
               </button>
+
+              {/* <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
+              onClick={() => router.push('/explore')}
+            >
+              Explore Venues
+            </button> */}
             </div>
           </div>
         </div>
