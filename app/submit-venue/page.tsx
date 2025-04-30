@@ -8,17 +8,23 @@ import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import GoogleAutoComplete from '../components/GoogleAutoComplete';
+import { VenueFormData } from '@/app/types/venue';
 
 export default function SubmitVenuePage() {
     const router = useRouter();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    const initialFormState = {
+    const initialFormState: VenueFormData = {
         name: '',
         description: '',
         address: '',
+        street_number: '',
+        street_name: '',
+        neighborhood: '',
         city: '',
         state: 'NY',
+        postal_code: '',
         latitude: '',
         longitude: '',
         category: '',
@@ -45,13 +51,17 @@ export default function SubmitVenuePage() {
         tags: '',
     };
 
+    // New state for tracking if "other" category is selected
+    const [isOtherCategorySelected, setIsOtherCategorySelected] = useState(false);
+    const [otherCategoryText, setOtherCategoryText] = useState('');
+
     // New state for image uploads
     const [uploadedImages, setUploadedImages] = useState<File[]>([]);
     const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [formData, setFormData] = useState(initialFormState);
+    const [formData, setFormData] = useState<VenueFormData>(initialFormState);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -77,6 +87,8 @@ export default function SubmitVenuePage() {
         setValidationErrors({});
         setError(null);
         setSuccess(null);
+        setIsOtherCategorySelected(false);
+        setOtherCategoryText('');
 
         // Clear images
         imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
@@ -92,17 +104,35 @@ export default function SubmitVenuePage() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
 
+        // Handle category selection
+        if (name === 'category') {
+            if (value === 'other') {
+                setIsOtherCategorySelected(true);
+                // Keep 'other' as the dropdown value but don't update formData yet
+                setFormData((prev: VenueFormData) => ({ ...prev, [name]: value }));
+            } else {
+                setIsOtherCategorySelected(false);
+                setOtherCategoryText('');
+                setFormData((prev: VenueFormData) => ({ ...prev, [name]: value }));
+            }
+        }
+        // Handle other category text input
+        else if (name === 'otherCategoryText') {
+            setOtherCategoryText(value);
+            // Update the category in formData with the custom text
+            setFormData((prev: VenueFormData) => ({ ...prev, category: value.trim() ? value : 'other' }));
+        }
         // Handle checkboxes
-        if (type === 'checkbox') {
+        else if (type === 'checkbox') {
             const { checked } = e.target as HTMLInputElement;
-            setFormData(prev => ({ ...prev, [name]: checked }));
+            setFormData((prev: VenueFormData) => ({ ...prev, [name]: checked }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData((prev: VenueFormData) => ({ ...prev, [name]: value }));
         }
 
         // Clear validation error for this field when user starts typing
         if (validationErrors[name]) {
-            setValidationErrors(prev => {
+            setValidationErrors((prev: Record<string, string>) => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
                 return newErrors;
@@ -117,6 +147,7 @@ export default function SubmitVenuePage() {
         if (!formData.name.trim()) errors.name = 'Venue name is required';
         if (!formData.address.trim()) errors.address = 'Address is required';
         if (!formData.city.trim()) errors.city = 'City is required';
+        if (!formData.neighborhood.trim()) errors.neighborhood = 'Neighborhood is required';
 
         // Number validations - ensure no negative values
         if (formData.price && parseFloat(formData.price) < 0) {
@@ -296,6 +327,12 @@ export default function SubmitVenuePage() {
             min_hours: formData.min_hours ? parseInt(formData.min_hours, 10) : null,
             website: formData.website.trim() || null,
             instagram_handle: formData.instagram_handle.trim() || null,
+            street_number: formData.street_number.trim() || null,
+            street_name: formData.street_name.trim() || null,
+            neighborhood: formData.neighborhood.trim() || null,
+            city: formData.city.trim() || null,
+            state: formData.state || null,
+            postal_code: formData.postal_code.trim() || null,
             latitude: formData.latitude ? parseFloat(formData.latitude) : null,
             longitude: formData.longitude ? parseFloat(formData.longitude) : null,
             byob_price: formData.byob_price ? parseFloat(formData.byob_price) : null,
@@ -306,7 +343,7 @@ export default function SubmitVenuePage() {
             max_guests: formData.max_guests ? parseInt(formData.max_guests, 10) : null,
             max_seated_guests: formData.max_seated_guests ? parseInt(formData.max_seated_guests, 10) : null,
             max_standing_guests: formData.max_standing_guests ? parseInt(formData.max_standing_guests, 10) : null,
-            tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''), // Convert comma-separated string to array
+            tags: formData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== ''), // Convert comma-separated string to array
         };
 
         try {
@@ -473,7 +510,7 @@ export default function SubmitVenuePage() {
                                     <select
                                         id="category"
                                         name="category"
-                                        value={formData.category}
+                                        value={formData.category === 'other' || isOtherCategorySelected ? 'other' : formData.category}
                                         onChange={handleChange}
                                         className={`w-full p-3 border ${validationErrors.category ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent bg-white`}
                                     >
@@ -483,7 +520,19 @@ export default function SubmitVenuePage() {
                                         <option value="rooftop">Rooftop</option>
                                         <option value="cafe">Cafe</option>
                                         <option value="event_space">Event Space</option>
+                                        <option value="coffee_shop">Coffee Shop</option>
+                                        <option value="other">Other</option>
                                     </select>
+                                    {isOtherCategorySelected && (
+                                        <input
+                                            type="text"
+                                            name="otherCategoryText"
+                                            value={otherCategoryText}
+                                            onChange={handleChange}
+                                            placeholder="Please specify category"
+                                            className="w-full mt-2 p-3 border border-[#e0d8c3] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent"
+                                        />
+                                    )}
                                     {validationErrors.category && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.category}</p>
                                     )}
@@ -503,7 +552,7 @@ export default function SubmitVenuePage() {
                                                 onChange={(e) => {
                                                     const newTypes = e.target.checked
                                                         ? [...formData.rental_type, 'full']
-                                                        : formData.rental_type.filter(t => t !== 'full');
+                                                        : formData.rental_type.filter((t: string) => t !== 'full');
 
                                                     setFormData({ ...formData, rental_type: newTypes });
                                                 }}
@@ -522,7 +571,7 @@ export default function SubmitVenuePage() {
                                                 onChange={(e) => {
                                                     const newTypes = e.target.checked
                                                         ? [...formData.rental_type, 'private_room']
-                                                        : formData.rental_type.filter(t => t !== 'private_room');
+                                                        : formData.rental_type.filter((t: string) => t !== 'private_room');
 
                                                     setFormData({ ...formData, rental_type: newTypes });
                                                 }}
@@ -541,7 +590,7 @@ export default function SubmitVenuePage() {
                                                 onChange={(e) => {
                                                     const newTypes = e.target.checked
                                                         ? [...formData.rental_type, 'outside']
-                                                        : formData.rental_type.filter(t => t !== 'outside');
+                                                        : formData.rental_type.filter((t: string) => t !== 'outside');
 
                                                     setFormData({ ...formData, rental_type: newTypes });
                                                 }}
@@ -560,7 +609,7 @@ export default function SubmitVenuePage() {
                                                 onChange={(e) => {
                                                     const newTypes = e.target.checked
                                                         ? [...formData.rental_type, 'semi_private']
-                                                        : formData.rental_type.filter(t => t !== 'semi_private');
+                                                        : formData.rental_type.filter((t: string) => t !== 'semi_private');
 
                                                     setFormData({ ...formData, rental_type: newTypes });
                                                 }}
@@ -581,26 +630,32 @@ export default function SubmitVenuePage() {
                         {/* Location Section */}
                         <section className="bg-white p-6 rounded-lg shadow-sm border border-[#e0d8c3]">
                             <h2 className="text-xl font-semibold mb-4 text-[#ca0013]">Location</h2>
-                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm mb-4">
-                                <p className="font-medium">Tip: Latitude and Longitude</p>
-                                <p>You can find these coordinates using Google Maps by right-clicking on your location and selecting &quot;What&apos;s here?&quot;</p>
-                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="col-span-2">
                                     <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="address">
                                         Address <span className="text-[#ca0013]">*</span>
                                     </label>
-                                    <input
-                                        id="address"
-                                        type="text"
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        className={`w-full p-3 border ${validationErrors.address ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
-                                        placeholder="Street address"
-                                    />
+                                    <GoogleAutoComplete formData={formData} setFormData={setFormData} />
                                     {validationErrors.address && (
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.address}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="neighborhood">
+                                        Neighborhood <span className="text-[#ca0013]">*</span>
+                                    </label>
+                                    <input
+                                        id="neighborhood"
+                                        type="text"
+                                        name="neighborhood"
+                                        value={formData.neighborhood}
+                                        onChange={handleChange}
+                                        className={`w-full p-3 border ${validationErrors.neighborhood ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
+                                        placeholder="Neighborhood"
+                                    />
+                                    {validationErrors.neighborhood && (
+                                        <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.neighborhood}</p>
                                     )}
                                 </div>
 
@@ -644,45 +699,20 @@ export default function SubmitVenuePage() {
                                         <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.state}</p>
                                     )}
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="latitude">
-                                        Latitude
-                                    </label>
-                                    <input
-                                        id="latitude"
-                                        type="number"
-                                        step="any"
-                                        name="latitude"
-                                        value={formData.latitude}
-                                        onChange={handleChange}
-                                        className={`w-full p-3 border ${validationErrors.latitude ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
-                                        placeholder="e.g. 40.7128"
-                                    />
-                                    {validationErrors.latitude && (
-                                        <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.latitude}</p>
-                                    )}
-                                </div>
 
                                 <div>
-                                    <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="longitude">
-                                        Longitude
+                                    <label className="block text-[#ca0013] text-sm font-medium mb-2" htmlFor="postalCode">
+                                        ZIP Code
                                     </label>
                                     <input
-                                        id="longitude"
-                                        type="number"
-                                        step="any"
-                                        name="longitude"
-                                        value={formData.longitude}
+                                        id="postal_code"
+                                        type="text"
+                                        name="postal_code"
+                                        value={formData.postal_code}
                                         onChange={handleChange}
-                                        className={`w-full p-3 border ${validationErrors.longitude ? 'border-red-500' : 'border-[#e0d8c3]'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent`}
-                                        placeholder="e.g. -74.0060"
+                                        className="w-full p-3 border border-[#e0d8c3] rounded-md focus:outline-none focus:ring-2 focus:ring-[#ca0013] focus:border-transparent"
+                                        placeholder="ZIP Code"
                                     />
-                                    {validationErrors.longitude && (
-                                        <p className="mt-1 text-sm text-[#ca0013]">{validationErrors.longitude}</p>
-                                    )}
                                 </div>
                             </div>
                         </section>
