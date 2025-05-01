@@ -2,11 +2,14 @@
 
 import { useState, Suspense } from 'react';
 import Image from 'next/image';
+import { format } from 'date-fns';
 import MapboxMap from '../components/MapboxMap';
 import { useVenues } from '../lib/queries';
-import EventHeader from '../components/EventHeader';
+import { useEvents } from '../lib/queries';
+// import EventHeader from '../components/EventHeader';
 import FloatingButton from '../components/FloatingButton';
 import NavBar from '../components/NavBar';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // Define types for venue images
 interface VenueImage {
@@ -14,20 +17,51 @@ interface VenueImage {
     sort_order?: number;
 }
 
+// Define types for events
+interface Event {
+    id: string;
+    title: string;
+    event_type: string;
+    start_date: string;
+    end_date?: string;
+    description?: string;
+    assets_needed?: string[];
+    expected_capacity_min?: number;
+    expected_capacity_max?: number;
+    image_url: string;
+    venue_images?: VenueImage[];
+    address: string;
+    pricing_type: string;
+    price?: number;
+}
+
+// Helper function to format text
+const formatText = (text: string) => {
+    return text.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
 // Create a client component for the content that uses useSearchParams
 function ExploreContent() {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
-    // Use React Query to fetch venues
-    const { data: venues = [], isLoading, error } = useVenues();
+    // Get the view from URL parameters, default to 'spaces'
+    const view = searchParams.get('view') || 'spaces';
+    const selectedView = view === 'popups' ? 'popups' : 'spaces';
+
+    // Use React Query to fetch venues and events
+    const { data: venues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
+    const { data: events = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
+
+    const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
+    const error = selectedView === 'spaces' ? venuesError : eventsError;
 
     const handleExploreMoreClick = () => {
         // This would typically navigate to a more comprehensive venue listing page
         alert('This would take you to an expanded venue listing page');
     };
-
-    console.log(venues);
 
     const handleVenueClick = (venueId: string) => {
         // Set the selected venue ID
@@ -62,22 +96,25 @@ function ExploreContent() {
 
     return (
         <div className="flex flex-col h-screen w-full">
+            {/* View Toggle */}
+
+
             {/* Sticky header */}
-            <EventHeader />
+            {/* <EventHeader /> */}
 
             {/* Main content with two-column layout */}
             <div className="flex flex-row flex-1 overflow-hidden">
                 {/* Venues list on the left - 60% width */}
-                <div className="w-4/6 overflow-y-auto bg-[#FFF9F5] p-4">
+                <div className="w-[55%] overflow-y-auto bg-[#FFF9F5] p-4">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
                         </div>
                     ) : error ? (
                         <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
-                            {error instanceof Error ? error.message : 'An error occurred while fetching venues'}
+                            {error instanceof Error ? error.message : 'An error occurred while fetching data'}
                         </div>
-                    ) : (
+                    ) : selectedView === 'spaces' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {venues.map((venue) => {
                                 const venueImages = venue.venue_images && venue.venue_images.length > 0
@@ -95,7 +132,7 @@ function ExploreContent() {
                                 return (
                                     <div
                                         key={venue.id}
-                                        className={`cursor-pointer transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-amber-500' : ''}`}
+                                        className={`cursor-pointer transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#ca0013]' : ''}`}
                                         onClick={() => handleVenueClick(venue.id)}
                                     >
                                         <div className="aspect-square w-full overflow-hidden rounded-xl relative group">
@@ -158,18 +195,66 @@ function ExploreContent() {
                                 );
                             })}
                         </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {events.map((event: Event) => (
+                                <div
+                                    key={event.id}
+                                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                                >
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h2 className="text-2xl font-semibold">{event.title}</h2>
+                                            <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium">
+                                                {formatText(event.event_type)}
+                                            </span>
+                                        </div>
+                                        <div className="text-gray-600 mb-4">
+                                            {format(event.start_date, 'MMM d, yyyy')}
+                                            {event.end_date && ` - ${format(event.end_date, 'MMM d, yyyy')}`}
+                                        </div>
+                                        <p className="text-gray-700 mb-4 line-clamp-3">
+                                            {event.description || 'No description available'}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {event.assets_needed?.map((tag: string, index: number) => (
+                                                <span
+                                                    key={index}
+                                                    className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm"
+                                                >
+                                                    {formatText(tag)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-sm text-gray-600">
+                                                {event.expected_capacity_min && event.expected_capacity_max
+                                                    ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                    : 'Guest count not specified'}
+                                            </div>
+                                            <button
+                                                className="px-4 py-2 bg-[#ca0013] text-white rounded hover:bg-[#ca0013] transition-colors duration-200"
+                                                onClick={() => {/* TODO: Implement messaging */ }}
+                                            >
+                                                Message
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
 
                 {/* Map on the right - 40% width */}
-                <div className="w-2/6 relative">
+                <div className="w-[45%] relative">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full bg-[#FFF9F5]">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
                         </div>
                     ) : error ? (
                         <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
-                            {error instanceof Error ? error.message : 'An error occurred while fetching venues'}
+                            {error instanceof Error ? error.message : 'An error occurred while fetching data'}
                         </div>
                     ) : (
                         <div className="h-full">
@@ -182,9 +267,6 @@ function ExploreContent() {
                     )}
                 </div>
             </div>
-
-            {/* Floating "Explore More" button */}
-            <FloatingButton onClick={handleExploreMoreClick} />
         </div>
     );
 }
@@ -194,7 +276,7 @@ export default function ExplorePage() {
         <>
             <NavBar />
             <Suspense fallback={<div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
             </div>}>
                 <ExploreContent />
             </Suspense>
