@@ -33,4 +33,5 @@ export interface Venue {
     venue_features?: string[];
     longitude: number;
     latitude: number;
+    neighborhood?: string;
 }

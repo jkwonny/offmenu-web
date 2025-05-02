@@ -6,9 +6,6 @@ import { useEventDetails } from '../context/EventContext';
 function formatDate(dateString: string): string {
     if (!dateString) return 'Date to be determined';
 
-    // Log the incoming date string for debugging
-    console.log('Date string:', dateString);
-
     try {
         // Check if the string matches expected format "YYYY-MM-DD at h:mm AM/PM"
         const parts = dateString.split(' at ');

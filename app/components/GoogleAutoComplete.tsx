@@ -22,8 +22,6 @@ export default function GoogleAutoComplete({ formData, setFormData }: GoogleAuto
         const place = autocompleteRef.current?.getPlace();
         if (!place?.geometry) return;
 
-        console.log("Place:", place);
-
         const lat = place.geometry.location?.lat();
         const lng = place.geometry.location?.lng();
 
@@ -89,15 +87,6 @@ export default function GoogleAutoComplete({ formData, setFormData }: GoogleAuto
                 neighborhood: neighborhood || "",
                 city: city || "",
                 state: state || "NY",
-                postal_code
-            });
-            console.log("Selected:", place.formatted_address, lat, lng);
-            console.log("Address components:", {
-                street_number,
-                street_name,
-                neighborhood,
-                city,
-                state,
                 postal_code
             });
         }

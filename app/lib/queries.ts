@@ -25,7 +25,6 @@ export interface Venue {
 
 // Function to fetch venues from Supabase
 async function fetchVenues() {
-  console.log('Making Supabase request');
   const { data, error } = await supabase
     .from('venues')
     .select(`
@@ -64,6 +63,7 @@ async function fetchVenues() {
         capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
         tags: venue.rental_type || [],
         venue_images: venue.venue_images || [],
+        neighborhood: venue.neighborhood || '',
       };
     });
   }

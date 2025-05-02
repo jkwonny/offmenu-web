@@ -480,7 +480,6 @@ export default function ChatRoomPage() {
                     // Don't refresh if already refreshing
                     if (refreshingUrls[messageId]) continue;
 
-                    console.log(`Proactively refreshing soon-to-expire URL for message ${messageId}`);
                     await handleImageError(messageId, url);
                 } catch (error) {
                     console.error('Error refreshing URL:', error);

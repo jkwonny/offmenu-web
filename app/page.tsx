@@ -33,12 +33,10 @@ export default function Page() {
   };
 
   const handleDateSelect = (date: string) => {
-    console.log('Selected date:', date);
     setSelectedDate(date);
   };
 
   const handleTimeSelect = (time: string) => {
-    console.log('Selected time:', time);
     setSelectedTime(time);
   };
 
@@ -141,9 +139,6 @@ export default function Page() {
     return slots;
   };
 
-  console.log('selectedTime', selectedTime);
-
-  console.log(featuredListings);
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
       <NavBar />

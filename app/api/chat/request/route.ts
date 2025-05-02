@@ -12,12 +12,6 @@ export async function POST(request: NextRequest) {
   try {
     const { event_id, venue_id, sender_id, recipient_id, message } = await request.json();
 
-    console.log('event_id', event_id);
-    console.log('venue_id', venue_id);
-    console.log('sender_id', sender_id);
-    console.log('recipient_id', recipient_id);
-    console.log('message', message);
-
         // Validate required fields
     if (!event_id || !venue_id || !sender_id || !recipient_id) {
       return NextResponse.json(

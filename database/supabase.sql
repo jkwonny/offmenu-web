@@ -8,7 +8,8 @@ CREATE TABLE users (
   phone TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'venue_owner', 'admin')),
   created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
+  updated_at TIMESTAMP DEFAULT now(),
+  spaces_host BOOLEAN DEFAULT FALSE
 );
 
 -- Step 2: Create main venues table with updated structure

@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function NavBar() {
-    const { user, signOut, isLoading } = useUser();
+    const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const isExplorePage = pathname === '/explore';
     const view = searchParams.get('view');
-    console.log('view', view);
+    const isSpacesHost = userProfile?.spaces_host || false;
 
     return (
         <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
@@ -83,6 +83,13 @@ export default function NavBar() {
                                     <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         Messages
                                     </Link>
+
+                                    {isSpacesHost && (
+                                        <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Host Dashboard
+                                        </Link>
+                                    )}
+
                                     <button
                                         onClick={() => signOut()}
                                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -144,6 +151,17 @@ export default function NavBar() {
                             >
                                 Messages
                             </Link>
+
+                            {isSpacesHost && (
+                                <Link
+                                    href="/host/dashboard"
+                                    className="block py-2 text-gray-700 hover:text-black"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Host Dashboard
+                                </Link>
+                            )}
+
                             <button
                                 onClick={() => {
                                     signOut();

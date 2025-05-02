@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
     
     // Use the known structure based on console output
     if (requestData && typeof requestData === 'object') {
-      console.log('requestData', requestData);
       const senderID = (requestData as ChatParticipant).sender_id;
       const recipientID = (requestData as ChatParticipant).recipient_id;
       
@@ -120,8 +119,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    console.log('Message created successfully:', message);
 
     return NextResponse.json({
       success: true,

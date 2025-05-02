@@ -6,10 +6,8 @@ import { format } from 'date-fns';
 import MapboxMap from '../components/MapboxMap';
 import { useVenues } from '../lib/queries';
 import { useEvents } from '../lib/queries';
-// import EventHeader from '../components/EventHeader';
-import FloatingButton from '../components/FloatingButton';
 import NavBar from '../components/NavBar';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 // Define types for venue images
 interface VenueImage {
@@ -45,7 +43,6 @@ function ExploreContent() {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
     const searchParams = useSearchParams();
-    const router = useRouter();
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
@@ -57,11 +54,6 @@ function ExploreContent() {
 
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
-
-    const handleExploreMoreClick = () => {
-        // This would typically navigate to a more comprehensive venue listing page
-        alert('This would take you to an expanded venue listing page');
-    };
 
     const handleVenueClick = (venueId: string) => {
         // Set the selected venue ID
@@ -96,16 +88,10 @@ function ExploreContent() {
 
     return (
         <div className="flex flex-col h-screen w-full">
-            {/* View Toggle */}
-
-
-            {/* Sticky header */}
-            {/* <EventHeader /> */}
-
             {/* Main content with two-column layout */}
             <div className="flex flex-row flex-1 overflow-hidden">
                 {/* Venues list on the left - 60% width */}
-                <div className="w-[55%] overflow-y-auto bg-[#FFF9F5] p-4">
+                <div className="w-4/6 overflow-y-auto bg-[#FFF9F5] p-4">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
@@ -247,7 +233,7 @@ function ExploreContent() {
                 </div>
 
                 {/* Map on the right - 40% width */}
-                <div className="w-[45%] relative">
+                <div className="w-2/6 relative">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full bg-[#FFF9F5]">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>

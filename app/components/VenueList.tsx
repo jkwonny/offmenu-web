@@ -67,7 +67,6 @@ export default function VenueList({
                                 : 'border border-amber-200 bg-white'
                                 }`}
                             onClick={() => {
-                                console.log('Venue clicked in list:', venue.id);
                                 onVenueClick(venue.id);
                             }}
                             onMouseEnter={() => onVenueHover(venue.id)}

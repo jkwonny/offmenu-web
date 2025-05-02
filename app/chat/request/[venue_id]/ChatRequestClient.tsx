@@ -39,7 +39,6 @@ export default function ChatRequestClient({ venue_id }: { venue_id: string }) {
                 .eq('id', venue_id)
                 .single();
 
-            console.log('venueData', venueData);
             if (!error && venueData) {
                 setVenue(venueData);
             }
