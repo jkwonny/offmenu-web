@@ -4,21 +4,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 
-// Define a type for the user profile from the database
-type UserProfile = {
-    id: string;
-    email: string;
-    name?: string;
-    phone?: string;
-    role: string;
-    spaces_host: boolean;
-    created_at?: string;
-    updated_at?: string;
-};
-
 type UserContextType = {
     user: User | null;
-    userProfile: UserProfile | null;
     session: Session | null;
     isLoading: boolean;
     signUp: (email: string, password: string, name?: string, phone?: string) => Promise<{
@@ -36,58 +23,22 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Function to fetch user profile data
-    const fetchUserProfile = async (userId: string) => {
-        try {
-            const { data, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                return null;
-            }
-
-            return data as UserProfile;
-        } catch (error) {
-            console.error('Error in fetchUserProfile:', error);
-            return null;
-        }
-    };
-
     useEffect(() => {
         // Check for active session on mount
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
-
-            if (session?.user) {
-                const profile = await fetchUserProfile(session.user.id);
-                setUserProfile(profile);
-            }
-
             setIsLoading(false);
         });
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
+            (_event, session) => {
                 setSession(session);
                 setUser(session?.user ?? null);
-
-                if (session?.user) {
-                    const profile = await fetchUserProfile(session.user.id);
-                    setUserProfile(profile);
-                } else {
-                    setUserProfile(null);
-                }
-
                 setIsLoading(false);
             }
         );
@@ -114,8 +65,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                         email: email,
                         name: name || null,
                         phone: phone || null,
-                        role: 'user',
-                        spaces_host: false
+                        role: 'user'
                     });
 
                 if (insertError) {
@@ -157,12 +107,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Sign out
     const signOut = async () => {
         await supabase.auth.signOut();
-        setUserProfile(null);
     };
 
     const value = {
         user,
-        userProfile,
         session,
         isLoading,
         signUp,
