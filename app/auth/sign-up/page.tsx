@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NavBar from "../../components/NavBar";
 import { useUser } from "../../context/UserContext";
@@ -9,7 +9,6 @@ import { useUser } from "../../context/UserContext";
 // Component that uses useSearchParams must be wrapped in Suspense
 function SignUpForm() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const { signUp } = useUser();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -18,9 +17,6 @@ function SignUpForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-    // Get redirect URL from query params if available
-    const redirectUrl = searchParams.get("redirect") || "/auth/sign-in";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +49,7 @@ function SignUpForm() {
             if (success) {
                 setSuccessMessage("Sign-up successful! Please check your email to confirm your account.");
                 setTimeout(() => {
-                    router.push(redirectUrl);
+                    router.push("/auth/sign-in");
                 }, 2000);
             } else {
                 setError(error?.message || "An error occurred during sign up");

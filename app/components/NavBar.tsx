@@ -1,15 +1,56 @@
+'use client';
+
 import Link from 'next/link';
 import { useUser } from '../context/UserContext';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+
+// This component uses useSearchParams and will be wrapped in Suspense
+function TabsSection() {
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const isExplorePage = pathname === '/explore';
+    const view = searchParams.get('view');
+
+    if (!isExplorePage) return null;
+
+    return (
+        <div className="flex rounded-lg overflow-hidden shadow-sm">
+            <Link
+                href="/explore?view=spaces"
+                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'spaces'
+                    ? 'bg-[#ca0013] text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+            >
+                Spaces
+            </Link>
+            <Link
+                href="/explore?view=popups"
+                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'popups'
+                    ? 'bg-[#ca0013] text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+            >
+                Popups
+            </Link>
+        </div>
+    );
+}
+
+// Fallback UI while suspense is loading
+function TabsSkeletonLoader() {
+    return (
+        <div className="flex rounded-lg overflow-hidden shadow-sm">
+            <div className="px-6 py-2 bg-gray-200 animate-pulse w-24" />
+            <div className="px-6 py-2 bg-gray-200 animate-pulse w-24" />
+        </div>
+    );
+}
 
 export default function NavBar() {
     const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const isExplorePage = pathname === '/explore';
-    const view = searchParams.get('view');
     const isSpacesHost = userProfile?.spaces_host || false;
 
     return (
@@ -24,27 +65,10 @@ export default function NavBar() {
 
                 {/* Center section - Tabs (only visible on explore page) */}
                 <div className="flex justify-center items-center">
-                    {isExplorePage && (
-                        <div className="flex rounded-lg overflow-hidden shadow-sm">
-                            <Link
-                                href="/explore?view=spaces"
-                                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'spaces'
-                                    ? 'bg-[#ca0013] text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                                    }`}
-                            >
-                                Spaces
-                            </Link>
-                            <Link
-                                href="/explore?view=popups"
-                                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'popups'
-                                    ? 'bg-[#ca0013] text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                                    }`}
-                            >
-                                Popups
-                            </Link>
-                        </div>
+                    {(
+                        <Suspense fallback={<TabsSkeletonLoader />}>
+                            <TabsSection />
+                        </Suspense>
                     )}
                 </div>
 

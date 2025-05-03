@@ -97,7 +97,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         );
 
         return () => {
-            setIsLoading(false);
             subscription.unsubscribe();
         };
     }, []);

@@ -32,7 +32,6 @@ function SignInForm() {
 
         try {
             const { success, error } = await signIn(email, password);
-
             if (success) {
                 router.push(redirectUrl);
             } else {
