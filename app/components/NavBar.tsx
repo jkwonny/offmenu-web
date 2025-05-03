@@ -5,7 +5,6 @@ import { useUser } from '../context/UserContext';
 import { useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-// This component uses useSearchParams and will be wrapped in Suspense
 function TabsSection() {
     const searchParams = useSearchParams();
     const pathname = usePathname();

@@ -61,23 +61,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Initialize auth
     useEffect(() => {
-        console.log('user', user);
-    }, [user]);
+        // Set initial loading state
+        setIsLoading(true);
 
-    useEffect(() => {
         // Check for active session on mount
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
+        const initializeAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
 
-            if (session?.user) {
-                const profile = await fetchUserProfile(session.user.id);
-                setUserProfile(profile);
+                setSession(session);
+                setUser(session?.user ?? null);
+
+                if (session?.user) {
+                    const profile = await fetchUserProfile(session.user.id);
+                    setUserProfile(profile);
+                }
+            } catch (error) {
+                console.error('Error initializing auth:', error);
+            } finally {
+                setIsLoading(false);
             }
+        };
 
-            setIsLoading(false);
-        });
+        initializeAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -85,14 +93,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setSession(session);
                 setUser(session?.user ?? null);
 
-                if (session?.user) {
-                    const profile = await fetchUserProfile(session.user.id);
-                    setUserProfile(profile);
-                } else {
-                    setUserProfile(null);
+                try {
+                    if (session?.user) {
+                        const profile = await fetchUserProfile(session.user.id);
+                        setUserProfile(profile);
+                    } else {
+                        setUserProfile(null);
+                    }
+                } catch (error) {
+                    console.error('Error fetching user profile on auth change:', error);
                 }
-
-                setIsLoading(false);
             }
         );
 
