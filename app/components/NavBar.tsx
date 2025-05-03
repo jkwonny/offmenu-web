@@ -2,177 +2,119 @@ import Link from 'next/link';
 import { useUser } from '../context/UserContext';
 import { useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import { User } from '@supabase/supabase-js';
-
-// UserProfile type from UserContext
-type UserProfile = {
-    id: string;
-    email: string;
-    name?: string;
-    phone?: string;
-    role: string;
-    spaces_host: boolean;
-    created_at?: string;
-    updated_at?: string;
-};
-
-interface NavBarProps {
-    pathname: string;
-    user: User | null;
-    userProfile: UserProfile | null;
-    signOut: () => Promise<void>;
-    isLoading: boolean;
-    mobileMenuOpen: boolean;
-    setMobileMenuOpen: (value: boolean) => void;
-}
-
-interface NavBarContentProps extends NavBarProps {
-    searchParams: ReturnType<typeof useSearchParams> | null;
-    isExplorePage?: boolean;
-    view?: string | null;
-    isSpacesHost?: boolean;
-}
 
 export default function NavBar() {
     const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const pathname = usePathname();
-
-    return (
-        <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
-            <Suspense fallback={<NavBarContent pathname={pathname} user={user} userProfile={userProfile} signOut={signOut} isLoading={isLoading} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} searchParams={null} />}>
-                <NavBarWithSearchParams pathname={pathname} user={user} userProfile={userProfile} signOut={signOut} isLoading={isLoading} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
-            </Suspense>
-        </nav>
-    );
-}
-
-function NavBarWithSearchParams({ pathname, user, userProfile, signOut, isLoading, mobileMenuOpen, setMobileMenuOpen }: NavBarProps) {
     const searchParams = useSearchParams();
     const isExplorePage = pathname === '/explore';
     const view = searchParams.get('view');
     const isSpacesHost = userProfile?.spaces_host || false;
 
     return (
-        <NavBarContent
-            pathname={pathname}
-            user={user}
-            userProfile={userProfile}
-            signOut={signOut}
-            isLoading={isLoading}
-            mobileMenuOpen={mobileMenuOpen}
-            setMobileMenuOpen={setMobileMenuOpen}
-            searchParams={searchParams}
-            isExplorePage={isExplorePage}
-            view={view}
-            isSpacesHost={isSpacesHost}
-        />
-    );
-}
-
-function NavBarContent({ user, signOut, isLoading, mobileMenuOpen, setMobileMenuOpen, isExplorePage = false, view = null, isSpacesHost = false }: NavBarContentProps) {
-    return (
-        <div className="grid grid-cols-3 px-4 md:px-10 py-2 items-center">
-            {/* Left section - Logo */}
-            <div className="flex items-center">
-                <Link href="/" className="text-xl font-bold font-heading">
-                    OffMenu
-                </Link>
-            </div>
-
-            {/* Center section - Tabs (only visible on explore page) */}
-            <div className="flex justify-center items-center">
-                {isExplorePage && (
-                    <div className="flex rounded-lg overflow-hidden shadow-sm">
-                        <Link
-                            href="/explore?view=spaces"
-                            className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'spaces'
-                                ? 'bg-[#ca0013] text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            Spaces
-                        </Link>
-                        <Link
-                            href="/explore?view=popups"
-                            className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'popups'
-                                ? 'bg-[#ca0013] text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            Popups
-                        </Link>
-                    </div>
-                )}
-            </div>
-
-            {/* Right section - Navigation and Auth */}
-            <div className="flex items-center justify-end gap-6">
-                {/* Hamburger menu button - visible on mobile only */}
-                <button
-                    className="md:hidden flex flex-col space-y-1.5"
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    aria-label="Toggle menu"
-                >
-                    <span className={`block w-6 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-                    <span className={`block w-6 h-0.5 bg-gray-800 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
-                    <span className={`block w-6 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-                </button>
-
-                {/* Desktop navigation - hidden on mobile */}
-                <div className="hidden md:flex items-center gap-6">
-                    <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black">
-                        Explore
+        <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
+            <div className="grid grid-cols-3 px-4 md:px-10 py-2 items-center">
+                {/* Left section - Logo */}
+                <div className="flex items-center">
+                    <Link href="/" className="text-xl font-bold font-heading">
+                        OffMenu
                     </Link>
+                </div>
 
-                    <Link href="/submit-venue" className="text-gray-700 hover:text-black">
-                        List your Venue
-                    </Link>
-
-                    {isLoading ? (
-                        <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
-                    ) : user ? (
-                        <div className="relative group">
-                            <Link href="/profile" className="flex items-center text-gray-700 hover:text-black">
-                                My Account <span className="ml-1">&#9662;</span>
-                            </Link>
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 invisible group-hover:visible">
-                                <div className="absolute h-2 w-full top-[-8px]"></div>
-                                <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Messages
-                                </Link>
-
-                                {isSpacesHost && (
-                                    <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Host Dashboard
-                                    </Link>
-                                )}
-
-                                <button
-                                    onClick={() => signOut()}
-                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                    Log out
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-4">
+                {/* Center section - Tabs (only visible on explore page) */}
+                <div className="flex justify-center items-center">
+                    {isExplorePage && (
+                        <div className="flex rounded-lg overflow-hidden shadow-sm">
                             <Link
-                                href="/auth/sign-in"
-                                className="text-gray-700 hover:text-black"
+                                href="/explore?view=spaces"
+                                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'spaces'
+                                    ? 'bg-[#ca0013] text-white'
+                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                                    }`}
                             >
-                                Sign in
+                                Spaces
                             </Link>
                             <Link
-                                href="/auth/sign-up"
-                                className="bg-black text-white px-4 py-1.5 rounded-md hover:bg-gray-800"
+                                href="/explore?view=popups"
+                                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'popups'
+                                    ? 'bg-[#ca0013] text-white'
+                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                                    }`}
                             >
-                                Sign up
+                                Popups
                             </Link>
                         </div>
                     )}
+                </div>
+
+                {/* Right section - Navigation and Auth */}
+                <div className="flex items-center justify-end gap-6">
+                    {/* Hamburger menu button - visible on mobile only */}
+                    <button
+                        className="md:hidden flex flex-col space-y-1.5"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-label="Toggle menu"
+                    >
+                        <span className={`block w-6 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+                        <span className={`block w-6 h-0.5 bg-gray-800 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
+                        <span className={`block w-6 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+                    </button>
+
+                    {/* Desktop navigation - hidden on mobile */}
+                    <div className="hidden md:flex items-center gap-6">
+                        <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black">
+                            Explore
+                        </Link>
+
+                        <Link href="/submit-venue" className="text-gray-700 hover:text-black">
+                            List your Venue
+                        </Link>
+
+                        {isLoading ? (
+                            <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
+                        ) : user ? (
+                            <div className="relative group">
+                                <Link href="/profile" className="flex items-center text-gray-700 hover:text-black">
+                                    My Account <span className="ml-1">&#9662;</span>
+                                </Link>
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 invisible group-hover:visible">
+                                    <div className="absolute h-2 w-full top-[-8px]"></div>
+                                    <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        Messages
+                                    </Link>
+
+                                    {isSpacesHost && (
+                                        <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Host Dashboard
+                                        </Link>
+                                    )}
+
+                                    <button
+                                        onClick={() => signOut()}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Log out
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <Link
+                                    href="/auth/sign-in"
+                                    className="text-gray-700 hover:text-black"
+                                >
+                                    Sign in
+                                </Link>
+                                <Link
+                                    href="/auth/sign-up"
+                                    className="bg-black text-white px-4 py-1.5 rounded-md hover:bg-gray-800"
+                                >
+                                    Sign up
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -250,6 +192,6 @@ function NavBarContent({ user, signOut, isLoading, mobileMenuOpen, setMobileMenu
                     )}
                 </div>
             )}
-        </div>
+        </nav>
     );
 } 
