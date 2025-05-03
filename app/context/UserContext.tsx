@@ -42,7 +42,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // Function to fetch user profile data
     const fetchUserProfile = async (userId: string) => {
-        console.log('fetching user profile');
         try {
             const { data, error } = await supabase
                 .from('users')
@@ -62,10 +61,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    useEffect(() => {
-        console.log('user', user);
-    }, [user]);
-
     // Initialize auth
     useEffect(() => {
         // Set initial loading state
@@ -74,7 +69,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Check for active session on mount
         const initializeAuth = async () => {
             try {
-                console.log('Initializing auth...');
 
                 // Check if supabase is properly initialized
                 if (!supabase) {
@@ -82,8 +76,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     return;
                 }
 
-                console.log('getting session');
-                console.log('supabase', supabase);
                 const { data, error } = await supabase.auth.getSession();
 
                 if (error) {
@@ -92,19 +84,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     return;
                 }
 
-                console.log('Session data:', data);
-
                 if (data?.session?.user) {
-                    console.log('Session found with user ID:', data.session.user.id);
                     setSession(data.session);
                     setUser(data.session.user);
 
                     const profile = await fetchUserProfile(data.session.user.id);
-                    console.log('User profile:', profile);
                     setUserProfile(profile);
                     setIsLoading(false);
                 } else {
-                    console.log('No active session found');
                     setSession(null);
                     setUser(null);
                     setUserProfile(null);
@@ -114,7 +101,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 console.error('Error initializing auth:', error);
             } finally {
                 setIsLoading(false);
-                console.log('Auth initialization complete, isLoading:', false);
             }
         };
 
@@ -124,7 +110,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Listen for auth changes
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
-                console.log('Auth state changed:', event, newSession?.user?.id);
 
                 // Only update if we have good data (avoid wiping during initialization)
                 setSession(newSession);
