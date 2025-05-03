@@ -52,6 +52,8 @@ export default function NavBar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
 
+    console.log('user in nav bar', user);
+
     return (
         <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
             <div className="grid grid-cols-3 px-4 md:px-10 py-2 items-center">

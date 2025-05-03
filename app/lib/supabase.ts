@@ -17,6 +17,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
+console.log('Environment check: Supabase URL exists:', !!supabaseUrl);
+console.log('Environment check: Supabase Anon Key exists:', !!supabaseAnonKey);
+
 // Create a Supabase client with the public URL and anon key
 export const supabase = createClient(
     supabaseUrl || 'https://placeholder-url.supabase.co', // Fallback to prevent crash
@@ -25,6 +28,8 @@ export const supabase = createClient(
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        storageKey: 'offmenu-auth-token',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       },
       global: {
         // Add request timeout to prevent hanging requests
@@ -38,4 +43,7 @@ export const supabase = createClient(
         },
       },
     }
-); 
+);
+
+// Check if the client is initialized correctly
+console.log('Supabase client initialized:', !!supabase); 

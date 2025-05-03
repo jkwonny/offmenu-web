@@ -42,6 +42,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // Function to fetch user profile data
     const fetchUserProfile = async (userId: string) => {
+        console.log('fetching user profile');
         try {
             const { data, error } = await supabase
                 .from('users')
@@ -61,6 +62,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    useEffect(() => {
+        console.log('user', user);
+    }, [user]);
+
     // Initialize auth
     useEffect(() => {
         // Set initial loading state
@@ -69,45 +74,76 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Check for active session on mount
         const initializeAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                console.log('Initializing auth...');
 
-                setSession(session);
-                setUser(session?.user ?? null);
+                // Check if supabase is properly initialized
+                if (!supabase) {
+                    console.error('Supabase client is not properly initialized');
+                    return;
+                }
 
-                if (session?.user) {
-                    const profile = await fetchUserProfile(session.user.id);
+                console.log('getting session');
+                console.log('supabase', supabase);
+                const { data, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    console.error('Error getting session:', error);
+                    setIsLoading(false);
+                    return;
+                }
+
+                console.log('Session data:', data);
+
+                if (data?.session?.user) {
+                    console.log('Session found with user ID:', data.session.user.id);
+                    setSession(data.session);
+                    setUser(data.session.user);
+
+                    const profile = await fetchUserProfile(data.session.user.id);
+                    console.log('User profile:', profile);
                     setUserProfile(profile);
+                    setIsLoading(false);
+                } else {
+                    console.log('No active session found');
+                    setSession(null);
+                    setUser(null);
+                    setUserProfile(null);
+                    setIsLoading(false);
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
             } finally {
                 setIsLoading(false);
+                console.log('Auth initialization complete, isLoading:', false);
             }
         };
 
+        // Initialize auth immediately
         initializeAuth();
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
-                setSession(session);
-                setUser(session?.user ?? null);
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+            async (event, newSession) => {
+                console.log('Auth state changed:', event, newSession?.user?.id);
 
-                try {
-                    if (session?.user) {
-                        const profile = await fetchUserProfile(session.user.id);
-                        setUserProfile(profile);
-                    } else {
-                        setUserProfile(null);
-                    }
-                } catch (error) {
-                    console.error('Error fetching user profile on auth change:', error);
+                // Only update if we have good data (avoid wiping during initialization)
+                setSession(newSession);
+
+                // Don't set user to null during page refreshes
+                if (newSession?.user) {
+                    setUser(newSession.user);
+                    const profile = await fetchUserProfile(newSession.user.id);
+                    setUserProfile(profile);
+                } else if (event === 'SIGNED_OUT') {
+                    // Only clear user on explicit sign out
+                    setUser(null);
+                    setUserProfile(null);
                 }
             }
         );
 
         return () => {
-            subscription.unsubscribe();
+            authListener.subscription.unsubscribe();
         };
     }, []);
 
