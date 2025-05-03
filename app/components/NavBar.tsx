@@ -52,8 +52,6 @@ export default function NavBar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
 
-    console.log('user in nav bar', user);
-
     return (
         <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
             <div className="grid grid-cols-3 px-4 md:px-10 py-2 items-center">
@@ -88,13 +86,13 @@ export default function NavBar() {
 
                     {/* Desktop navigation - hidden on mobile */}
                     <div className="hidden md:flex items-center gap-6">
+                        <Link href="/submit-venue" className="text-gray-700 hover:text-black border border-gray-300 rounded-md px-4 py-2">
+                            Submit Your Space
+                        </Link>
                         <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black">
                             Explore
                         </Link>
 
-                        <Link href="/submit-venue" className="text-gray-700 hover:text-black">
-                            List your Venue
-                        </Link>
 
                         {isLoading ? (
                             <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
@@ -155,7 +153,7 @@ export default function NavBar() {
                         className="block py-2 text-gray-700 hover:text-black"
                         onClick={() => setMobileMenuOpen(false)}
                     >
-                        List your Venue
+                        Submit Your Space
                     </Link>
 
                     {isLoading ? (

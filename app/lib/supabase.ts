@@ -17,9 +17,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-console.log('Environment check: Supabase URL exists:', !!supabaseUrl);
-console.log('Environment check: Supabase Anon Key exists:', !!supabaseAnonKey);
-
 // Create a Supabase client with the public URL and anon key
 export const supabase = createClient(
     supabaseUrl || 'https://placeholder-url.supabase.co', // Fallback to prevent crash
