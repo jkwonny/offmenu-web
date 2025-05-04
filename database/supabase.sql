@@ -100,11 +100,12 @@ CREATE TABLE events (
 -- Chat functionality
 CREATE TABLE chat_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
   venue_id BIGINT REFERENCES venues(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
   recipient_id UUID REFERENCES users(id) ON DELETE CASCADE,
   message TEXT,
+  venue_name TEXT,
+  event_date DATE,
   status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT now()
 );
@@ -113,8 +114,9 @@ CREATE TABLE chat_requests (
 CREATE TABLE chat_rooms (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   request_id UUID REFERENCES chat_requests(id),
-  event_id UUID REFERENCES events(id),
   venue_id BIGINT REFERENCES venues(id),
+  venue_name TEXT,
+  event_date DATE,
   created_at TIMESTAMP DEFAULT now()
 );
 

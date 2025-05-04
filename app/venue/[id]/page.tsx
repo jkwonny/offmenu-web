@@ -251,7 +251,7 @@ export default function VenuePage() {
                                 {formatPrice()}
                             </div>
                             <button
-                                className="w-full bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors"
+                                className="w-full cursor-pointer bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors"
                                 onClick={() => router.push(`/chat/request/${params.id}`)}
                             >
                                 Contact Venue

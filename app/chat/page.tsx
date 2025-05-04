@@ -11,18 +11,18 @@ interface User {
     id: string;
     email?: string;
     user_metadata?: Record<string, unknown>;
+    role?: string;
 }
 
 interface ChatRoom {
     id: string;
     created_at: string;
     venue_id: number;
-    event_id: string;
+    venue_name?: string;
+    event_date?: string;
+    request_id?: string;
     venue: {
         name: string;
-    };
-    event: {
-        title: string;
     };
     latest_message?: {
         content: string;
@@ -39,39 +39,156 @@ interface ChatRequest {
     message: string;
     status: string;
     venue_id: number;
-    event_id: string;
     venue_name: string;
-    event_title: string;
-    sender_name: string;
-    recipient_name: string;
+    event_date: string;
     sender_id: string;
     recipient_id: string;
+    sender_name: string;
+    recipient_name: string;
+    room_id?: string;
 }
 
-// Type for the Supabase response data
-interface SupabaseRequestData {
+// Type for raw response from Supabase
+interface SupabaseRequestResponse {
     id: string;
     created_at: string;
     message: string;
     status: string;
     venue_id: number;
-    event_id: string;
+    venue_name?: string;
+    event_date?: string;
     sender_id: string;
     recipient_id: string;
-    venue: { name: string; }[];
-    event: { title: string; }[];
-    sender: { name: string; }[];
-    recipient: { name: string; }[];
+    sender: unknown;
+    recipient: unknown;
 }
 
 export default function ChatHomePage() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-    const [pendingChats, setPendingChats] = useState<ChatRequest[]>([]);
+    const [allVenueRequests, setAllVenueRequests] = useState<ChatRequest[]>([]);
+    const [ownedVenues, setOwnedVenues] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    // Add this helper function for fetching chat rooms
+    const fetchChatRooms = async (userId: string | undefined) => {
+        if (!userId) return;
+
+        try {
+            // Fetch chat rooms where the user is a participant
+            // First, get rooms where user is the sender
+            const { data: senderRooms, error: senderError } = await supabase
+                .from('chat_rooms')
+                .select(`
+                    id, 
+                    created_at, 
+                    venue_id, 
+                    venue_name,
+                    event_date,
+                    request_id,
+                    venue:venues(name),
+                    chat_request:chat_requests!inner(sender_id, recipient_id, status)
+                `)
+                .eq('chat_request.sender_id', userId);
+
+            if (senderError) throw senderError;
+
+            // Then, get rooms where user is the recipient
+            const { data: recipientRooms, error: recipientError } = await supabase
+                .from('chat_rooms')
+                .select(`
+                    id, 
+                    created_at, 
+                    venue_id,
+                    venue_name,
+                    event_date,
+                    request_id,
+                    venue:venues(name),
+                    chat_request:chat_requests!inner(sender_id, recipient_id, status)
+                `)
+                .eq('chat_request.recipient_id', userId);
+
+            if (recipientError) throw recipientError;
+
+            // Combine the results
+            const combinedRooms = [...(senderRooms || []), ...(recipientRooms || [])];
+
+            // Sort by created_at
+            const sortedRooms = combinedRooms.sort((a, b) =>
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+
+            // Remove duplicates based on room id
+            const uniqueRoomIds = new Set();
+            const rooms = sortedRooms.filter(room => {
+                if (uniqueRoomIds.has(room.id)) {
+                    return false;
+                }
+                uniqueRoomIds.add(room.id);
+                return true;
+            });
+
+            // Fetch the latest message for each room
+            const roomsWithMessages = await Promise.all(
+                rooms.map(async (room) => {
+                    const { data: messages } = await supabase
+                        .from('chat_messages')
+                        .select(`
+                            content, 
+                            created_at,
+                            sender:users!sender_id(name)
+                        `)
+                        .eq('room_id', room.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    const latestMessage = messages && messages.length > 0
+                        ? {
+                            content: messages[0].content,
+                            created_at: messages[0].created_at,
+                            sender: {
+                                name: (() => {
+                                    const sender = messages[0].sender;
+                                    if (!sender) return 'Unknown';
+
+                                    // Use type assertion
+                                    const senderData = Array.isArray(sender)
+                                        ? (sender as { name?: string }[])[0]
+                                        : sender as { name?: string };
+
+                                    return senderData?.name || 'Unknown';
+                                })()
+                            }
+                        }
+                        : undefined;
+
+                    // Transform the data to match the ChatRoom interface
+                    const chatRoom: ChatRoom = {
+                        id: room.id,
+                        created_at: room.created_at,
+                        venue_id: room.venue_id,
+                        venue_name: room.venue_name,
+                        event_date: room.event_date,
+                        request_id: room.request_id,
+                        venue: {
+                            name: room.venue && Array.isArray(room.venue) && room.venue[0]?.name ? room.venue[0].name : 'Unknown Venue'
+                        },
+                        latest_message: latestMessage
+                    };
+
+                    return chatRoom;
+                })
+            );
+
+            setChatRooms(roomsWithMessages);
+
+        } catch (err) {
+            console.error('Error fetching chat rooms:', err);
+        }
+    };
 
     useEffect(() => {
         async function fetchUserAndChats() {
@@ -85,111 +202,77 @@ export default function ChatHomePage() {
                     return;
                 }
 
-                // Fetch chat rooms where the user is a participant
-                // First, get rooms where user is the sender
-                const { data: senderRooms, error: senderError } = await supabase
-                    .from('chat_rooms')
-                    .select(`
-            id, 
-            created_at, 
-            venue_id, 
-            event_id,
-            venue:venues(name),
-            event:events(title),
-            chat_request:chat_requests!inner(sender_id, recipient_id)
-          `)
-                    .eq('chat_request.sender_id', user.id);
+                // Fetch venues owned by the user
+                const { data: userVenues, error: venueError } = await supabase
+                    .from('venues')
+                    .select('id')
+                    .eq('owner_id', user.id);
 
-                if (senderError) throw senderError;
+                if (venueError) throw venueError;
 
-                // Then, get rooms where user is the recipient
-                const { data: recipientRooms, error: recipientError } = await supabase
-                    .from('chat_rooms')
-                    .select(`
-            id, 
-            created_at, 
-            venue_id, 
-            event_id,
-            venue:venues(name),
-            event:events(title),
-            chat_request:chat_requests!inner(sender_id, recipient_id)
-          `)
-                    .eq('chat_request.recipient_id', user.id);
+                // Store venue IDs owned by this user
+                const venueIds = userVenues?.map(venue => venue.id) || [];
+                setOwnedVenues(venueIds);
 
-                if (recipientError) throw recipientError;
+                // Fetch chat requests for venues owned by this user
+                if (venueIds.length > 0) {
+                    const { data: venueRequests, error: requestsError } = await supabase
+                        .from('chat_requests')
+                        .select(`
+                            id,
+                            created_at,
+                            message,
+                            status,
+                            venue_id,
+                            venue_name,
+                            event_date,
+                            sender_id,
+                            recipient_id,
+                            sender:users!sender_id(name),
+                            recipient:users!recipient_id(name)
+                        `)
+                        .in('venue_id', venueIds);
 
-                // Combine the results
-                const combinedRooms = [...(senderRooms || []), ...(recipientRooms || [])];
+                    if (requestsError) throw requestsError;
 
-                // Sort by created_at
-                const sortedRooms = combinedRooms.sort((a, b) =>
-                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
+                    // Process all venue chat requests
+                    const formattedVenueRequests = ((venueRequests || []) as unknown as SupabaseRequestResponse[]).map((req) => {
+                        // Extract sender and recipient names safely
+                        let senderName = 'Unknown';
+                        let recipientName = 'Unknown';
 
-                // Remove duplicates based on room id
-                const uniqueRoomIds = new Set();
-                const rooms = sortedRooms.filter(room => {
-                    if (uniqueRoomIds.has(room.id)) {
-                        return false;
-                    }
-                    uniqueRoomIds.add(room.id);
-                    return true;
-                });
+                        if (req.sender) {
+                            const sender = req.sender as { name?: string };
+                            senderName = typeof sender.name === 'string' ? sender.name : 'Unknown';
+                        }
 
-                // Fetch the latest message for each room
-                const roomsWithMessages = await Promise.all(
-                    rooms.map(async (room) => {
-                        const { data: messages } = await supabase
-                            .from('chat_messages')
-                            .select(`
-                content, 
-                created_at,
-                sender:users!sender_id(name)
-              `)
-                            .eq('room_id', room.id)
-                            .order('created_at', { ascending: false })
-                            .limit(1);
+                        if (req.recipient) {
+                            const recipient = req.recipient as { name?: string };
+                            recipientName = typeof recipient.name === 'string' ? recipient.name : 'Unknown';
+                        }
 
-                        const latestMessage = messages && messages.length > 0
-                            ? {
-                                content: messages[0].content,
-                                created_at: messages[0].created_at,
-                                sender: {
-                                    name: (() => {
-                                        const sender = messages[0].sender;
-                                        if (!sender) return 'Unknown';
-
-                                        // Use type assertion
-                                        const senderData = Array.isArray(sender)
-                                            ? (sender as { name?: string }[])[0]
-                                            : sender as { name?: string };
-
-                                        return senderData?.name || 'Unknown';
-                                    })()
-                                }
-                            }
-                            : undefined;
-
-                        // Transform the data to match the ChatRoom interface
-                        const chatRoom: ChatRoom = {
-                            id: room.id,
-                            created_at: room.created_at,
-                            venue_id: room.venue_id,
-                            event_id: room.event_id,
-                            venue: {
-                                name: room.venue && Array.isArray(room.venue) && room.venue[0]?.name ? room.venue[0].name : 'Unknown Venue'
-                            },
-                            event: {
-                                title: room.event && Array.isArray(room.event) && room.event[0]?.title ? room.event[0].title : 'Unknown Event'
-                            },
-                            latest_message: latestMessage
+                        return {
+                            id: req.id,
+                            created_at: req.created_at,
+                            message: req.message,
+                            status: req.status,
+                            venue_id: req.venue_id,
+                            venue_name: req.venue_name || 'Unknown Venue',
+                            event_date: req.event_date || '',
+                            sender_id: req.sender_id,
+                            recipient_id: req.recipient_id,
+                            sender_name: senderName,
+                            recipient_name: recipientName
                         };
+                    });
 
-                        return chatRoom;
-                    })
-                );
+                    setAllVenueRequests(formattedVenueRequests);
+                }
 
-                // Fetch pending chat requests
+                // Fetch chat rooms where the user is a participant
+                await fetchChatRooms(user?.id);
+
+                // Fetch pending chat requests for the user (not venue related)
                 const { data: pendingRequests, error: pendingError } = await supabase
                     .from('chat_requests')
                     .select(`
@@ -198,11 +281,10 @@ export default function ChatHomePage() {
                         message,
                         status,
                         venue_id,
-                        event_id,
+                        venue_name,
+                        event_date,
                         sender_id,
                         recipient_id,
-                        venue:venues(name),
-                        event:events(title),
                         sender:users!sender_id(name),
                         recipient:users!recipient_id(name)
                     `)
@@ -211,25 +293,54 @@ export default function ChatHomePage() {
 
                 if (pendingError) throw pendingError;
 
-                // Process pending chat requests with proper type handling
-                const formattedPendingRequests = (pendingRequests || []).map((req: SupabaseRequestData) => ({
-                    id: req.id,
-                    created_at: req.created_at,
-                    message: req.message,
-                    status: req.status,
-                    venue_id: req.venue_id,
-                    event_id: req.event_id,
-                    sender_id: req.sender_id,
-                    recipient_id: req.recipient_id,
-                    venue_name: req.venue?.[0]?.name || 'Unknown Venue',
-                    event_title: req.event?.[0]?.title || 'Unknown Event',
-                    sender_name: req.sender?.[0]?.name || 'Unknown',
-                    recipient_name: req.recipient?.[0]?.name || 'Unknown'
-                }));
+                // Process pending chat requests, but not storing the result since it's unused
+                ((pendingRequests || []) as unknown as SupabaseRequestResponse[]).map((req) => {
+                    // Extract sender and recipient names safely
+                    let senderName = 'Unknown';
+                    let recipientName = 'Unknown';
 
-                setPendingChats(formattedPendingRequests);
+                    if (req.sender) {
+                        const sender = req.sender as { name?: string };
+                        senderName = typeof sender.name === 'string' ? sender.name : 'Unknown';
+                    }
 
-                setChatRooms(roomsWithMessages);
+                    if (req.recipient) {
+                        const recipient = req.recipient as { name?: string };
+                        recipientName = typeof recipient.name === 'string' ? recipient.name : 'Unknown';
+                    }
+
+                    return {
+                        id: req.id,
+                        created_at: req.created_at,
+                        message: req.message,
+                        status: req.status,
+                        venue_id: req.venue_id,
+                        venue_name: req.venue_name || 'Unknown Venue',
+                        event_date: req.event_date || '',
+                        sender_id: req.sender_id,
+                        recipient_id: req.recipient_id,
+                        sender_name: senderName,
+                        recipient_name: recipientName
+                    };
+                });
+
+                // Create a mapping of request_id to room_id for later use
+                const requestToRoomMap: Record<string, string> = {};
+                chatRooms.forEach(room => {
+                    if (room.request_id) {
+                        requestToRoomMap[room.request_id] = room.id;
+                    }
+                });
+
+                // If we have venue requests, check if any approved ones have corresponding room IDs
+                if (allVenueRequests.length > 0) {
+                    setAllVenueRequests(prev => prev.map(request => {
+                        if (request.status === 'approved' && requestToRoomMap[request.id]) {
+                            return { ...request, room_id: requestToRoomMap[request.id] };
+                        }
+                        return request;
+                    }));
+                }
             } catch (err: Error | unknown) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to load chat rooms';
                 setError(errorMessage);
@@ -256,7 +367,7 @@ export default function ChatHomePage() {
             // Get the request details to create a chat room
             const { data: requestData, error: fetchError } = await supabase
                 .from('chat_requests')
-                .select('event_id, venue_id, sender_id, message')
+                .select('venue_id, venue_name, event_date, sender_id, message')
                 .eq('id', requestId)
                 .single();
 
@@ -267,8 +378,9 @@ export default function ChatHomePage() {
                 .from('chat_rooms')
                 .insert({
                     request_id: requestId,
-                    event_id: requestData.event_id,
-                    venue_id: requestData.venue_id
+                    venue_id: requestData.venue_id,
+                    venue_name: requestData.venue_name,
+                    event_date: requestData.event_date
                 })
                 .select('id')
                 .single();
@@ -286,10 +398,19 @@ export default function ChatHomePage() {
 
             if (messageError) throw messageError;
 
-            // Update the local state to remove the accepted request
-            setPendingChats(prev => prev.filter(chat => chat.id !== requestId));
+            // Update the status in allVenueRequests if this request is in that list
+            setAllVenueRequests(prev =>
+                prev.map(request =>
+                    request.id === requestId
+                        ? { ...request, status: 'approved', room_id: roomData.id }
+                        : request
+                )
+            );
 
-            // Refresh the chat rooms list
+            // Refetch chat rooms to update the list
+            await fetchChatRooms(user?.id);
+
+            // Refresh the page
             router.refresh();
         } catch (err: Error | unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to accept request';
@@ -309,9 +430,14 @@ export default function ChatHomePage() {
                 .eq('id', requestId);
 
             if (error) throw error;
-
-            // Update the local state to remove the rejected request
-            setPendingChats(prev => prev.filter(chat => chat.id !== requestId));
+            // Update the status in allVenueRequests if this request is in that list
+            setAllVenueRequests(prev =>
+                prev.map(request =>
+                    request.id === requestId
+                        ? { ...request, status: 'rejected' }
+                        : request
+                )
+            );
         } catch (err: Error | unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to reject request';
             setError(errorMessage);
@@ -337,51 +463,78 @@ export default function ChatHomePage() {
         <div className="min-h-screen bg-[#FFF9F5]">
             <NavBar />
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-                <h1 className="text-2xl font-bold mb-6">Your Conversations</h1>
-
                 {loading ? (
                     <div className="text-center py-10">Loading your conversations...</div>
                 ) : error ? (
                     <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4">{error}</div>
                 ) : null}
 
-                {pendingChats.length > 0 && (
+                {/* Section for all venue requests (for venue owners) */}
+                {allVenueRequests.filter(request => request.status === 'pending').length > 0 && (
                     <>
-                        <h2 className="text-xl font-bold mb-4">Pending Requests</h2>
+                        <h2 className="text-xl font-bold mb-4">Pending Chat Requests</h2>
                         <div className="space-y-4 mb-6">
-                            {pendingChats.map((request) => (
+                            {allVenueRequests.filter(request => request.status === 'pending').map((request) => (
                                 <div key={request.id} className="block bg-gray-50 rounded-lg shadow-md p-4">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h2 className="font-semibold">{request.venue_name}</h2>
-                                            <p className="text-sm text-gray-600">
-                                                Event: {request.event_title}
-                                            </p>
-                                            <p className="text-sm mt-2">
-                                                {request.sender_id === user?.id
-                                                    ? `To: ${request.recipient_name}`
-                                                    : `From: ${request.sender_name}`}
-                                            </p>
-                                            <p className="text-sm italic mt-1">{request.message}</p>
+                                    {request.status === 'approved' ? (
+                                        <Link href={`/chat/${request.room_id || ''}`} className="block">
+                                            <div className="flex justify-between items-start hover:bg-gray-100 transition-colors rounded-md p-2">
+                                                <div>
+                                                    <h2 className="font-semibold">{request.venue_name}</h2>
+                                                    {request.event_date && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Event date: {format(new Date(request.event_date), 'MMM d, yyyy')}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-sm mt-2">
+                                                        From: {request.sender_name}
+                                                    </p>
+                                                    <p className="text-sm italic mt-1">{request.message}</p>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                                                        Approved
+                                                    </span>
+                                                    <span className="text-xs text-amber-600 mt-2">Click to chat</span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ) : (
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h2 className="font-semibold">{request.venue_name}</h2>
+                                                {request.event_date && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Event date: {format(new Date(request.event_date), 'MMM d, yyyy')}
+                                                    </p>
+                                                )}
+                                                <p className="text-sm mt-2">
+                                                    From: {request.sender_name}
+                                                </p>
+                                                <p className="text-sm italic mt-1">{request.message}</p>
+                                            </div>
+                                            <span className={`text-xs px-2 py-1 rounded ${request.status === 'pending'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                            </span>
                                         </div>
-                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                            Pending
-                                        </span>
-                                    </div>
+                                    )}
 
-                                    {request.recipient_id === user?.id && (
+                                    {request.status === 'pending' && ownedVenues.includes(request.venue_id) && (
                                         <div className="mt-3 flex space-x-2">
                                             <button
                                                 onClick={() => handleAcceptRequest(request.id)}
                                                 disabled={actionLoading === request.id}
-                                                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                                                className="px-3 cursor-pointer py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
                                             >
                                                 {actionLoading === request.id ? 'Processing...' : 'Accept'}
                                             </button>
                                             <button
                                                 onClick={() => handleRejectRequest(request.id)}
                                                 disabled={actionLoading === request.id}
-                                                className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
+                                                className="px-3 cursor-pointer py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
                                             >
                                                 {actionLoading === request.id ? 'Processing...' : 'Reject'}
                                             </button>
@@ -411,9 +564,9 @@ export default function ChatHomePage() {
                             >
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <h2 className="font-semibold">{room.venue?.name || 'Unknown Venue'}</h2>
+                                        <h2 className="font-semibold">{room.venue_name || 'Unknown Venue'}</h2>
                                         <p className="text-sm text-gray-600">
-                                            Event: {room.event?.title || 'Not specified'}
+                                            {room.event_date ? `Event date: ${format(new Date(room.event_date), 'MMM d, yyyy')}` : 'No event date specified'}
                                         </p>
                                     </div>
                                     <span className="text-xs text-gray-500">
@@ -423,8 +576,8 @@ export default function ChatHomePage() {
 
                                 {room.latest_message && (
                                     <div className="mt-2 pt-2 border-t">
-                                        <p className="text-sm font-medium">{room.latest_message.sender?.name || 'Unknown'}:</p>
-                                        <p className="text-sm text-gray-700 truncate">{room.latest_message.content}</p>
+                                        <span className="text-sm font-medium">{room.latest_message.sender?.name || 'Unknown'}: </span>
+                                        <span className="text-sm text-gray-700 truncate">{room.latest_message.content}</span>
                                         <p className="text-xs text-gray-500 mt-1">
                                             {format(new Date(room.latest_message.created_at), 'h:mm a')}
                                         </p>
