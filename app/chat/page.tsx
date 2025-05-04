@@ -447,8 +447,6 @@ export default function ChatHomePage() {
         }
     };
 
-    console.log('chatRooms', chatRooms);
-
     if (!user && !loading) {
         return (
             <div className="min-h-screen bg-[#FFF9F5]">
