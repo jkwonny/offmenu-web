@@ -22,7 +22,7 @@ export default function VerificationPage() {
 
             try {
                 // Exchange the authorization code for a session
-                const { data, error } = await supabase.auth.exchangeCodeForSession(hash);
+                const { error } = await supabase.auth.exchangeCodeForSession(hash);
 
                 if (error) {
                     console.error('Verification error:', error);
