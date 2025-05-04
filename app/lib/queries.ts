@@ -21,6 +21,7 @@ export interface Venue {
   capacity: number;
   tags: string[];
   venue_images: string[];
+  owner_id?: string;
 }
 
 // Function to fetch venues from Supabase
@@ -64,6 +65,7 @@ async function fetchVenues() {
         tags: venue.rental_type || [],
         venue_images: venue.venue_images || [],
         neighborhood: venue.neighborhood || '',
+        owner_id: venue.owner_id,
       };
     });
   }
@@ -135,6 +137,7 @@ async function fetchFeaturedVenues() {
         capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
         tags: venue.rental_type || [],
         venue_images: venue.venue_images || [],
+        owner_id: venue.owner_id,
       };
     });
   }
