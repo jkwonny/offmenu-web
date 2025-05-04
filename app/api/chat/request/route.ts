@@ -10,10 +10,10 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(request: NextRequest) {
   try {
-    const { event_id, venue_id, sender_id, recipient_id, message } = await request.json();
+    const {  venue_id, sender_id, recipient_id, message, event_date, venue_name } = await request.json();
 
         // Validate required fields
-    if (!event_id || !venue_id || !sender_id || !recipient_id) {
+    if (!venue_id || !sender_id || !recipient_id || !event_date || !venue_name) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -24,11 +24,12 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from('chat_requests')
       .insert({
-        event_id,
+        venue_name,
         venue_id,
         sender_id,
         recipient_id,
         message,
+        event_date,
         status: 'pending'
       })
       .select('id')

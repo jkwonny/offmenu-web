@@ -32,14 +32,12 @@ interface ChatParticipant {
 interface RoomData {
     id: string;
     request_id?: string;
-    event_id?: string;
     venue_id?: number;
+    venue_name?: string;
+    event_date?: string;
     chat_requests: {
         sender_id: string;
         recipient_id: string;
-    };
-    events?: {
-        title: string;
     };
     venues?: {
         name: string;
@@ -67,8 +65,8 @@ export default function ChatRoomPage() {
     const [error, setError] = useState('');
     const [newMessage, setNewMessage] = useState('');
     const [roomDetails, setRoomDetails] = useState<{
-        event_title?: string;
         venue_name?: string;
+        event_date?: string;
     }>({});
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
@@ -99,14 +97,14 @@ export default function ChatRoomPage() {
                 const { data: room, error: roomError } = await supabase
                     .from('chat_rooms')
                     .select(`
-            id,
-            request_id,
-            event_id,
-            venue_id,
-            chat_requests(sender_id, recipient_id),
-            events(title),
-            venues(name)
-          `)
+                        id,
+                        request_id,
+                        venue_name,
+                        event_date,
+                        venue_id,
+                        chat_requests!inner(sender_id, recipient_id),
+                        venues(name)
+                    `)
                     .eq('id', roomId)
                     .single();
 
@@ -117,10 +115,9 @@ export default function ChatRoomPage() {
 
                 // Set room details
                 setRoomDetails({
-                    event_title: typedRoom.events?.title,
-                    venue_name: typedRoom.venues?.name
+                    venue_name: typedRoom.venues?.name || typedRoom.venue_name,
+                    event_date: typedRoom.event_date ? formatInTimeZone(new Date(typedRoom.event_date), 'America/New_York', 'MMMM d, yyyy h:mm a') : undefined
                 });
-
 
                 // Get participants
                 const participants = [
@@ -148,14 +145,14 @@ export default function ChatRoomPage() {
                 const { data: messagesData, error: messagesError } = await supabase
                     .from('chat_messages')
                     .select(`
-            id,
-            content,
-            sender_id,
-            created_at,
-            attachment_url,
-            attachment_type,
-            sender:users(name, email)
-          `)
+                        id,
+                        content,
+                        sender_id,
+                        created_at,
+                        attachment_url,
+                        attachment_type,
+                        sender:users!sender_id(name, email)
+                    `)
                     .eq('room_id', roomId)
                     .order('created_at', { ascending: true });
 
@@ -163,7 +160,7 @@ export default function ChatRoomPage() {
 
                 // Format the messages data to match our interface
                 const formattedMessages = messagesData?.map(msg => {
-                    // Extract sender info from the nested array
+                    // Extract sender info from the nested object
                     const senderInfo = msg.sender
                         ? msg.sender
                         : { name: 'Unknown', email: '' };
@@ -282,23 +279,28 @@ export default function ChatRoomPage() {
 
         if (!channelRef.current || !user) return;
 
-        // Update presence with typing: true
-        channelRef.current.track({
-            user_id: user.id,
-            typing: true,
-            username: user.name || user.email,
-        });
+        try {
+            // Update presence with typing: true
+            channelRef.current.track({
+                user_id: user.id,
+                typing: true,
+                username: user.name || user.email || 'User',
+            });
 
-        // Set timeout to clear typing indicator
-        typingTimeoutRef.current = setTimeout(() => {
-            if (channelRef.current && user) {
-                channelRef.current.track({
-                    user_id: user.id,
-                    typing: false,
-                    username: user.name || user.email,
-                });
-            }
-        }, 2000);
+            // Set timeout to clear typing indicator after 2 seconds
+            typingTimeoutRef.current = setTimeout(() => {
+                if (channelRef.current && user) {
+                    channelRef.current.track({
+                        user_id: user.id,
+                        typing: false,
+                        username: user.name || user.email || 'User',
+                    });
+                }
+            }, 2000);
+        } catch (error) {
+            console.error('Error updating typing status:', error);
+            // No need to show this error to the user, just log it
+        }
     };
 
     const handleSendMessage = async (e: React.FormEvent) => {
@@ -317,10 +319,18 @@ export default function ChatRoomPage() {
             // If there's a file to upload, process it first
             if (fileToUpload) {
                 setIsUploading(true);
-                // Upload the file and get the URL
-                const uploadResult = await uploadChatAttachment(fileToUpload, user.id);
-                attachmentUrl = uploadResult.url;
-                attachmentType = uploadResult.attachment_type;
+                try {
+                    // Upload the file and get the URL
+                    const uploadResult = await uploadChatAttachment(fileToUpload, user.id);
+                    attachmentUrl = uploadResult.url;
+                    attachmentType = uploadResult.attachment_type;
+                } catch (uploadError) {
+                    console.error('File upload error:', uploadError);
+                    setError(uploadError instanceof Error ? uploadError.message : 'Failed to upload file');
+                    setSending(false);
+                    setIsUploading(false);
+                    return;
+                }
                 setIsUploading(false);
                 setFileToUpload(null);
             }
@@ -334,7 +344,6 @@ export default function ChatRoomPage() {
                 body: JSON.stringify({
                     room_id: roomId,
                     sender_id: user.id,
-                    sender_name: user.name,
                     content: newMessage.trim(),
                     attachment_url: attachmentUrl,
                     attachment_type: attachmentType
@@ -342,12 +351,13 @@ export default function ChatRoomPage() {
             });
 
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to send message');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to send message');
             }
 
-            // Clear the input
+            // Clear the input and error state
             setNewMessage('');
+            setError('');
         } catch (err: unknown) {
             console.error('Error sending message:', err);
             setError(err instanceof Error ? err.message : 'Failed to send message');
@@ -410,9 +420,15 @@ export default function ChatRoomPage() {
         setRefreshingUrls(prev => ({ ...prev, [messageId]: true }));
 
         try {
+            // Check if there's actually a URL to refresh
+            if (!originalUrl) {
+                console.error('Empty URL provided for refresh');
+                return;
+            }
+
             const result = await refreshAttachmentUrl(originalUrl);
 
-            if (result.success) {
+            if (result.success && result.url) {
                 // Update the message with the refreshed URL
                 setMessages(prevMessages =>
                     prevMessages.map(msg =>
@@ -421,6 +437,8 @@ export default function ChatRoomPage() {
                             : msg
                     )
                 );
+            } else {
+                console.warn('Failed to refresh URL:', originalUrl);
             }
         } catch (error) {
             console.error('Failed to refresh image URL:', error);
@@ -526,13 +544,13 @@ export default function ChatRoomPage() {
         <>
             <NavBar />
             <div className="max-w-4xl mx-auto px-4 pt-4 pb-4 flex flex-col h-[calc(100vh-128px)]">
-                {/* Header with venue/event info */}
+                {/* Header with venue info */}
                 <div className="bg-white rounded-t-lg shadow-sm p-4 border-b flex justify-between items-center">
                     <div>
                         <h1 className="font-semibold text-lg">{roomDetails.venue_name || 'Chat'}</h1>
-                        {roomDetails.event_title && (
-                            <p className="text-sm text-gray-600">Event: {roomDetails.event_title}</p>
-                        )}
+                    </div>
+                    <div>
+                        <h3 className="text-sm text-gray-500">Event Date: {roomDetails.event_date} EST</h3>
                     </div>
                     <button
                         onClick={() => router.push('/chat')}
