@@ -138,6 +138,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    emailRedirectTo: 'https://offmenu.space/verification'
+                }
             });
 
             if (!error && data.user) {

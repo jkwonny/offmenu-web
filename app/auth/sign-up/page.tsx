@@ -62,6 +62,27 @@ function SignUpForm() {
         }
     };
 
+    // Function to format phone number input
+    const formatPhoneNumber = (input: string) => {
+        // Strip all non-numeric characters
+        const phoneNumber = input.replace(/\D/g, '');
+
+        // Format the number based on its length
+        if (phoneNumber.length <= 3) {
+            return phoneNumber;
+        } else if (phoneNumber.length <= 6) {
+            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+        } else {
+            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+        }
+    };
+
+    // Handle phone input change with formatting
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formattedPhone = formatPhoneNumber(e.target.value);
+        setPhone(formattedPhone);
+    };
+
     return (
         <>
             {successMessage && (
@@ -114,7 +135,7 @@ function SignUpForm() {
                         id="phone"
                         type="tel"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={handlePhoneChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
                         placeholder="(123) 456-7890"
                     />
