@@ -8,6 +8,7 @@ import { useVenues } from '../lib/queries';
 import { useEvents } from '../lib/queries';
 import NavBar from '../components/NavBar';
 import { useSearchParams } from 'next/navigation';
+import { useUser } from '../context/UserContext';
 
 // Define types for venue images
 interface VenueImage {
@@ -31,6 +32,8 @@ interface Event {
     address: string;
     pricing_type: string;
     price?: number;
+    user_id?: string;
+    owner_id?: string;
 }
 
 // Helper function to format text
@@ -43,14 +46,19 @@ function ExploreContent() {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
     const searchParams = useSearchParams();
+    const { user } = useUser();
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
     const selectedView = view === 'popups' ? 'popups' : 'spaces';
 
     // Use React Query to fetch venues and events
-    const { data: venues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
-    const { data: events = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
+    const { data: allVenues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
+    const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
+
+    // Filter out venues and events owned by the current user
+    const venues = allVenues.filter(venue => venue.owner_id !== user?.id);
+    const events = allEvents.filter(event => (event.owner_id !== user?.id && event.user_id !== user?.id));
 
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;

@@ -41,6 +41,3 @@ export const supabase = createClient(
       },
     }
 );
-
-// Check if the client is initialized correctly
-console.log('Supabase client initialized:', !!supabase); 
