@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useUser } from '../context/UserContext';
 import { useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import FeedbackModal from './FeedbackModal';
 
 function TabsSection() {
     const searchParams = useSearchParams();
@@ -14,10 +15,10 @@ function TabsSection() {
     if (!isExplorePage) return null;
 
     return (
-        <div className="flex rounded-lg overflow-hidden shadow-sm">
+        <div className="flex rounded-lg overflow-hidden shadow-sm w-full max-w-[200px] mx-auto">
             <Link
                 href="/explore?view=spaces"
-                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'spaces'
+                className={`px-3 md:px-6 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${view === 'spaces'
                     ? 'bg-[#ca0013] text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                     }`}
@@ -26,7 +27,7 @@ function TabsSection() {
             </Link>
             <Link
                 href="/explore?view=popups"
-                className={`px-6 py-2 text-sm font-medium transition-colors ${view === 'popups'
+                className={`px-3 md:px-6 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
                     ? 'bg-[#ca0013] text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                     }`}
@@ -40,9 +41,9 @@ function TabsSection() {
 // Fallback UI while suspense is loading
 function TabsSkeletonLoader() {
     return (
-        <div className="flex rounded-lg overflow-hidden shadow-sm">
-            <div className="px-6 py-2 bg-gray-200 animate-pulse w-24" />
-            <div className="px-6 py-2 bg-gray-200 animate-pulse w-24" />
+        <div className="flex rounded-lg overflow-hidden shadow-sm w-full max-w-[200px] mx-auto">
+            <div className="px-3 md:px-6 py-2 bg-gray-200 animate-pulse w-full" />
+            <div className="px-3 md:px-6 py-2 bg-gray-200 animate-pulse w-full" />
         </div>
     );
 }
@@ -52,6 +53,13 @@ export default function NavBar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
     const isAdmin = userProfile?.role === 'admin';
+    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+
+    const openFeedbackModal = () => {
+        setFeedbackModalOpen(true);
+        // Close the dropdown menu when opening the modal
+        setMobileMenuOpen(false);
+    };
 
     return (
         <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
@@ -121,6 +129,13 @@ export default function NavBar() {
                                     )}
 
                                     <button
+                                        onClick={openFeedbackModal}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Submit Feedback
+                                    </button>
+
+                                    <button
                                         onClick={() => signOut()}
                                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     >
@@ -151,6 +166,13 @@ export default function NavBar() {
             {/* Mobile menu - shown when hamburger is clicked */}
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-t border-gray-200 px-4 py-3 space-y-4 shadow-lg">
+                    {/* Add TabsSection for mobile */}
+                    <div className="mb-2 flex justify-center">
+                        <Suspense fallback={<TabsSkeletonLoader />}>
+                            <TabsSection />
+                        </Suspense>
+                    </div>
+
                     {isLoading ? (
                         <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
                     ) : user ? (
@@ -180,7 +202,15 @@ export default function NavBar() {
                             >
                                 Messages
                             </Link>
-
+                            {isAdmin && (
+                                <Link
+                                    href="/admin/dashboard"
+                                    className="block py-2 text-gray-700 hover:text-black"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Admin Dashboard
+                                </Link>
+                            )}
                             {isSpacesHost && (
                                 <Link
                                     href="/host/dashboard"
@@ -190,6 +220,13 @@ export default function NavBar() {
                                     Host Dashboard
                                 </Link>
                             )}
+
+                            <button
+                                onClick={openFeedbackModal}
+                                className="block w-full text-left py-2 text-gray-700 hover:text-black"
+                            >
+                                Submit Feedback
+                            </button>
 
                             <button
                                 onClick={() => {
@@ -221,6 +258,9 @@ export default function NavBar() {
                     )}
                 </div>
             )}
+
+            {/* Feedback Modal */}
+            <FeedbackModal isOpen={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
         </nav>
     );
 } 
