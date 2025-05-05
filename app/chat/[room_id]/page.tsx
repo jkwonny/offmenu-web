@@ -35,6 +35,10 @@ interface RoomData {
     venue_id?: number;
     venue_name?: string;
     event_date?: string;
+    collaboration_types?: string[];
+    popup_name?: string;
+    selected_date?: string;
+    selected_time?: string;
     chat_requests: {
         sender_id: string;
         recipient_id: string;
@@ -67,6 +71,10 @@ export default function ChatRoomPage() {
     const [roomDetails, setRoomDetails] = useState<{
         venue_name?: string;
         event_date?: string;
+        collaboration_types?: string[];
+        popup_name?: string;
+        selected_date?: string;
+        selected_time?: string;
     }>({});
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
@@ -103,7 +111,11 @@ export default function ChatRoomPage() {
                         event_date,
                         venue_id,
                         chat_requests!inner(sender_id, recipient_id),
-                        venues(name)
+                        venues(name),
+                        collaboration_types,
+                        popup_name,
+                        selected_date,
+                        selected_time
                     `)
                     .eq('id', roomId)
                     .single();
@@ -113,10 +125,16 @@ export default function ChatRoomPage() {
                 // Type cast the room data to our interface
                 const typedRoom = room as unknown as RoomData;
 
+                console.log('typedRoom', typedRoom);
+
                 // Set room details
                 setRoomDetails({
                     venue_name: typedRoom.venues?.name || typedRoom.venue_name,
-                    event_date: typedRoom.event_date ? formatInTimeZone(new Date(typedRoom.event_date), 'America/New_York', 'MMMM d, yyyy h:mm a') : undefined
+                    event_date: typedRoom.event_date ? formatInTimeZone(new Date(typedRoom.event_date), 'America/New_York', 'MMMM d, yyyy h:mm a') : undefined,
+                    collaboration_types: typedRoom.collaboration_types,
+                    popup_name: typedRoom.popup_name,
+                    selected_date: typedRoom.selected_date,
+                    selected_time: typedRoom.selected_time
                 });
 
                 // Get participants
@@ -547,10 +565,27 @@ export default function ChatRoomPage() {
                 {/* Header with venue info */}
                 <div className="bg-white rounded-t-lg shadow-sm p-4 border-b flex justify-between items-center">
                     <div>
-                        <h1 className="font-semibold text-lg">{roomDetails.venue_name || 'Chat'}</h1>
+                        <h1 className="font-semibold text-lg">{roomDetails?.popup_name} at {roomDetails.venue_name || 'Chat'}</h1>
                     </div>
                     <div>
-                        <h3 className="text-sm text-gray-500">Event Date: {roomDetails.event_date} EST</h3>
+                        <h3 className="text-sm text-gray-500">Event Date: {roomDetails.selected_date?.includes('-') ? new Date(roomDetails.selected_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : roomDetails.selected_date} at {roomDetails.selected_time} EST</h3>
+                    </div>
+                    <div>
+                        <h3 className="text-sm text-gray-500">Open to:</h3>
+                        <ul className="text-xs text-gray-500 list-disc pl-5">
+                            {roomDetails.collaboration_types?.includes('minimumSpend') && (
+                                <li>Minimum Spend</li>
+                            )}
+                            {roomDetails.collaboration_types?.includes('revenueShare') && (
+                                <li>Revenue Share</li>
+                            )}
+                            {roomDetails.collaboration_types?.includes('fixedRental') && (
+                                <li>Fixed Rental</li>
+                            )}
+                            {roomDetails.collaboration_types?.includes('freePromotion') && (
+                                <li>Free Promotion</li>
+                            )}
+                        </ul>
                     </div>
                     <button
                         onClick={() => router.push('/chat')}

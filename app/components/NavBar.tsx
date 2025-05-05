@@ -72,7 +72,7 @@ export default function NavBar() {
                 </div>
 
                 {/* Right section - Navigation and Auth */}
-                <div className="flex items-center justify-end gap-6">
+                <div className="flex items-center justify-end gap-2 md:gap-4">
                     {/* Hamburger menu button - visible on mobile only */}
                     <button
                         className="md:hidden flex flex-col space-y-1.5"
@@ -85,11 +85,11 @@ export default function NavBar() {
                     </button>
 
                     {/* Desktop navigation - hidden on mobile */}
-                    <div className="hidden md:flex items-center gap-6">
-                        <Link href="/submit-venue" className="text-gray-700 hover:text-black border border-gray-300 rounded-md px-4 py-2">
+                    <div className="hidden md:flex items-center gap-3 xl:gap-4">
+                        <Link href="/submit-venue" className="text-gray-700 hover:text-black border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm">
                             Submit Your Space
                         </Link>
-                        <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black">
+                        <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black whitespace-nowrap">
                             Explore
                         </Link>
 
@@ -98,7 +98,7 @@ export default function NavBar() {
                             <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
                         ) : user ? (
                             <div className="relative group">
-                                <Link href="/profile" className="flex items-center text-gray-700 hover:text-black">
+                                <Link href="/profile" className="flex items-center text-gray-700 hover:text-black whitespace-nowrap">
                                     My Account <span className="ml-1">&#9662;</span>
                                 </Link>
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 invisible group-hover:visible">
@@ -144,22 +144,21 @@ export default function NavBar() {
             {/* Mobile menu - shown when hamburger is clicked */}
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-t border-gray-200 px-4 py-3 space-y-4 shadow-lg">
-                    <Link href="/explore" className="text-gray-700 hover:text-black">
-                        Explore
-                    </Link>
-
-                    <Link
-                        href="/submit-venue"
-                        className="block py-2 text-gray-700 hover:text-black"
-                        onClick={() => setMobileMenuOpen(false)}
-                    >
-                        Submit Your Space
-                    </Link>
-
                     {isLoading ? (
                         <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
                     ) : user ? (
                         <div className="space-y-3">
+                            <Link href="/explore" className="block py-2 text-gray-700 hover:text-black">
+                                Explore
+                            </Link>
+
+                            <Link
+                                href="/submit-venue"
+                                className="block py-2 text-gray-700 hover:text-black"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Submit Your Space
+                            </Link>
                             <Link
                                 href="/profile"
                                 className="block py-2 text-gray-700 hover:text-black"
