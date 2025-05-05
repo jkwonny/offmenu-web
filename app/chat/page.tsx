@@ -367,7 +367,7 @@ export default function ChatHomePage() {
             // Get the request details to create a chat room
             const { data: requestData, error: fetchError } = await supabase
                 .from('chat_requests')
-                .select('venue_id, venue_name, event_date, sender_id, message')
+                .select('venue_id, venue_name, event_date, sender_id, message, collaboration_types, popup_name, selected_date, selected_time')
                 .eq('id', requestId)
                 .single();
 
@@ -380,7 +380,11 @@ export default function ChatHomePage() {
                     request_id: requestId,
                     venue_id: requestData.venue_id,
                     venue_name: requestData.venue_name,
-                    event_date: requestData.event_date
+                    event_date: requestData.event_date,
+                    collaboration_types: requestData.collaboration_types,
+                    popup_name: requestData.popup_name,
+                    selected_date: requestData.selected_date,
+                    selected_time: requestData.selected_time
                 })
                 .select('id')
                 .single();
@@ -468,7 +472,6 @@ export default function ChatHomePage() {
                 ) : error ? (
                     <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4">{error}</div>
                 ) : null}
-
                 {/* Section for all venue requests (for venue owners) */}
                 {allVenueRequests.filter(request => request.status === 'pending').length > 0 && (
                     <>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import NavBar from '@/app/components/NavBar';
 import { Venue } from '@/types/Venue';
+import { useUser } from '@/app/context/UserContext';
 
 export default function VenuePage() {
     const params = useParams();
@@ -13,6 +14,146 @@ export default function VenuePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+    const [selectedDate, setSelectedDate] = useState("");
+    const [selectedTime, setSelectedTime] = useState("");
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user } = useUser();
+    // Form state
+    const [popupName, setPopupName] = useState('');
+    const [message, setMessage] = useState('');
+    const [collaborationTypes, setCollaborationTypes] = useState({
+        minimumSpend: false,
+        revenueShare: false,
+        fixedRental: false,
+        freePromotion: false
+    });
+
+    const handleCollaborationTypeChange = (type: string) => {
+        setCollaborationTypes(prev => ({
+            ...prev,
+            [type]: !prev[type as keyof typeof prev]
+        }));
+    };
+
+    const toggleModal = () => {
+        setIsModalOpen(!isModalOpen);
+    };
+
+    // Date and time picker functions
+    const formatSelectedDate = (dateString: string) => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString();
+    };
+
+    const handleDateTimeClick = () => {
+        setShowDateTimePicker(!showDateTimePicker);
+    };
+
+    const handleDateSelect = (date: string) => {
+        setSelectedDate(date);
+    };
+
+    const handleTimeSelect = (time: string) => {
+        setSelectedTime(time);
+    };
+
+    const handleDateTimeConfirm = () => {
+        if (selectedDate && selectedTime) {
+            setShowDateTimePicker(false);
+        }
+    };
+
+    // Calendar navigation
+    const prevMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    };
+
+    const nextMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    };
+
+    // Generate calendar grid for current month
+    const generateCalendarMonth = () => {
+        const month = currentMonth.getMonth();
+        const year = currentMonth.getFullYear();
+
+        // First day of month
+        const firstDay = new Date(year, month, 1);
+        // Last day of month
+        const lastDay = new Date(year, month + 1, 0);
+
+        // Day of week of first day (0 = Sunday, 6 = Saturday)
+        const startDayOfWeek = firstDay.getDay();
+
+        // Total days in month
+        const daysInMonth = lastDay.getDate();
+
+        // Create array for calendar grid (max 6 weeks * 7 days = 42 cells)
+        const calendarDays = [];
+
+        // Add empty cells for days before first of month
+        for (let i = 0; i < startDayOfWeek; i++) {
+            calendarDays.push(null);
+        }
+
+        // Add days of month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            calendarDays.push({
+                date,
+                dateString: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                isToday: date.getTime() === today.getTime(),
+                isPast: date < today,
+                isAvailable: date >= today
+            });
+        }
+
+        return calendarDays;
+    };
+
+    // Generate time slots from 12PM to 2AM in 30-minute increments
+    const generateTimeSlots = () => {
+        const slots = [];
+        // 12PM to 11:30PM
+        for (let hour = 12; hour < 24; hour++) {
+            const hour12 = hour > 12 ? hour - 12 : hour;
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            slots.push(`${hour12}:00 ${ampm}`);
+            slots.push(`${hour12}:30 ${ampm}`);
+        }
+        // 12AM to 2AM
+        slots.push(`12:00 AM`);
+        slots.push(`12:30 AM`);
+        slots.push(`1:00 AM`);
+        slots.push(`1:30 AM`);
+        slots.push(`2:00 AM`);
+
+        return slots;
+    };
+
+    const convertTimeToHHMM = (timeString: string): string => {
+        // Extract hours, minutes, and period
+        const [time, period] = timeString.split(' ');
+        const timeParts = time.split(':').map(part => parseInt(part, 10));
+        let hours = timeParts[0];
+        const minutes = timeParts[1];
+
+        // Convert 12-hour to 24-hour format
+        if (period === 'PM' && hours < 12) {
+            hours += 12;
+        } else if (period === 'AM' && hours === 12) {
+            hours = 0;
+        }
+
+        // Return formatted time
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    };
 
     useEffect(() => {
         const fetchVenue = async () => {
@@ -85,6 +226,58 @@ export default function VenuePage() {
         }
 
         return `$${venue.price}`;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
+
+        if (!message.trim()) {
+            setError('Please enter a message to send.');
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+
+            const eventDate = selectedDate && selectedTime
+                ? `${selectedDate}T${convertTimeToHHMM(selectedTime)}:00` // ISO format: YYYY-MM-DDTHH:MM:SS
+                : new Date().toISOString().split('.')[0]; // Remove milliseconds
+
+            const response = await fetch('/api/chat/request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    venue_name: venue?.name ?? '',
+                    event_date: eventDate,
+                    venue_id: params.id,
+                    sender_id: user?.id ?? '',
+                    recipient_id: venue?.owner_id ?? '',
+                    message,
+                    collaboration_types: Object.keys(collaborationTypes).filter(type => collaborationTypes[type as keyof typeof collaborationTypes]),
+                    popup_name: popupName,
+                    selected_date: selectedDate,
+                    selected_time: selectedTime,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send chat request');
+            }
+
+            // On success, redirect to the chat page
+            router.push('/chat');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred while sending your request.';
+            setError(errorMessage);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -252,7 +445,7 @@ export default function VenuePage() {
                             </div>
                             <button
                                 className="w-full cursor-pointer bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors"
-                                onClick={() => router.push(`/chat/request/${params.id}`)}
+                                onClick={toggleModal}
                             >
                                 Contact Venue
                             </button>
@@ -260,6 +453,224 @@ export default function VenuePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Contact Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg w-full max-w-md relative">
+                        <button
+                            onClick={toggleModal}
+                            className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+                            aria-label="Close modal"
+                        >
+                            ✕
+                        </button>
+                        <div className="p-6">
+                            <h2 className="text-2xl font-bold text-amber-950 mb-6">Contact the Space Owner</h2>
+
+                            <div className="mb-4">
+                                <label htmlFor="popup-name" className="block text-sm font-medium text-amber-900 mb-1">
+                                    Pop-up name
+                                </label>
+                                <input
+                                    id="popup-name"
+                                    type="text"
+                                    value={popupName}
+                                    onChange={(e) => setPopupName(e.target.value)}
+                                    className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                    placeholder="Enter your pop-up name"
+                                />
+                            </div>
+
+                            {/* Date Time Picker */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-amber-900 mb-1">
+                                    When is your event?
+                                </label>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={handleDateTimeClick}
+                                        className="w-full px-3 py-2 border border-amber-200 rounded-lg text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                    >
+                                        {selectedDate && selectedTime ?
+                                            `${formatSelectedDate(selectedDate)} at ${selectedTime}` :
+                                            "Select date and time"}
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDateTimePicker ? "rotate-180" : ""}>
+                                            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+
+                                    {showDateTimePicker && (
+                                        <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden w-full max-w-lg">
+                                            <div className="flex flex-col sm:flex-row border-b">
+                                                <div className="w-full sm:w-3/5 sm:border-r">
+                                                    <div className="flex justify-between items-center p-3 border-b">
+                                                        <button type="button" onClick={prevMonth} className="p-1">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </button>
+                                                        <div className="font-medium">
+                                                            {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                                        </div>
+                                                        <button type="button" onClick={nextMonth} className="p-1">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-7 mb-1 border-b">
+                                                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                                                            <div key={day} className="text-center py-2 text-sm font-medium">
+                                                                {day}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-7 p-2">
+                                                        {generateCalendarMonth().map((day, index) => (
+                                                            <div key={index} className="p-1 text-center">
+                                                                {day ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
+                                                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
+                                                                            ${day.isToday ? 'border border-amber-500' : ''}
+                                                                            ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
+                                                                            ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
+                                                                            ${day.dateString === selectedDate ? 'bg-amber-600 text-white' :
+                                                                                (day.isAvailable && !day.isToday ? 'hover:bg-amber-100' : '')}
+                                                                        `}
+                                                                        disabled={!day.isAvailable}
+                                                                    >
+                                                                        {day.date.getDate()}
+                                                                    </button>
+                                                                ) : (
+                                                                    <div className="w-8 h-8"></div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="w-full sm:w-2/5 border-t sm:border-t-0">
+                                                    <div className="p-3 border-b font-medium text-center">
+                                                        Select Time
+                                                    </div>
+                                                    <div className="flex-1 overflow-y-auto max-h-[200px] p-2">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-1 gap-1">
+                                                            {generateTimeSlots().map((time) => (
+                                                                <button
+                                                                    type="button"
+                                                                    key={time}
+                                                                    onClick={() => handleTimeSelect(time)}
+                                                                    className={`text-sm py-2 px-3 rounded text-left
+                                                                        ${selectedTime === time ? 'bg-amber-600 text-white font-medium' : 'hover:bg-amber-100'}
+                                                                    `}
+                                                                >
+                                                                    {time}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t p-3 flex justify-between items-center">
+                                                <div className="text-sm">
+                                                    {selectedDate ?
+                                                        selectedTime ?
+                                                            `Selected: ${formatSelectedDate(selectedDate)} at ${selectedTime}` :
+                                                            `Selected: ${formatSelectedDate(selectedDate)} - Please select a time`
+                                                        : "Please select a date and time"}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDateTimeConfirm}
+                                                    disabled={!selectedDate || !selectedTime}
+                                                    className={`px-4 py-1 rounded-full text-sm font-medium ${selectedDate && selectedTime ?
+                                                        'bg-amber-600 text-white hover:bg-amber-700' :
+                                                        'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    Confirm
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label htmlFor="message" className="block text-sm font-medium text-amber-900 mb-1">
+                                    Message
+                                </label>
+                                <textarea
+                                    id="message"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    className="w-full px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 min-h-[120px]"
+                                    placeholder="Introduce yourself and explain what type of event you're planning..."
+                                />
+                            </div>
+
+                            <div className="mb-6">
+                                <p className="block text-sm font-medium text-amber-900 mb-2">
+                                    Collaboration Type
+                                </p>
+                                <div className="space-y-2">
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={collaborationTypes.minimumSpend}
+                                            onChange={() => handleCollaborationTypeChange('minimumSpend')}
+                                            className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
+                                        />
+                                        <span>Minimum spend</span>
+                                    </label>
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={collaborationTypes.revenueShare}
+                                            onChange={() => handleCollaborationTypeChange('revenueShare')}
+                                            className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
+                                        />
+                                        <span>Revenue share on ticket sales</span>
+                                    </label>
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={collaborationTypes.fixedRental}
+                                            onChange={() => handleCollaborationTypeChange('fixedRental')}
+                                            className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
+                                        />
+                                        <span>Fixed space rental fee</span>
+                                    </label>
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={collaborationTypes.freePromotion}
+                                            onChange={() => handleCollaborationTypeChange('freePromotion')}
+                                            className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
+                                        />
+                                        <span>Free venue space for promotion</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button
+                                className="w-full cursor-pointer bg-amber-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-amber-700 transition-colors"
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'Sending...' : 'Contact Host'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 } 
