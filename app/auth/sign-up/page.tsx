@@ -43,6 +43,17 @@ function SignUpForm() {
             return;
         }
 
+        // Validate US phone number if provided
+        if (phone) {
+            // Check if the phone follows the US format (after formatting: (XXX) XXX-XXXX)
+            const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/;
+            if (!phoneRegex.test(phone)) {
+                setError("Please enter a valid US phone number");
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
             const { success, error } = await signUp(email, password, name, phone);
 
@@ -67,13 +78,16 @@ function SignUpForm() {
         // Strip all non-numeric characters
         const phoneNumber = input.replace(/\D/g, '');
 
+        // Limit to 10 digits (US phone number)
+        const limitedNumber = phoneNumber.slice(0, 10);
+
         // Format the number based on its length
-        if (phoneNumber.length <= 3) {
-            return phoneNumber;
-        } else if (phoneNumber.length <= 6) {
-            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+        if (limitedNumber.length <= 3) {
+            return limitedNumber;
+        } else if (limitedNumber.length <= 6) {
+            return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
         } else {
-            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+            return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
         }
     };
 
@@ -129,7 +143,7 @@ function SignUpForm() {
 
                 <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number
+                        Phone Number (US format)
                     </label>
                     <input
                         id="phone"
