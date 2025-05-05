@@ -344,6 +344,7 @@ export default function SubmitVenuePage() {
             max_seated_guests: formData.max_seated_guests ? parseInt(formData.max_seated_guests, 10) : null,
             max_standing_guests: formData.max_standing_guests ? parseInt(formData.max_standing_guests, 10) : null,
             tags: formData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== ''), // Convert comma-separated string to array
+            status: 'pending',
         };
 
         try {

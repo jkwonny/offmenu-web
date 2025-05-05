@@ -60,6 +60,7 @@ CREATE TABLE venues (
   featured BOOLEAN DEFAULT FALSE,
 
   owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'approved',
 
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()

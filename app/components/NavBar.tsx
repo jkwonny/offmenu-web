@@ -51,6 +51,7 @@ export default function NavBar() {
     const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
+    const isAdmin = userProfile?.role === 'admin';
 
     return (
         <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
@@ -106,6 +107,12 @@ export default function NavBar() {
                                     <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         Messages
                                     </Link>
+
+                                    {isAdmin && (
+                                        <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Admin Dashboard
+                                        </Link>
+                                    )}
 
                                     {isSpacesHost && (
                                         <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

@@ -66,6 +66,7 @@ async function fetchVenues() {
         venue_images: venue.venue_images || [],
         neighborhood: venue.neighborhood || '',
         owner_id: venue.owner_id,
+        status: venue.status || 'approved',
       };
     });
   }
