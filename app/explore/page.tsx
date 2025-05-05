@@ -57,7 +57,7 @@ function ExploreContent() {
     const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
 
     // Filter out venues and events owned by the current user
-    const venues = allVenues.filter(venue => venue.owner_id !== user?.id);
+    const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
     const events = allEvents.filter(event => (event.owner_id !== user?.id && event.user_id !== user?.id));
 
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;

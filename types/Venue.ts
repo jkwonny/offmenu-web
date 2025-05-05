@@ -35,4 +35,5 @@ export interface Venue {
     latitude: number;
     neighborhood?: string;
     owner_id: string;
+    status?: 'pending' | 'approved' | 'declined';
 }
