@@ -116,9 +116,6 @@ export default function NavBar() {
 
                     {/* Desktop navigation - hidden on mobile */}
                     <div className="hidden md:flex items-center gap-3 xl:gap-4">
-                        <Link href="/submit-venue" className="text-gray-700 hover:text-black border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm">
-                            Submit Your Space
-                        </Link>
                         <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black whitespace-nowrap">
                             Explore
                         </Link>
@@ -155,6 +152,9 @@ export default function NavBar() {
                                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 origin-top-right transform transition-all duration-200 ease-out animate-menu-open">
                                         <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
                                             Account
+                                        </Link>
+                                        <Link href="/submit-venue" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                            Become a Host
                                         </Link>
                                         <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
                                             Messages
@@ -252,20 +252,19 @@ export default function NavBar() {
                             <Link href="/explore" className="block py-2 text-gray-700 hover:text-black">
                                 Explore
                             </Link>
-
-                            <Link
-                                href="/submit-venue"
-                                className="block py-2 text-gray-700 hover:text-black"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Submit Your Space
-                            </Link>
                             <Link
                                 href="/profile"
                                 className="block py-2 text-gray-700 hover:text-black"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 Account
+                            </Link>
+                            <Link
+                                href="/submit-venue"
+                                className="block py-2 text-gray-700 hover:text-black"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Become a Host
                             </Link>
                             <Link
                                 href="/chat"
