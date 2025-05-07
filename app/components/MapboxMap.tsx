@@ -45,7 +45,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         const popup = new mapboxgl.Popup({
             offset: 25,
             closeButton: false,
-            maxWidth: '400px',
+            maxWidth: '700px',
             className: 'venue-popup',
             closeOnClick: false,
             focusAfterOpen: false,
@@ -57,7 +57,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
 
         // Set inner HTML with a container for React to render into
         popupContainer.innerHTML = `
-            <div class="p-0 w-64">
+            <div class="p-0 w-[300px]">
                 <div id="carousel-container-${venue.id}" class="relative w-full h-64 cursor-pointer" onclick="window.open('/venue/${venue.id}', '_blank')"></div>
                 <div class="p-3">
                     <h3 class="font-bold text-lg mb-1 font-heading">${venue.name}</h3>

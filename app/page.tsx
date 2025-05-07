@@ -155,12 +155,12 @@ export default function Page() {
             Find a space to host, or discover who&apos;s looking for one.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
+            <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
               onClick={() => router.push('/booking')}
             >
               List Your Event
             </button>
-            <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
+            <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
               onClick={() => router.push('/explore')}
             >
               Explore Venues
@@ -315,19 +315,11 @@ export default function Page() {
                 </div>
               </div>
 
-              <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105 mt-2" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
+              <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:shadow-lg hover:scale-105 mt-2" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
                 onClick={handleSearch}
-              // className="px-6 py-2 ml-2 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg mt-4"
-              // style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
               >
                 Find my venue
               </button>
-
-              {/* <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
-              onClick={() => router.push('/explore')}
-            >
-              Explore Venues
-            </button> */}
             </div>
           </div>
         </div>
