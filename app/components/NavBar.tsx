@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useUser } from '../context/UserContext';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useRef, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import FeedbackModal from './FeedbackModal';
+import Image from 'next/image';
+import { useProfilePictureUrl } from '../lib/queries/user';
 
 function TabsSection() {
     const searchParams = useSearchParams();
@@ -51,15 +53,34 @@ function TabsSkeletonLoader() {
 export default function NavBar() {
     const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
     const isAdmin = userProfile?.role === 'admin';
     const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const { data: profilePictureUrl } = useProfilePictureUrl(userProfile?.profile_picture);
+
 
     const openFeedbackModal = () => {
         setFeedbackModalOpen(true);
         // Close the dropdown menu when opening the modal
         setMobileMenuOpen(false);
+        setDropdownOpen(false);
     };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setDropdownOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     return (
         <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
@@ -106,42 +127,69 @@ export default function NavBar() {
                         {isLoading ? (
                             <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
                         ) : user ? (
-                            <div className="relative group">
-                                <Link href="/profile" className="flex items-center text-gray-700 hover:text-black whitespace-nowrap">
-                                    My Account <span className="ml-1">&#9662;</span>
-                                </Link>
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 invisible group-hover:visible">
-                                    <div className="absolute h-2 w-full top-[-8px]"></div>
-                                    <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Messages
-                                    </Link>
-
-                                    {isAdmin && (
-                                        <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Admin Dashboard
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    className="flex items-center cursor-pointer border border-gray-300 rounded-full overflow-hidden p-2"
+                                >
+                                    <div className="flex items-center rounded-full overflow-hidden mr-1">
+                                        {profilePictureUrl ? (
+                                            <img
+                                                src={profilePictureUrl}
+                                                alt="Profile"
+                                                width={36}
+                                                height={36}
+                                                className="object-cover w-8 h-8 rounded-full"
+                                            />
+                                        ) : (
+                                            <div className="w-9 h-9 flex items-center justify-center text-gray-600 rounded-full">
+                                                {userProfile?.name?.[0] || user.email?.[0] || '?'}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                                {dropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 origin-top-right transform transition-all duration-200 ease-out animate-menu-open">
+                                        <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                            Account
                                         </Link>
-                                    )}
-
-                                    {isSpacesHost && (
-                                        <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Host Dashboard
+                                        <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                            Messages
                                         </Link>
-                                    )}
 
-                                    <button
-                                        onClick={openFeedbackModal}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    >
-                                        Submit Feedback
-                                    </button>
+                                        {isAdmin && (
+                                            <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                                Admin Dashboard
+                                            </Link>
+                                        )}
 
-                                    <button
-                                        onClick={() => signOut()}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    >
-                                        Log out
-                                    </button>
-                                </div>
+                                        {isSpacesHost && (
+                                            <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                                Host Dashboard
+                                            </Link>
+                                        )}
+
+                                        <button
+                                            onClick={openFeedbackModal}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Submit Feedback
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                signOut();
+                                                setDropdownOpen(false);
+                                            }}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Log out
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center gap-4">
@@ -166,6 +214,30 @@ export default function NavBar() {
             {/* Mobile menu - shown when hamburger is clicked */}
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-t border-gray-200 px-4 py-3 space-y-4 shadow-lg">
+                    {/* Add user info at the top of mobile menu */}
+                    {user && !isLoading && (
+                        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                            <div className="flex items-center border rounded-full overflow-hidden bg-gray-200">
+                                {profilePictureUrl ? (
+                                    <Image
+                                        src={profilePictureUrl}
+                                        alt="Profile"
+                                        width={32}
+                                        height={32}
+                                        className="object-cover w-8 h-8"
+                                    />
+                                ) : (
+                                    <div className="w-9 h-9 flex items-center justify-center text-gray-600 rounded-full">
+                                        {userProfile?.name?.[0] || user.email?.[0] || '?'}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="text-sm text-gray-700 font-medium truncate">
+                                {userProfile?.name || user.email}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Add TabsSection for mobile */}
                     <div className="mb-2 flex justify-center">
                         <Suspense fallback={<TabsSkeletonLoader />}>
@@ -193,7 +265,7 @@ export default function NavBar() {
                                 className="block py-2 text-gray-700 hover:text-black"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                My Account
+                                Account
                             </Link>
                             <Link
                                 href="/chat"

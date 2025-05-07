@@ -6,18 +6,19 @@ import Image from "next/image";
 import NavBar from "../components/NavBar";
 import { useUser } from "../context/UserContext";
 import { supabase } from "../lib/supabase";
+import { useProfilePictureUrl } from "../lib/queries/user";
 
 export default function Profile() {
     const router = useRouter();
     const { user, userProfile, isLoading, signOut, updateUserProfile } = useUser();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { data: fetchedProfilePictureUrl } = useProfilePictureUrl(userProfile?.profile_picture);
 
     // Form state
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [about, setAbout] = useState("");
     const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -31,12 +32,12 @@ export default function Profile() {
             setPhone(userProfile.phone || "");
             setAbout(userProfile.about || "");
 
-            // If user has a profile picture, get a signed URL
-            if (userProfile.profile_picture) {
-                fetchProfilePictureUrl(userProfile.profile_picture);
+            // Use the profile picture URL from React Query
+            if (fetchedProfilePictureUrl) {
+                setProfilePictureUrl(fetchedProfilePictureUrl);
             }
         }
-    }, [userProfile]);
+    }, [userProfile, fetchedProfilePictureUrl]);
 
     // Check if any fields have changed
     useEffect(() => {
@@ -56,25 +57,6 @@ export default function Profile() {
             router.push("/auth/sign-in");
         }
     }, [user, isLoading, router]);
-
-    // Get a signed URL for the profile picture
-    const fetchProfilePictureUrl = async (filePath: string) => {
-        try {
-            const { data, error } = await supabase
-                .storage
-                .from('user-profile-pic')
-                .createSignedUrl(filePath, 60 * 60); // 1 hour expiration
-
-            if (error) {
-                console.error('Error getting signed URL:', error);
-                return;
-            }
-
-            setProfilePictureUrl(data.signedUrl);
-        } catch (error) {
-            console.error('Error in fetchProfilePictureUrl:', error);
-        }
-    };
 
     // Function to format phone number input
     const formatPhoneNumber = (input: string) => {
@@ -142,8 +124,6 @@ export default function Profile() {
         if (!profilePicFile || !user) return null;
 
         try {
-            setIsUploading(true);
-
             // Create a unique file path
             const fileExt = profilePicFile.name.split('.').pop();
             const filePath = `${user.id}/${Date.now()}.${fileExt}`;
@@ -166,8 +146,6 @@ export default function Profile() {
             console.error('Error uploading profile picture:', error);
             setError('Failed to upload profile picture');
             return null;
-        } finally {
-            setIsUploading(false);
         }
     };
 
@@ -299,6 +277,29 @@ export default function Profile() {
                                     />
                                 </svg>
                             </button>
+                            {profilePictureUrl && (
+                                <button
+                                    className="absolute top-0 right-0 bg-red-500 rounded-full p-1 text-white"
+                                    onClick={handleRemovePicture}
+                                    type="button"
+                                    aria-label="Remove profile picture"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+                            )}
                             <input
                                 ref={fileInputRef}
                                 type="file"
