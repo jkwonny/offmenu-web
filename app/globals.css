@@ -30,3 +30,22 @@ body {
   display: none;
   /* Chrome, Safari and Opera */
 }
+
+/* Dropdown menu animation */
+@keyframes menuOpen {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+    transform-origin: top right;
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transform-origin: top right;
+  }
+}
+
+.animate-menu-open {
+  animation: menuOpen 0.2s ease-out forwards;
+}
