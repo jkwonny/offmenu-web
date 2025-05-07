@@ -16,6 +16,12 @@ export const storageConfig = {
       public: false, // Private bucket
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'application/pdf'],
       fileSizeLimit: 10485760 // 10MB
+    },
+    {
+      name: 'user-profile-pic',
+      public: true, // Public for simplicity
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      fileSizeLimit: 5242880 // 5MB
     }
   ],
   policies: [
@@ -43,6 +49,20 @@ export const storageConfig = {
     {
       name: 'Allow authenticated users to upload to chat-attachments',
       bucket: 'chat-attachments',
+      statement: 'insert',
+      effect: 'allow',
+      principal: 'authenticated'
+    },
+    {
+      name: 'Allow public access to user-profile-pic',
+      bucket: 'user-profile-pic',
+      statement: 'select',
+      effect: 'allow',
+      principal: 'anon'
+    },
+    {
+      name: 'Allow authenticated users to upload to user-profile-pic',
+      bucket: 'user-profile-pic',
       statement: 'insert',
       effect: 'allow',
       principal: 'authenticated'

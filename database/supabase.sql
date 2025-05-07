@@ -6,6 +6,8 @@ CREATE TABLE users (
   email TEXT UNIQUE NOT NULL,
   name TEXT,
   phone TEXT,
+  profile_picture TEXT, -- URL to profile picture
+  about TEXT, -- User bio/about
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'venue_owner', 'admin')),
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now(),

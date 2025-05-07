@@ -10,6 +10,8 @@ type UserProfile = {
     email: string;
     name?: string;
     phone?: string;
+    profile_picture?: string | null;
+    about?: string;
     role: string;
     spaces_host: boolean;
     created_at?: string;
@@ -30,6 +32,7 @@ type UserContextType = {
         error: Error | null;
     }>;
     signOut: () => Promise<void>;
+    updateUserProfile: (fields: Partial<Pick<UserProfile, 'name' | 'phone' | 'profile_picture' | 'about'>>) => Promise<{ success: boolean; error: Error | null }>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -200,6 +203,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     };
 
+    // Add updateUserProfile function
+    const updateUserProfile = async (fields: Partial<Pick<UserProfile, 'name' | 'phone' | 'profile_picture' | 'about'>>) => {
+        if (!user) return { success: false, error: new Error('Not authenticated') };
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ ...fields, updated_at: new Date().toISOString() })
+                .eq('id', user.id);
+            if (error) {
+                return { success: false, error };
+            }
+            // Refetch profile after update
+            const profile = await fetchUserProfile(user.id);
+            setUserProfile(profile);
+            return { success: true, error: null };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error : new Error('Unknown error') };
+        }
+    };
+
     const value = {
         user,
         userProfile,
@@ -208,6 +231,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         signOut,
+        updateUserProfile,
     };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
