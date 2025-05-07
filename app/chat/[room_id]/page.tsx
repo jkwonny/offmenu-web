@@ -125,8 +125,6 @@ export default function ChatRoomPage() {
                 // Type cast the room data to our interface
                 const typedRoom = room as unknown as RoomData;
 
-                console.log('typedRoom', typedRoom);
-
                 // Set room details
                 setRoomDetails({
                     venue_name: typedRoom.venues?.name || typedRoom.venue_name,
