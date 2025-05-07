@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import MapboxMap from '../components/MapboxMap';
