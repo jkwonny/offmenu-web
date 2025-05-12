@@ -21,13 +21,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const mapInitializedRef = useRef<boolean>(false);
     const markerClickedRef = useRef<boolean>(false);
-    const popupRootsRef = useRef<{ [key: string]: ReturnType<typeof createRoot> }>({});
-    const venuesRef = useRef<Venue[]>(venues);
-
-    // Update venuesRef when venues change to compare in effects
-    useEffect(() => {
-        venuesRef.current = venues;
-    }, [venues]);
 
     // Helper function to create a popup for a venue
     const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
@@ -85,54 +78,22 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         popup.on('open', () => {
             const carouselContainer = popupContainer.querySelector(`#carousel-container-${venue.id}`);
             if (carouselContainer) {
-                // Check if we already have a root for this venue's popup
-                if (!popupRootsRef.current[venue.id]) {
-                    const root = createRoot(carouselContainer);
-                    popupRootsRef.current[venue.id] = root;
-
-                    root.render(
-                        <ImageCarousel
-                            images={venueImages}
-                            height={256}
-                            width={256}
-                            alt={venue.name}
-                        />
-                    );
-                } else {
-                    // Reuse existing root and re-render the carousel
-                    popupRootsRef.current[venue.id].render(
-                        <ImageCarousel
-                            images={venueImages}
-                            height={256}
-                            width={256}
-                            alt={venue.name}
-                        />
-                    );
-                }
+                const root = createRoot(carouselContainer);
+                root.render(
+                    <ImageCarousel
+                        images={venueImages}
+                        height={256}
+                        width={256}
+                        alt={venue.name}
+                    />
+                );
             }
-        });
-
-        popup.on('close', () => {
-            // We'll handle unmounting in our cleanup functions instead of here
-            // to avoid issues with React rendering cycles
         });
 
         return popup;
     }, []);
 
-    // Function to safely unmount a React root
-    const unmountRoot = useCallback((venueId: string) => {
-        if (popupRootsRef.current[venueId]) {
-            try {
-                popupRootsRef.current[venueId].unmount();
-            } catch (e) {
-                console.error('Error unmounting popup root:', e);
-            }
-            delete popupRootsRef.current[venueId];
-        }
-    }, []);
-
-    // Function to update markers - only recreate markers if venues change
+    // Function to update markers
     const updateMarkers = useCallback((venues: Venue[]): void => {
         if (!mapRef.current) {
             return;
@@ -144,33 +105,16 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             popupRef.current = null;
         }
 
-        // Get existing venue IDs and new venue IDs for comparison
-        const existingVenueIds = Object.keys(markersRef.current);
-        const newVenueIds = venues.map(venue => venue.id);
+        // Clear existing markers
+        Object.values(markersRef.current).forEach(marker => marker.remove());
+        markersRef.current = {};
 
-        // Remove markers that are no longer needed
-        existingVenueIds.forEach(id => {
-            if (!newVenueIds.includes(id)) {
-                // Remove the marker
-                markersRef.current[id].remove();
-                delete markersRef.current[id];
+        // Add markers for each venue
+        const markers: { [key: string]: mapboxgl.Marker } = {};
 
-                // Clean up React root
-                unmountRoot(id);
-            }
-        });
-
-        // Add or update markers for each venue
         venues.forEach(venue => {
             // Skip venues with invalid coordinates
             if (typeof venue.latitude !== 'number' || typeof venue.longitude !== 'number') {
-                return;
-            }
-
-            // Check if we already have a marker for this venue
-            if (markersRef.current[venue.id]) {
-                // Update the marker position if needed
-                markersRef.current[venue.id].setLngLat([venue.longitude, venue.latitude]);
                 return;
             }
 
@@ -198,6 +142,11 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
 
             container.appendChild(priceTag);
 
+            // Style for selected state
+            if (venue.id === selectedVenueId) {
+                priceTag.classList.add('selected');
+            }
+
             // Create the popup for this marker but don't show it yet
             const popup = createVenuePopup(venue);
 
@@ -208,12 +157,18 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 .addTo(mapRef.current!);
 
             // Store marker reference
-            markersRef.current[venue.id] = marker;
+            markers[venue.id] = marker;
 
             // Add click event to marker
             container.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault(); // Prevent any default behavior
+
+                // If this marker is already selected with popup open, do nothing
+                const currentPopup = marker.getPopup();
+                if (selectedVenueId === venue.id && currentPopup && currentPopup.isOpen()) {
+                    return;
+                }
 
                 // Set the flag before calling onMarkerClick to ensure it's set before any effects run
                 markerClickedRef.current = true;
@@ -221,17 +176,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 // Get the popup and ensure it's positioned correctly
                 const popup = marker.getPopup();
                 if (popup) {
-                    // Close any existing popup
-                    if (popupRef.current && popupRef.current !== popup) {
-                        popupRef.current.remove();
-                    }
-
-                    // Open this popup manually
                     popup.setLngLat([venue.longitude, venue.latitude]);
-                    if (!popup.isOpen()) {
-                        popup.addTo(mapRef.current!);
-                    }
-                    popupRef.current = popup;
                 }
 
                 // Now call the click handler
@@ -243,7 +188,19 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 }, 500);
             });
         });
-    }, [createVenuePopup, onMarkerClick, unmountRoot]);
+
+        markersRef.current = markers;
+
+        // If there's a selected venue, show its popup after creating all markers
+        if (selectedVenueId && markersRef.current[selectedVenueId]) {
+            const selectedMarker = markersRef.current[selectedVenueId];
+            const popup = selectedMarker.getPopup();
+            if (popup) {
+                popup.addTo(mapRef.current);
+                popupRef.current = popup;
+            }
+        }
+    }, [selectedVenueId, onMarkerClick, createVenuePopup]);
 
     // Function to center the map on a venue
     const centerMapOnVenue = useCallback((venue: Venue) => {
@@ -290,18 +247,9 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 compact: true
             }), 'bottom-left');
 
-            // Adjust the center point to account for the content container on the left
-            // This ensures the center of the visible map portion is properly centered
-            const adjustMapCenter = () => {
-                const mapWidth = map.getContainer().offsetWidth;
-                const contentWidth = window.innerWidth / 2; // Assuming content takes half the screen
-                const offset = (contentWidth / mapWidth) * 0.5; // Calculate offset as a fraction of the map width
+            // Store map reference
+            mapRef.current = map;
 
-                // Apply padding to the left side of the map
-                map.setPadding({ left: contentWidth / 2, top: 0, right: 0, bottom: 0 });
-            };
-
-            // Call once after map load
             map.on('load', () => {
                 // Add a warm filter to the map
                 map.addLayer({
@@ -314,20 +262,16 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 });
                 mapInitializedRef.current = true;
 
-                // Adjust center after map is loaded
-                adjustMapCenter();
+                // If venues are already available when map loads, initialize markers
+                if (venues && venues.length > 0) {
+                    updateMarkers(venues);
+                }
             });
-
-            // Readjust on resize
-            map.on('resize', adjustMapCenter);
 
             map.on('error', (e) => {
                 console.error('Map error:', e);
                 setError('Error loading map: ' + e.error.message);
             });
-
-            // Store map reference
-            mapRef.current = map;
 
             // Cleanup on unmount
             return () => {
@@ -341,7 +285,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             console.error('Map initialization error:', err);
             setError('Failed to initialize map: ' + (err instanceof Error ? err.message : String(err)));
         }
-    }, []);
+    }, [venues]);
 
     // Initialize markers when venues data loads (if map is already initialized)
     useEffect(() => {
@@ -351,51 +295,18 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         updateMarkers(venues);
     }, [venues, updateMarkers]);
 
-    // Effect to update marker styles and show selected popup
-    useEffect(() => {
-        if (!mapRef.current || !venues?.length) return;
-
-        // Update marker styles
-        venues.forEach(venue => {
-            const marker = markersRef.current[venue.id];
-            if (marker) {
-                const element = marker.getElement();
-                const priceTag = element.querySelector('.price-tag');
-
-                if (priceTag) {
-                    if (venue.id === selectedVenueId) {
-                        priceTag.classList.add('selected');
-                    } else {
-                        priceTag.classList.remove('selected');
-                    }
-                }
-            }
-        });
-
-        // Show popup for selected venue if not triggered by marker click
-        if (selectedVenueId && markersRef.current[selectedVenueId] && !markerClickedRef.current) {
-            const selectedMarker = markersRef.current[selectedVenueId];
-            const popup = selectedMarker.getPopup();
-
-            if (popup) {
-                // Remove any existing popup first
-                if (popupRef.current && popupRef.current !== popup) {
-                    popupRef.current.remove();
-                }
-
-                // Only show popup if it's not already open
-                if (!popup.isOpen()) {
-                    popup.addTo(mapRef.current);
-                }
-
-                popupRef.current = popup;
-            }
-        }
-    }, [selectedVenueId, venues]);
-
     // Effect to handle selectedVenueId changes
     useEffect(() => {
-        if (!mapRef.current || !selectedVenueId) {
+        if (!mapRef.current) {
+            return;
+        }
+
+        if (!selectedVenueId) {
+            // Clear popup if no venue is selected
+            if (popupRef.current) {
+                popupRef.current.remove();
+                popupRef.current = null;
+            }
             return;
         }
 
@@ -415,21 +326,60 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         if (!markerClickedRef.current) {
             centerMapOnVenue(selectedVenue);
         }
-    }, [selectedVenueId, venues, centerMapOnVenue]);
 
-    // Effect to clear popup when no venue is selected
-    useEffect(() => {
-        if (!mapRef.current) return;
+        // Find the marker for the selected venue
+        const marker = markersRef.current[selectedVenueId];
 
-        // If no venue is selected, clear any popup
-        if (!selectedVenueId) {
-            if (popupRef.current) {
-                popupRef.current.remove();
-                popupRef.current = null;
+        if (marker) {
+            const popup = marker.getPopup();
+
+            // If a marker was clicked, we don't need to remove and re-add the popup
+            // Just ensure it's positioned correctly and visible
+            if (markerClickedRef.current && popup) {
+                // If there's already a popup shown and it's not for the selected venue,
+                // remove it before showing the new one
+                if (popupRef.current && popupRef.current !== popup) {
+                    popupRef.current.remove();
+                }
+
+                // Only add the popup if it's not already on the map
+                if (!popup.isOpen()) {
+                    popup.setLngLat([selectedVenue.longitude, selectedVenue.latitude]);
+                    popup.addTo(mapRef.current);
+                }
+
+                popupRef.current = popup;
+            } else {
+                // For non-marker clicks (e.g., list selection), handle normally
+                if (popupRef.current) {
+                    popupRef.current.remove();
+                    popupRef.current = null;
+                }
+
+                if (popup) {
+                    popup.addTo(mapRef.current);
+                    popupRef.current = popup;
+                }
             }
-            return;
         }
-    }, [selectedVenueId]);
+
+        // Update all marker styles
+        venues.forEach(venue => {
+            const marker = markersRef.current[venue.id];
+            if (marker) {
+                const element = marker.getElement();
+                const priceTag = element.querySelector('.price-tag');
+
+                if (priceTag) {
+                    if (venue.id === selectedVenueId) {
+                        priceTag.classList.add('selected');
+                    } else {
+                        priceTag.classList.remove('selected');
+                    }
+                }
+            }
+        });
+    }, [selectedVenueId, venues, centerMapOnVenue]);
 
     // Add custom CSS for the popup and markers
     useEffect(() => {
@@ -519,26 +469,12 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            // Safely unmount any React roots in popups
             if (popupRef.current) {
                 popupRef.current.remove();
                 popupRef.current = null;
             }
-
-            // Clean up all React roots
-            Object.keys(popupRootsRef.current).forEach(unmountRoot);
-
-            // Clean up the map instance
-            if (mapRef.current) {
-                mapRef.current.remove();
-                mapRef.current = null;
-            }
-
-            markersRef.current = {};
-            mapInitializedRef.current = false;
-            setError(null);
         };
-    }, [unmountRoot]);
+    }, []);
 
     return (
         <div className="relative w-full h-full">
