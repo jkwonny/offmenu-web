@@ -198,11 +198,6 @@ function ExploreContent() {
         window.open(`/venue/${venueId}`, '_blank');
     };
 
-    const handleMarkerClick = (venueId: string) => {
-        // Only update the selected venue ID, without navigating away
-        setSelectedVenueId(venueId);
-    };
-
     const handleImageNav = (
         event: React.MouseEvent,
         venueId: string,

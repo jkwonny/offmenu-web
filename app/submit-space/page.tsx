@@ -7,6 +7,8 @@ import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { SpaceFormData } from '@/app/types/space';
 import GoogleAutoComplete from '../components/GoogleAutoComplete';
+import Image from 'next/image';
+import { VenueFormData } from '@/app/types/venue';
 
 export default function SubmitSpacePage() {
     const router = useRouter();
@@ -525,8 +527,8 @@ export default function SubmitSpacePage() {
                                     Address <span className="text-red-500">*</span>
                                 </label>
                                 <GoogleAutoComplete
-                                    formData={formData as any}
-                                    setFormData={setFormData as any}
+                                    formData={formData as unknown as VenueFormData}
+                                    setFormData={setFormData as unknown as React.Dispatch<React.SetStateAction<VenueFormData>>}
                                 />
                                 {validationErrors.address && (
                                     <p className="mt-1 text-sm text-red-500">{validationErrors.address}</p>
@@ -952,11 +954,12 @@ export default function SubmitSpacePage() {
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
                                         {imagePreviewUrls.map((url, index) => (
                                             <div key={index} className="relative group">
-                                                <div className="h-24 w-full rounded-md overflow-hidden border border-gray-300">
-                                                    <img
+                                                <div className="h-24 w-full rounded-md overflow-hidden border border-gray-300 relative">
+                                                    <Image
                                                         src={url}
                                                         alt={`Space image ${index + 1}`}
-                                                        className="h-full w-full object-cover"
+                                                        className="object-cover"
+                                                        fill
                                                     />
                                                 </div>
                                                 <button
@@ -1042,7 +1045,7 @@ export default function SubmitSpacePage() {
                                 ) : (
                                     <button
                                         type="button"
-                                        onClick={(e) => handleSubmit(e as any)}
+                                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleSubmit(e as unknown as FormEvent<HTMLFormElement>)}
                                         className="px-6 py-2 bg-[#ca0013] text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={isLoading || isUploading}
                                     >

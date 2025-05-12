@@ -138,7 +138,7 @@ export default function NavBar() {
                                 >
                                     <div className="flex items-center rounded-full overflow-hidden mr-2">
                                         {profilePictureUrl ? (
-                                            <img
+                                            <Image
                                                 src={profilePictureUrl}
                                                 alt="Profile"
                                                 width={40}

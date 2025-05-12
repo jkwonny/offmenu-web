@@ -6,6 +6,76 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Venue } from '@/types/Venue';
 import { createRoot } from 'react-dom/client';
 import ImageCarousel from './ImageCarousel';
+import { LuMapPin } from "react-icons/lu";
+import { FaRegHandshake } from "react-icons/fa";
+import { IoClose } from "react-icons/io5";
+
+// New PopupContent component
+interface PopupContentProps {
+    venue: Venue;
+    priceDisplay: string;
+    venueImages?: string[];
+    onClose?: () => void;
+}
+
+const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupContentProps) => {
+    // Handle click on the carousel container
+    const handleCarouselClick = (e: React.MouseEvent) => {
+        // Check if the click event target is a button or button child element
+        // This prevents navigation when clicking carousel controls
+        const target = e.target as HTMLElement;
+        const isButton = target.tagName === 'BUTTON' ||
+            target.closest('button') !== null ||
+            target.classList.contains('z-20');
+
+        if (!isButton) {
+            window.open(`/venue/${venue.id}`, '_blank');
+        }
+    };
+
+    return (
+        <div className="p-0 w-[300px] z-[1000] bg-[#4A4A4A] p-2 text-white relative">
+            <button
+                onClick={onClose}
+                className="absolute top-2 right-2 z-[1001] bg-white bg-opacity-70 p-1 rounded-full text-gray-800 hover:bg-opacity-100 transition-all"
+                aria-label="Close popup"
+            >
+                <IoClose size={20} />
+            </button>
+            <div
+                id={`carousel-container-${venue.id}`}
+                className="relative w-full h-64 cursor-pointer"
+                onClick={handleCarouselClick}
+            >
+                <ImageCarousel
+                    images={venueImages}
+                    height={256}
+                    width={256}
+                    alt={venue.name}
+                />
+            </div>
+            <div className="p-3">
+                <h3 className="font-bold text-xl mb-1 font-heading">
+                    {venue.name}
+                </h3>
+                <p className="text-sm mb-2 flex items-center text-[#E7E7E7]">
+                    <LuMapPin className="mr-1" /> {venue.neighborhood}
+                </p>
+                <p className="text-sm mb-2 flex items-center text-[#E7E7E7]">
+                    <FaRegHandshake className="mr-1" /> {priceDisplay}
+                </p>
+                <a
+                    href={`/venue/${venue.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm hover underline"
+                >
+                    View Details
+                </a>
+            </div>
+        </div>
+    );
+};
 
 interface MapboxMapProps {
     venues: Venue[];
@@ -54,40 +124,19 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
 
         // Create a DOM element for the popup content
         const popupContainer = document.createElement('div');
-
-        // Set inner HTML with a container for React to render into
-        popupContainer.innerHTML = `
-            <div class="p-0 w-[300px]">
-                <div id="carousel-container-${venue.id}" class="relative w-full h-64 cursor-pointer" onclick="window.open('/venue/${venue.id}', '_blank')"></div>
-                <div class="p-3">
-                    <h3 class="font-bold text-lg mb-1 font-heading">${venue.name}</h3>
-                    <p class="text-sm text-amber-700 mb-2">${venue.neighborhood}</p>
-                    <p class="text-sm text-amber-700 mb-2">${priceDisplay}</p>
-                    <a href="/venue/${venue.id}" target="_blank" rel="noopener noreferrer" 
-                       class="text-sm text-amber-600 hover:text-amber-700 underline">
-                        View Details
-                    </a>
-                </div>
-            </div>
-        `;
-
-        // Add the popup element to the DOM so React can render into it
         popup.setDOMContent(popupContainer);
 
-        // When the popup opens, render the React ImageCarousel component into the container
+        // When the popup opens, render the React component into the container
         popup.on('open', () => {
-            const carouselContainer = popupContainer.querySelector(`#carousel-container-${venue.id}`);
-            if (carouselContainer) {
-                const root = createRoot(carouselContainer);
-                root.render(
-                    <ImageCarousel
-                        images={venueImages}
-                        height={256}
-                        width={256}
-                        alt={venue.name}
-                    />
-                );
-            }
+            const root = createRoot(popupContainer);
+            root.render(
+                <PopupContent
+                    venue={venue}
+                    priceDisplay={priceDisplay}
+                    venueImages={venueImages}
+                    onClose={() => popup.remove()}
+                />
+            );
         });
 
         return popup;
@@ -202,19 +251,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
         }
     }, [selectedVenueId, onMarkerClick, createVenuePopup]);
 
-    // Function to center the map on a venue
-    const centerMapOnVenue = useCallback((venue: Venue) => {
-        if (!mapRef.current || typeof venue.latitude !== 'number' || typeof venue.longitude !== 'number') {
-            return;
-        }
-
-        mapRef.current.flyTo({
-            center: [venue.longitude, venue.latitude],
-            zoom: 14,
-            duration: 1000
-        });
-    }, []);
-
     const mapContainer = useCallback((node: HTMLDivElement | null) => {
         nodeRef.current = node;
 
@@ -322,11 +358,6 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
             return;
         }
 
-        // Only center the map if this wasn't triggered by a marker click
-        if (!markerClickedRef.current) {
-            centerMapOnVenue(selectedVenue);
-        }
-
         // Find the marker for the selected venue
         const marker = markersRef.current[selectedVenueId];
 
@@ -379,7 +410,7 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 }
             }
         });
-    }, [selectedVenueId, venues, centerMapOnVenue]);
+    }, [selectedVenueId, venues]);
 
     // Add custom CSS for the popup and markers
     useEffect(() => {
@@ -438,9 +469,13 @@ export default function MapboxMap({ venues, selectedVenueId, onMarkerClick }: Ma
                 border-top-color: white;
             }
 
-            /* Fix z-index stacking for markers and overlay */
+            /* Fix z-index stacking for markers and popup */
             .mapboxgl-marker {
                 z-index: 1 !important;
+            }
+            
+            .mapboxgl-popup {
+                z-index: 500 !important;
             }
             
             /* Style for clickable carousel */
