@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Heebo } from "next/font/google";
+
 import "./globals.css";
 import { BookingProvider } from "./lib/context";
 import QueryProvider from "./lib/query-provider";
 import { EventProvider } from "./context/EventContext";
 import { UserProvider } from "./context/UserContext";
 
-const playfairDisplay = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-});
 
-const heebo = Heebo({
-  variable: "--font-heebo",
-  subsets: ["latin"],
-});
+
 
 export const metadata: Metadata = {
   title: "OffMenu - Event Booking Platform",
@@ -29,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${playfairDisplay.variable} ${heebo.variable} antialiased`}
+        className={`antialiased`}
       >
         <QueryProvider>
           <UserProvider>

@@ -1,14 +1,89 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Delight';
+  src: url('/fonts/delight/Web-TT/Delight-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #000000;
+  --card-bg: #F6F8FC;
+  --font-sans: 'Delight', sans-serif;
+  --font-heading: 'Delight', sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-heebo);
+  --color-card: var(--card-bg) --font-sans: var(--font-heebo);
   --font-heading: var(--font-playfair);
 }
 

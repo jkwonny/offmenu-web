@@ -17,24 +17,24 @@ function TabsSection() {
     if (!isExplorePage) return null;
 
     return (
-        <div className="flex rounded-lg overflow-hidden shadow-sm w-full max-w-[200px] mx-auto">
+        <div className="flex overflow-hidden rounded-full">
             <Link
                 href="/explore?view=spaces"
-                className={`px-3 md:px-6 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${view === 'spaces'
-                    ? 'bg-[#ca0013] text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${!view || view === 'spaces'
+                    ? 'bg-black text-white'
+                    : 'bg-white text-black'
                     }`}
             >
                 Spaces
             </Link>
             <Link
                 href="/explore?view=popups"
-                className={`px-3 md:px-6 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
-                    ? 'bg-[#ca0013] text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
+                    ? 'bg-black text-white'
+                    : 'bg-white text-black'
                     }`}
             >
-                Popups
+                Pop-ups
             </Link>
         </div>
     );
@@ -83,12 +83,12 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="bg-[#fbfbfa] border-b border-gray-200 w-full py-3">
-            <div className="grid grid-cols-3 px-4 md:px-10 py-2 items-center">
+        <nav className="w-full py-2 px-4 rounded-lg">
+            <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
                     <Link href="/" className="text-xl font-bold font-heading">
-                        OffMenu
+                        OFFMENU
                     </Link>
                 </div>
 
@@ -116,6 +116,13 @@ export default function NavBar() {
 
                     {/* Desktop navigation - hidden on mobile */}
                     <div className="hidden md:flex items-center gap-3 xl:gap-4">
+                        {/* <button className="flex items-center gap-2 text-gray-700 hover:text-black">
+                            <span>Change to list</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                            </svg>
+                        </button> */}
+
                         <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black whitespace-nowrap">
                             Explore
                         </Link>
@@ -129,19 +136,23 @@ export default function NavBar() {
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
                                     className="flex items-center cursor-pointer border border-gray-300 rounded-full overflow-hidden p-2"
                                 >
-                                    <div className="flex items-center rounded-full overflow-hidden mr-1">
+                                    <div className="flex items-center rounded-full overflow-hidden mr-2">
                                         {profilePictureUrl ? (
-                                            <img
+                                            <Image
                                                 src={profilePictureUrl}
                                                 alt="Profile"
-                                                width={36}
-                                                height={36}
+                                                width={40}
+                                                height={40}
                                                 className="object-cover w-8 h-8 rounded-full"
                                             />
                                         ) : (
-                                            <div className="w-9 h-9 flex items-center justify-center text-gray-600 rounded-full">
-                                                {userProfile?.name?.[0] || user.email?.[0] || '?'}
-                                            </div>
+                                            <svg
+                                                className="h-6 w-6 text-gray-400"
+                                                fill="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
                                         )}
                                     </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
@@ -227,9 +238,13 @@ export default function NavBar() {
                                         className="object-cover w-8 h-8"
                                     />
                                 ) : (
-                                    <div className="w-9 h-9 flex items-center justify-center text-gray-600 rounded-full">
-                                        {userProfile?.name?.[0] || user.email?.[0] || '?'}
-                                    </div>
+                                    <svg
+                                        className="h-16 w-16 text-gray-400"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
                                 )}
                             </div>
                             <div className="text-sm text-gray-700 font-medium truncate">
