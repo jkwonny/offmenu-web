@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import MapboxMap from '../components/MapboxMap';
@@ -9,6 +9,9 @@ import { useEvents } from '../lib/queries';
 import NavBar from '../components/NavBar';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../context/UserContext';
+import { FaRegHandshake } from "react-icons/fa";
+import { LuMapPin } from "react-icons/lu";
+
 
 // Define types for venue images
 interface VenueImage {
@@ -50,8 +53,11 @@ function ExploreContent() {
     const [selectedTime, setSelectedTime] = useState<string>('');
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [showCapacityMenu, setShowCapacityMenu] = useState(false);
     const searchParams = useSearchParams();
     const { user } = useUser();
+    const capacityMenuRef = useRef<HTMLDivElement>(null);
+    const dateTimePickerRef = useRef<HTMLDivElement>(null);
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
@@ -216,155 +222,197 @@ function ExploreContent() {
         });
     };
 
+    // Close menus when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (capacityMenuRef.current && !capacityMenuRef.current.contains(event.target as Node)) {
+                setShowCapacityMenu(false);
+            }
+            if (dateTimePickerRef.current && !dateTimePickerRef.current.contains(event.target as Node)) {
+                setShowDateTimePicker(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
-        <div className="flex flex-col h-screen w-full">
-            {/* Main content with two-column layout */}
-            <div className="flex flex-row flex-1 overflow-hidden">
-                {/* Venues list on the left - 60% width */}
-                <div className="w-1/2 overflow-y-auto p-4">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
-                        </div>
-                    ) : error ? (
-                        <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
-                            {error instanceof Error ? error.message : 'An error occurred while fetching data'}
-                        </div>
-                    ) : selectedView === 'spaces' ? (
-                        <div>
-                            {/* Venue count and filters */}
-                            <div className="mb-8">
-                                <h2 className="text-xl font-semibold mb-4">{filteredVenues.length} Spaces</h2>
+        <div className="flex flex-col w-full">
+            {/* Content container - floating on top of the map */}
+            <div className="w-full p-6 bg-white rounded-lg shadow-lg max-h-[calc(100vh-120px)] overflow-y-auto">
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                    </div>
+                ) : error ? (
+                    <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
+                        {error instanceof Error ? error.message : 'An error occurred while fetching data'}
+                    </div>
+                ) : selectedView === 'spaces' ? (
+                    <div className="min-h-screen">
+                        {/* Venue count and filters */}
+                        <div className="mb-8">
+                            <h2 className="text-xl font-semibold mb-4">{filteredVenues.length} Spaces</h2>
 
-                                <div className="flex flex-wrap gap-4 mb-4">
-                                    {/* Capacity filter */}
-                                    <div className="w-48">
-                                        <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Capacity
-                                        </label>
-                                        <select
-                                            id="capacity"
-                                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#ca0013] focus:border-[#ca0013]"
-                                            value={capacityFilter}
-                                            onChange={(e) => setCapacityFilter(e.target.value)}
-                                        >
-                                            <option value="">Any capacity</option>
-                                            <option value="1-15">1-15 guests</option>
-                                            <option value="16-30">16-30 guests</option>
-                                            <option value="31-50">31-50 guests</option>
-                                            <option value="51-75">51-75 guests</option>
-                                            <option value="75+">75+ guests</option>
-                                        </select>
-                                    </div>
+                            <div className="flex h-14 bg-[#F6F6F6] border border-gray-200 rounded-md items-center">
+                                {/* Capacity filter */}
+                                <div className="w-1/2 h-full relative" ref={capacityMenuRef}>
+                                    <button
+                                        onClick={() => setShowCapacityMenu(!showCapacityMenu)}
+                                        className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
+                                    >
+                                        <span className="text-gray-800">
+                                            {capacityFilter ?
+                                                (capacityFilter === '75+' ? '75+ guests' : `${capacityFilter} guests`) :
+                                                'Capacity'}
+                                        </span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showCapacityMenu ? "rotate-180" : ""}>
+                                            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
 
-                                    {/* Date/Time Selector */}
-                                    <div className="w-48 relative">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Date & Time
-                                        </label>
-                                        <button
-                                            onClick={handleDateTimeClick}
-                                            className="w-full flex items-center justify-between border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#ca0013] focus:border-[#ca0013]"
-                                        >
+                                    {showCapacityMenu && (
+                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden">
+                                            <div>
+                                                {[
+                                                    { value: '', label: 'Any capacity' },
+                                                    { value: '1-15', label: '1-15 guests' },
+                                                    { value: '16-30', label: '16-30 guests' },
+                                                    { value: '31-50', label: '31-50 guests' },
+                                                    { value: '51-75', label: '51-75 guests' },
+                                                    { value: '75+', label: '75+ guests' }
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        onClick={() => {
+                                                            setCapacityFilter(option.value);
+                                                            setShowCapacityMenu(false);
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2 rounded text-sm 
+                                                            ${capacityFilter === option.value ? 'bg-black text-white' : 'hover:bg-black/10'}`}
+                                                    >
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Divider */}
+                                <div className="h-8 w-px bg-gray-200"></div>
+
+                                {/* Date/Time Selector */}
+                                <div className="w-1/2 h-full" ref={dateTimePickerRef}>
+                                    <button
+                                        onClick={handleDateTimeClick}
+                                        className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
+                                    >
+                                        <span className="text-gray-800">
                                             {selectedDate && selectedTime ?
                                                 `${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}` :
                                                 "Select date & time"
                                             }
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDateTimePicker ? "rotate-180" : ""}>
-                                                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
-                                        </button>
+                                        </span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDateTimePicker ? "rotate-180" : ""}>
+                                            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
 
-                                        {showDateTimePicker && (
-                                            <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" style={{ width: '520px', left: '0' }}>
-                                                <div className="flex border-b">
-                                                    <div className="w-3/5 border-r">
-                                                        <div className="flex justify-between items-center p-3 border-b">
-                                                            <button onClick={prevMonth} className="p-1">
-                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                                </svg>
-                                                            </button>
-                                                            <div className="font-medium">
-                                                                {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                                            </div>
-                                                            <button onClick={nextMonth} className="p-1">
-                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                                </svg>
-                                                            </button>
+                                    {showDateTimePicker && (
+                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" style={{ width: '520px', right: '0' }}>
+                                            <div className="flex border-b">
+                                                <div className="w-3/5 border-r">
+                                                    <div className="flex justify-between items-center p-3 border-b">
+                                                        <button onClick={prevMonth} className="p-1">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </button>
+                                                        <div className="font-medium">
+                                                            {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                                                         </div>
-
-                                                        <div className="grid grid-cols-7 mb-1 border-b">
-                                                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                                                                <div key={day} className="text-center py-2 text-sm font-medium">
-                                                                    {day}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-
-                                                        <div className="grid grid-cols-7 p-2">
-                                                            {generateCalendarMonth().map((day, index) => (
-                                                                <div key={index} className="p-1 text-center">
-                                                                    {day ? (
-                                                                        <button
-                                                                            onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
-                                                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
-                                                                                ${day.isToday ? 'border border-amber-500' : ''}
-                                                                                ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
-                                                                                ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
-                                                                                ${day.dateString === selectedDate ? 'bg-[#ca0013] text-white border-2 border-[#ca0013]' :
-                                                                                    (day.isAvailable && !day.isToday ? 'hover:bg-[#f5d6d8]' : '')}
-                                                                            `}
-                                                                            disabled={!day.isAvailable}
-                                                                        >
-                                                                            {day.date.getDate()}
-                                                                        </button>
-                                                                    ) : (
-                                                                        <div className="w-8 h-8"></div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
+                                                        <button onClick={nextMonth} className="p-1">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </button>
                                                     </div>
 
-                                                    <div className="w-2/5 max-h-72 overflow-y-auto">
-                                                        <div className="p-3 border-b">
-                                                            <h3 className="font-medium text-center">Time</h3>
-                                                        </div>
-                                                        <div className="p-2">
-                                                            {generateTimeSlots().map((time) => (
-                                                                <button
-                                                                    key={time}
-                                                                    onClick={() => handleTimeSelect(time)}
-                                                                    className={`w-full text-left px-3 py-2 rounded text-sm 
-                                                                        ${selectedTime === time ? 'bg-[#ca0013] text-white' : 'hover:bg-[#f5d6d8]'}`}
-                                                                >
-                                                                    {time}
-                                                                </button>
-                                                            ))}
-                                                        </div>
+                                                    <div className="grid grid-cols-7 mb-1 border-b">
+                                                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                                                            <div key={day} className="text-center py-2 text-sm font-medium">
+                                                                {day}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-7 p-2">
+                                                        {generateCalendarMonth().map((day, index) => (
+                                                            <div key={index} className="p-1 text-center">
+                                                                {day ? (
+                                                                    <button
+                                                                        onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
+                                                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
+                                                                            ${day.isToday ? 'border border-amber-500' : ''}
+                                                                            ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
+                                                                            ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
+                                                                            ${day.dateString === selectedDate ? 'bg-[#ca0013] text-white border-2 border-[#ca0013]' :
+                                                                                (day.isAvailable && !day.isToday ? 'hover:bg-[#f5d6d8]' : '')}
+                                                                        `}
+                                                                        disabled={!day.isAvailable}
+                                                                    >
+                                                                        {day.date.getDate()}
+                                                                    </button>
+                                                                ) : (
+                                                                    <div className="w-8 h-8"></div>
+                                                                )}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
 
-                                                <div className="p-3 flex justify-end border-t">
-                                                    <button
-                                                        onClick={handleDateTimeConfirm}
-                                                        className={`px-4 py-2 rounded font-medium text-sm
-                                                            ${selectedDate && selectedTime ? 'bg-[#ca0013] text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                                                        disabled={!selectedDate || !selectedTime}
-                                                    >
-                                                        Apply
-                                                    </button>
+                                                <div className="w-2/5 max-h-72 overflow-y-auto">
+                                                    <div className="p-3 border-b">
+                                                        <h3 className="font-medium text-center">Time</h3>
+                                                    </div>
+                                                    <div className="p-2">
+                                                        {generateTimeSlots().map((time) => (
+                                                            <button
+                                                                key={time}
+                                                                onClick={() => handleTimeSelect(time)}
+                                                                className={`w-full text-left px-3 py-2 rounded text-sm 
+                                                                    ${selectedTime === time ? 'bg-[#ca0013] text-white' : 'hover:bg-[#f5d6d8]'}`}
+                                                            >
+                                                                {time}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
+
+                                            <div className="p-3 flex justify-end border-t">
+                                                <button
+                                                    onClick={handleDateTimeConfirm}
+                                                    className={`px-4 py-2 rounded font-medium text-sm
+                                                        ${selectedDate && selectedTime ? 'bg-[#ca0013] text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                                                    disabled={!selectedDate || !selectedTime}
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredVenues.map((venue) => {
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {filteredVenues.length > 0 ? (
+                                filteredVenues.map((venue) => {
                                     const venueImages = venue.venue_images && venue.venue_images.length > 0
                                         ? venue.venue_images
                                         : [{ image_url: venue.image_url }];
@@ -380,7 +428,7 @@ function ExploreContent() {
                                     return (
                                         <div
                                             key={venue.id}
-                                            className={`cursor-pointer transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#ca0013]' : ''}`}
+                                            className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#ca0013]' : ''}`}
                                             onClick={() => handleVenueClick(venue.id)}
                                         >
                                             <div className="aspect-square w-full overflow-hidden rounded-xl relative group">
@@ -388,8 +436,8 @@ function ExploreContent() {
                                                     src={normalizedImages[currentIndex]}
                                                     alt={venue.name}
                                                     className="h-full w-full object-cover transition-all duration-500"
-                                                    width={400}
-                                                    height={400}
+                                                    width={300}
+                                                    height={300}
                                                 />
 
                                                 {/* Navigation buttons - only visible on hover */}
@@ -427,13 +475,20 @@ function ExploreContent() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="mt-2">
-                                                <h3 className="font-medium text-base">{venue.name}</h3>
-                                                <p className="text-gray-500 text-sm mt-0.5">{venue.address}</p>
+                                            <div className="py-3 px-3">
+                                                <h3 className="font-medium text-xl text-base">{venue.name}</h3>
+                                                <p className="text-gray-500 text-sm mt-0.5 flex items-center">
+                                                    <LuMapPin className="w-4 h-4 mr-1" />
+                                                    {venue.address}
+                                                </p>
                                                 {venue.pricing_type === 'no_minimum_spend' ? (
-                                                    <p className="text-sm mt-1 font-medium">No Minimum Spend</p>
+                                                    <p className="text-sm mt-1 font-medium flex items-center">
+                                                        <FaRegHandshake className="w-4 h-4 mr-1" />
+                                                        No Minimum Spend
+                                                    </p>
                                                 ) : (
-                                                    <p className="text-sm mt-1 font-medium">
+                                                    <p className="text-sm mt-1 font-medium flex items-center">
+                                                        <FaRegHandshake className="w-4 h-4 mr-1" />
                                                         ${venue.price}
                                                         {venue.pricing_type === 'hourly' && ' / hour'}
                                                     </p>
@@ -441,80 +496,67 @@ function ExploreContent() {
                                             </div>
                                         </div>
                                     );
-                                })}
-                            </div>
+                                })
+                            ) : (
+                                <div className="col-span-2 flex flex-col items-center justify-center py-10 text-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No spaces found</h3>
+                                    <p className="text-gray-500">Try adjusting your filters to see more results</p>
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {events.map((event: Event) => (
-                                <div
-                                    key={event.id}
-                                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
-                                >
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                            <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium">
-                                                {formatText(event.event_type)}
-                                            </span>
-                                        </div>
-                                        <div className="text-gray-600 mb-4">
-                                            {format(event.start_date, 'MMM d, yyyy')}
-                                            {event.end_date && ` - ${format(event.end_date, 'MMM d, yyyy')}`}
-                                        </div>
-                                        <p className="text-gray-700 mb-4 line-clamp-3">
-                                            {event.description || 'No description available'}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2 mb-4">
-                                            {event.assets_needed?.map((tag: string, index: number) => (
-                                                <span
-                                                    key={index}
-                                                    className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm"
-                                                >
-                                                    {formatText(tag)}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-sm text-gray-600">
-                                                {event.expected_capacity_min && event.expected_capacity_max
-                                                    ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                    : 'Guest count not specified'}
-                                            </div>
-                                            <button
-                                                className="px-4 py-2 bg-[#ca0013] text-white rounded hover:bg-[#ca0013] transition-colors duration-200"
-                                                onClick={() => {/* TODO: Implement messaging */ }}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                        {events.map((event: Event) => (
+                            <div
+                                key={event.id}
+                                className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                            >
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h2 className="text-2xl font-semibold">{event.title}</h2>
+                                        <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium">
+                                            {formatText(event.event_type)}
+                                        </span>
+                                    </div>
+                                    <div className="text-gray-600 mb-4">
+                                        {format(event.start_date, 'MMM d, yyyy')}
+                                        {event.end_date && ` - ${format(event.end_date, 'MMM d, yyyy')}`}
+                                    </div>
+                                    <p className="text-gray-700 mb-4 line-clamp-3">
+                                        {event.description || 'No description available'}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {event.assets_needed?.map((tag: string, index: number) => (
+                                            <span
+                                                key={index}
+                                                className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm"
                                             >
-                                                Message
-                                            </button>
+                                                {formatText(tag)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <div className="text-sm text-gray-600">
+                                            {event.expected_capacity_min && event.expected_capacity_max
+                                                ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                : 'Guest count not specified'}
                                         </div>
+                                        <button
+                                            className="px-4 py-2 bg-[#ca0013] text-white rounded hover:bg-[#ca0013] transition-colors duration-200"
+                                            onClick={() => {/* TODO: Implement messaging */ }}
+                                        >
+                                            Message
+                                        </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Map on the right - 40% width */}
-                <div className="w-1/2 relative">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center h-full bg-[#FFF9F5]">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
-                        </div>
-                    ) : error ? (
-                        <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
-                            {error instanceof Error ? error.message : 'An error occurred while fetching data'}
-                        </div>
-                    ) : (
-                        <div className="h-full">
-                            <MapboxMap
-                                venues={selectedView === 'spaces' ? filteredVenues : venues}
-                                selectedVenueId={selectedVenueId}
-                                onMarkerClick={handleMarkerClick}
-                            />
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -522,13 +564,69 @@ function ExploreContent() {
 
 export default function ExplorePage() {
     return (
-        <>
-            <NavBar />
-            <Suspense fallback={<div className="flex items-center justify-center h-screen">
+        <div className="relative h-screen w-screen">
+            {/* Map takes up the entire screen */}
+            <div className="absolute inset-0">
+                <Suspense fallback={<div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                </div>}>
+                    <ExploreMap />
+                </Suspense>
+            </div>
+
+            {/* Floating navbar with margin on all sides */}
+            <div className="absolute top-0 left-0 right-0 m-3 z-10">
+                <div className="bg-white rounded-lg shadow-lg">
+                    <NavBar />
+                </div>
+            </div>
+
+            {/* Floating content container below navbar */}
+            <div className="absolute top-22 left-3 z-10 w-full lg:w-1/2 max-w-[1/2]">
+                <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                </div>}>
+                    <ExploreContent />
+                </Suspense>
+            </div>
+        </div>
+    );
+}
+
+// Map component that will receive venue data
+function ExploreMap() {
+    const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+    const searchParams = useSearchParams();
+    const { user } = useUser();
+
+    // Get the view from URL parameters, default to 'spaces'
+    const view = searchParams.get('view') || 'spaces';
+    const selectedView = view === 'popups' ? 'popups' : 'spaces';
+
+    // Use React Query to fetch venues
+    const { data: allVenues = [], isLoading: venuesLoading } = useVenues();
+
+    // Filter out venues owned by the current user
+    const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
+
+    const handleMarkerClick = useCallback((venueId: string) => {
+        setSelectedVenueId(venueId);
+    }, []);
+
+    if (venuesLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
-            </div>}>
-                <ExploreContent />
-            </Suspense>
-        </>
+            </div>
+        );
+    }
+
+    // Only show the map if we have venues and we're in spaces view
+    return (
+        <MapboxMap
+            venues={selectedView === 'spaces' ? venues : []}
+            selectedVenueId={selectedVenueId}
+            onMarkerClick={handleMarkerClick}
+        />
     );
 } 

@@ -3,7 +3,7 @@
     "description": "OffMenu is a web platform to help users book restaurants, bars, and unique venues for events. Built with React (Next.js), Node.js, Supabase, and Express. The experience is optimized for ease and elegance.",
     "design": {
         "fonts": {
-            "primary": "Inter",
+            "primary": "Delight",
             "accent": "Playfair Display"
         },
         "colors": {
@@ -18,7 +18,7 @@
         "tailwind": {
             "fontFamily": {
                 "sans": [
-                    "Inter",
+                    "Delight",
                     "ui-sans-serif",
                     "system-ui"
                 ],
