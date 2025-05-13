@@ -331,7 +331,7 @@ function ExploreContent() {
                                 <div className="p-6">
                                     <div className="flex justify-between items-start mb-2">
                                         <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                        <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium">
+                                        <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium whitespace-nowrap">
                                             {formatText(event.event_type)}
                                         </span>
                                     </div>
@@ -388,14 +388,14 @@ export default function ExplorePage() {
             </div>
 
             {/* Floating navbar with margin on all sides */}
-            <div className="absolute top-0 left-0 right-0 m-3 z-10">
+            <div className="absolute top-0 left-0 right-0 m-3">
                 <div className="bg-white rounded-lg shadow-lg">
                     <NavBar />
                 </div>
             </div>
 
             {/* Floating content container below navbar */}
-            <div className="absolute top-22 left-3 z-10 w-full lg:w-1/2 max-w-[1/2]">
+            <div className="absolute top-22 left-3 w-full lg:w-1/2 max-w-[1/2]">
                 <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
                 </div>}>
