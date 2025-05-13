@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(request: NextRequest) {
   try {
-    const {  venue_id, sender_id, recipient_id, message, event_date, venue_name, collaboration_types, popup_name, selected_date, selected_time } = await request.json();
+    const {  venue_id, sender_id, recipient_id, message, event_date, venue_name, collaboration_types, popup_name, selected_date, selected_time, requirements, special_requests, instagram_handle, website, guest_count } = await request.json();
 
         // Validate required fields
     if (!venue_id || !sender_id || !recipient_id || !event_date || !venue_name) {
@@ -34,7 +34,12 @@ export async function POST(request: NextRequest) {
         collaboration_types,
         popup_name,
         selected_date,
-        selected_time
+        selected_time,
+        requirements,
+        special_requests,
+        instagram_handle,
+        website,
+        guest_count
       })
       .select('id')
       .single();
