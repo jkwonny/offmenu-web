@@ -160,7 +160,7 @@ export default function NavBar() {
                                     </svg>
                                 </button>
                                 {dropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 origin-top-right transform transition-all duration-200 ease-out animate-menu-open">
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 origin-top-right transform transition-all duration-200 ease-out animate-menu-open">
                                         <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
                                             Account
                                         </Link>
@@ -178,8 +178,8 @@ export default function NavBar() {
                                         )}
 
                                         {isSpacesHost && (
-                                            <Link href="/host/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
-                                                Host Dashboard
+                                            <Link href="/manage/dashboard?view=spaces" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                                Manager Dashboard
                                             </Link>
                                         )}
 
@@ -299,11 +299,11 @@ export default function NavBar() {
                             )}
                             {isSpacesHost && (
                                 <Link
-                                    href="/host/dashboard"
+                                    href="/manage/dashboard?view=spaces"
                                     className="block py-2 text-gray-700 hover:text-black"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
-                                    Host Dashboard
+                                    Manager Dashboard
                                 </Link>
                             )}
 
