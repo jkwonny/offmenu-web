@@ -1,26 +1,35 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createEvent } from "../lib/react-query/mutations/events";
 import NavBar from "../components/NavBar";
 import { useUser } from "../context/UserContext";
+import Image from "next/image";
+import DateTimePicker from "../components/DateTimePicker";
 
 type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
 type GuestRange = '1-15' | '16-30' | '31-50' | '51-75' | '75+';
 
-export default function BookingStep1() {
+export default function ListEvent() {
     const router = useRouter();
     const { user, isLoading } = useUser();
     const [eventType, setEventType] = useState<EventType>('Pop Up');
     const [guestRange, setGuestRange] = useState<GuestRange>('1-15');
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-    const [endDate, setEndDate] = useState<string>("");
+    const [selectedTime, setSelectedTime] = useState<string>("");
+    const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [title, setTitle] = useState<string>("");
     const [description, setDescription] = useState<string>("");
     const [assetsNeeded, setAssetsNeeded] = useState<string[]>([]);
     const [assetInput, setAssetInput] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [eventStatus, setEventStatus] = useState<"private_pending" | "public_pending" | "public_approved" | "private_approved">('private_pending');
+
+    // Image upload state
+    const [eventImage, setEventImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -42,6 +51,35 @@ export default function BookingStep1() {
     if (!user) {
         return null; // Will redirect in the useEffect
     }
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Validate file type
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                // Could add error state here
+                return;
+            }
+
+            // Validate file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                // Could add error state here
+                return;
+            }
+
+            setEventImage(file);
+            // Create a preview URL
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setImagePreview(null);
+        setEventImage(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -73,11 +111,13 @@ export default function BookingStep1() {
                 title: title,
                 event_type: eventType,
                 description,
-                start_date: selectedDate,
-                end_date: endDate || undefined,
+                selected_date: selectedDate,
+                selected_time: selectedTime,
                 expected_capacity_min: expectedCapacityMin,
                 expected_capacity_max: expectedCapacityMax,
-                assets_needed: assetsNeeded
+                assets_needed: assetsNeeded,
+                image_file: eventImage || undefined,
+                status: eventStatus
             };
 
             await createEvent(formData);
@@ -105,14 +145,88 @@ export default function BookingStep1() {
     return (
         <>
             <NavBar />
-            <main className="min-h-screen bg-gradient-to-br from-[#FFF9F5] py-12">
-                <div className="max-w-2xl mx-auto px-4 md:px-6">
-                    <div className="bg-white p-8 rounded-xl shadow-sm border">
+            <main className="min-h-screen w-full py-12">
+                <div className="max-w-2xl mx-auto">
+                    <div>
                         <h1 className="text-3xl font-bold font-heading mb-6 text-center">
                             Create Your Event
                         </h1>
 
                         <form onSubmit={handleSubmit}>
+                            {/* Image Upload Section */}
+                            <div className="mb-6">
+                                <label className="block mb-2 font-semibold">
+                                    Event Image
+                                </label>
+                                <div className="rounded-lg">
+                                    {imagePreview ? (
+                                        <div className="relative h-60 w-full mb-4">
+                                            <Image
+                                                src={imagePreview}
+                                                alt="Event preview"
+                                                className="rounded-md object-cover"
+                                                fill
+                                            />
+                                            <button
+                                                className="absolute top-2 right-2 bg-red-500 rounded-full p-1 text-white"
+                                                onClick={handleRemoveImage}
+                                                type="button"
+                                                aria-label="Remove image"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="h-4 w-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M6 18L18 6M6 6l12 12"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className="h-60 w-full border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer mb-4"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <div className="text-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="mt-1 text-sm text-gray-600">Drag an image here or select one</p>
+                                                <p className="mt-1 text-xs text-gray-500">File format: PNG, JPEG. Max size 10 mb.</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/jpeg, image/png, image/webp"
+                                        className="hidden"
+                                        onChange={handleImageChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label htmlFor="title" className="block mb-2 font-semibold">
+                                    Event Name
+                                </label>
+                                <input
+                                    type="text"
+                                    id="title"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+                                    placeholder="Give your event a name"
+                                    required
+                                />
+                            </div>
                             <div className="mb-6">
                                 <label htmlFor="eventType" className="block mb-2 font-semibold">
                                     Event Type
@@ -121,7 +235,7 @@ export default function BookingStep1() {
                                     id="eventType"
                                     value={eventType}
                                     onChange={(e) => setEventType(e.target.value as EventType)}
-                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
+                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
                                     required
                                 >
                                     <option value="Pop Up">Pop Up</option>
@@ -130,21 +244,6 @@ export default function BookingStep1() {
                                     <option value="Wedding">Wedding</option>
                                     <option value="Other">Other Event</option>
                                 </select>
-                            </div>
-
-                            <div className="mb-6">
-                                <label htmlFor="title" className="block mb-2 font-semibold">
-                                    Event Title
-                                </label>
-                                <input
-                                    type="text"
-                                    id="title"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
-                                    placeholder="Give your event a name"
-                                    required
-                                />
                             </div>
 
                             <div className="mb-6">
@@ -168,29 +267,20 @@ export default function BookingStep1() {
 
                             <div className="mb-6">
                                 <label htmlFor="startDate" className="block mb-2 font-semibold">
-                                    Start Date
+                                    Start Date & Time
                                 </label>
-                                <input
-                                    type="date"
-                                    id="startDate"
-                                    value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
-                                    required
-                                />
-                            </div>
-
-                            <div className="mb-6">
-                                <label htmlFor="endDate" className="block mb-2 font-semibold">
-                                    End Date (Optional)
-                                </label>
-                                <input
-                                    type="date"
-                                    id="endDate"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
-                                />
+                                <div className="relative h-12">
+                                    <DateTimePicker
+                                        selectedDate={selectedDate}
+                                        selectedTime={selectedTime}
+                                        onDateSelect={setSelectedDate}
+                                        onTimeSelect={setSelectedTime}
+                                        onConfirm={() => setShowDateTimePicker(false)}
+                                        showPicker={showDateTimePicker}
+                                        togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
+                                        buttonClassName="w-full h-full flex items-center px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+                                    />
+                                </div>
                             </div>
 
                             <div className="mb-6">
@@ -201,7 +291,7 @@ export default function BookingStep1() {
                                     id="description"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013] min-h-[120px] resize-y"
+                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 min-h-[120px] resize-y"
                                     placeholder="Describe your event in detail..."
                                     rows={4}
                                 />
@@ -217,7 +307,7 @@ export default function BookingStep1() {
                                     value={assetInput}
                                     onChange={(e) => setAssetInput(e.target.value)}
                                     onKeyDown={handleAssetKeyDown}
-                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 placeholder-[#ca0013]"
+                                    className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
                                     placeholder="Type an asset and press space to add"
                                 />
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -239,6 +329,23 @@ export default function BookingStep1() {
                                 </div>
                             </div>
 
+                            <div className="mb-6">
+                                <div className="flex items-center">
+                                    <input
+                                        id="isPublic"
+                                        type="checkbox"
+                                        checked={eventStatus === 'public_pending'}
+                                        onChange={(e) => setEventStatus(e.target.checked ? 'public_pending' : 'private_pending')}
+                                        className="h-4 w-4 text-[#ca0013] focus:ring-[#ca0013] border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="isPublic" className="ml-2 block text-sm font-medium text-gray-700">
+                                        Public Event
+                                    </label>
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Public events are visible to everyone and require moderator approval. Your event won’t be published right away.                                </p>
+                            </div>
+
                             <div className="flex justify-between mt-8">
                                 <button
                                     type="button"
@@ -251,7 +358,7 @@ export default function BookingStep1() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="px-6 py-3 text-white rounded-lg transition-colors shadow-md font-semibold"
+                                    className="px-6 py-3 text-white rounded-lg transition-colors shadow-md font-semibold bg-[#ca0013] hover:bg-[#a80010]"
                                 >
                                     {isSubmitting ? 'Creating...' : 'Create Event'}
                                 </button>

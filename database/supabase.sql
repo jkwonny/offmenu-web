@@ -84,9 +84,9 @@ CREATE TABLE events (
   title text NOT NULL,
   description text,
   event_type text NOT NULL,
-  
-  start_date date NOT NULL,
-  end_date date, -- optional
+
+  selected_date date NOT NULL,
+  selected_time time NOT NULL,
 
   expected_capacity_min integer,
   expected_capacity_max integer,
@@ -114,7 +114,7 @@ CREATE TABLE chat_requests (
   special_requests TEXT,
   instagram_handle TEXT,
   website TEXT,
-  guest_count INTEGER,
+  guest_count TEXT,
   collaboration_types TEXT[],
   created_at TIMESTAMP DEFAULT now()
 );

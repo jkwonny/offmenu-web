@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.title || !body.start_date || !body.expected_capacity_min || !body.expected_capacity_max) {
+    if (!body.title|| !body.expected_capacity_min || !body.expected_capacity_max) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -53,8 +53,8 @@ export async function POST(request: Request) {
         user_id: body.user_id,
         title: body.title,
         description: body.description,
-        start_date: body.start_date,
-        end_date: body.end_date,
+        selected_date: body.selected_date,
+        selected_time: body.selected_time,
         expected_capacity_min: body.expected_capacity_min,
         expected_capacity_max: body.expected_capacity_max,
         assets_needed: body.assets_needed || [],
@@ -108,7 +108,7 @@ export async function GET(request: Request) {
       query = query.not('event_type', 'eq', 'Inquiry');
     }
     
-    const { data, error } = await query.order('start_date', { ascending: true });
+    const { data, error } = await query.order('selected_date', { ascending: true });
 
     if (error) {
       console.error('Supabase fetch error:', error);
