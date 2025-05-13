@@ -11,6 +11,7 @@ import { useSearchParams } from 'next/navigation';
 import { useUser } from '../context/UserContext';
 import { FaRegHandshake } from "react-icons/fa";
 import { LuMapPin } from "react-icons/lu";
+import DateTimePicker from '../components/DateTimePicker';
 
 
 // Define types for venue images
@@ -24,14 +25,14 @@ interface Event {
     id: string;
     title: string;
     event_type: string;
-    start_date: string;
-    end_date?: string;
+    selected_date: string;
+    selected_time?: string;
     description?: string;
     assets_needed?: string[];
     expected_capacity_min?: number;
     expected_capacity_max?: number;
     image_url: string;
-    venue_images?: VenueImage[];
+    event_photos?: VenueImage[];
     address: string;
     pricing_type: string;
     price?: number;
@@ -52,12 +53,10 @@ function ExploreContent() {
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [selectedTime, setSelectedTime] = useState<string>('');
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
     const searchParams = useSearchParams();
     const { user } = useUser();
     const capacityMenuRef = useRef<HTMLDivElement>(null);
-    const dateTimePickerRef = useRef<HTMLDivElement>(null);
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
@@ -102,95 +101,6 @@ function ExploreContent() {
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
 
-    // Calendar functions
-    const prevMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-    };
-
-    const nextMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-    };
-
-    // Generate calendar grid for current month
-    const generateCalendarMonth = () => {
-        const month = currentMonth.getMonth();
-        const year = currentMonth.getFullYear();
-
-        // First day of month
-        const firstDay = new Date(year, month, 1);
-        // Last day of month
-        const lastDay = new Date(year, month + 1, 0);
-
-        // Day of week of first day (0 = Sunday, 6 = Saturday)
-        const startDayOfWeek = firstDay.getDay();
-
-        // Total days in month
-        const daysInMonth = lastDay.getDate();
-
-        // Create array for calendar grid (max 6 weeks * 7 days = 42 cells)
-        const calendarDays = [];
-
-        // Add empty cells for days before first of month
-        for (let i = 0; i < startDayOfWeek; i++) {
-            calendarDays.push(null);
-        }
-
-        // Add days of month
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month, day);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            calendarDays.push({
-                date,
-                dateString: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-                isToday: date.getTime() === today.getTime(),
-                isPast: date < today,
-                isAvailable: date >= today
-            });
-        }
-
-        return calendarDays;
-    };
-
-    // Generate time slots from 12PM to 2AM in 30-minute increments
-    const generateTimeSlots = () => {
-        const slots = [];
-        // 12PM to 11:30PM
-        for (let hour = 12; hour < 24; hour++) {
-            const hour12 = hour > 12 ? hour - 12 : hour;
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            slots.push(`${hour12}:00 ${ampm}`);
-            slots.push(`${hour12}:30 ${ampm}`);
-        }
-        // 12AM to 2AM
-        slots.push(`12:00 AM`);
-        slots.push(`12:30 AM`);
-        slots.push(`1:00 AM`);
-        slots.push(`1:30 AM`);
-        slots.push(`2:00 AM`);
-
-        return slots;
-    };
-
-    const handleDateSelect = (date: string) => {
-        setSelectedDate(date);
-    };
-
-    const handleTimeSelect = (time: string) => {
-        setSelectedTime(time);
-    };
-
-    const handleDateTimeClick = () => {
-        setShowDateTimePicker(!showDateTimePicker);
-    };
-
-    const handleDateTimeConfirm = () => {
-        if (selectedDate && selectedTime) {
-            setShowDateTimePicker(false);
-        }
-    };
-
     const handleVenueClick = (venueId: string) => {
         // Set the selected venue ID
         setSelectedVenueId(venueId);
@@ -222,9 +132,6 @@ function ExploreContent() {
         function handleClickOutside(event: MouseEvent) {
             if (capacityMenuRef.current && !capacityMenuRef.current.contains(event.target as Node)) {
                 setShowCapacityMenu(false);
-            }
-            if (dateTimePickerRef.current && !dateTimePickerRef.current.contains(event.target as Node)) {
-                setShowDateTimePicker(false);
             }
         }
 
@@ -301,106 +208,17 @@ function ExploreContent() {
                                 <div className="h-8 w-px bg-gray-200"></div>
 
                                 {/* Date/Time Selector */}
-                                <div className="w-1/2 h-full" ref={dateTimePickerRef}>
-                                    <button
-                                        onClick={handleDateTimeClick}
-                                        className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
-                                    >
-                                        <span className="text-gray-800">
-                                            {selectedDate && selectedTime ?
-                                                `${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}` :
-                                                "Select date & time"
-                                            }
-                                        </span>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showDateTimePicker ? "rotate-180" : ""}>
-                                            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-
-                                    {showDateTimePicker && (
-                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden" style={{ width: '520px', right: '0' }}>
-                                            <div className="flex border-b">
-                                                <div className="w-3/5 border-r">
-                                                    <div className="flex justify-between items-center p-3 border-b">
-                                                        <button onClick={prevMonth} className="p-1">
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                            </svg>
-                                                        </button>
-                                                        <div className="font-medium">
-                                                            {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                                        </div>
-                                                        <button onClick={nextMonth} className="p-1">
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-7 mb-1 border-b">
-                                                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                                                            <div key={day} className="text-center py-2 text-sm font-medium">
-                                                                {day}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="grid grid-cols-7 p-2">
-                                                        {generateCalendarMonth().map((day, index) => (
-                                                            <div key={index} className="p-1 text-center">
-                                                                {day ? (
-                                                                    <button
-                                                                        onClick={() => day.isAvailable && handleDateSelect(day.dateString)}
-                                                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
-                                                                            ${day.isToday ? 'border border-amber-500' : ''}
-                                                                            ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
-                                                                            ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
-                                                                            ${day.dateString === selectedDate ? 'bg-[#ca0013] text-white border-2 border-[#ca0013]' :
-                                                                                (day.isAvailable && !day.isToday ? 'hover:bg-[#f5d6d8]' : '')}
-                                                                        `}
-                                                                        disabled={!day.isAvailable}
-                                                                    >
-                                                                        {day.date.getDate()}
-                                                                    </button>
-                                                                ) : (
-                                                                    <div className="w-8 h-8"></div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="w-2/5 max-h-72 overflow-y-auto">
-                                                    <div className="p-3 border-b">
-                                                        <h3 className="font-medium text-center">Time</h3>
-                                                    </div>
-                                                    <div className="p-2">
-                                                        {generateTimeSlots().map((time) => (
-                                                            <button
-                                                                key={time}
-                                                                onClick={() => handleTimeSelect(time)}
-                                                                className={`w-full text-left px-3 py-2 rounded text-sm 
-                                                                    ${selectedTime === time ? 'bg-[#ca0013] text-white' : 'hover:bg-[#f5d6d8]'}`}
-                                                            >
-                                                                {time}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="p-3 flex justify-end border-t">
-                                                <button
-                                                    onClick={handleDateTimeConfirm}
-                                                    className={`px-4 py-2 rounded font-medium text-sm
-                                                        ${selectedDate && selectedTime ? 'bg-[#ca0013] text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                                                    disabled={!selectedDate || !selectedTime}
-                                                >
-                                                    Apply
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                <div className="w-1/2 h-full">
+                                    <DateTimePicker
+                                        selectedDate={selectedDate}
+                                        selectedTime={selectedTime}
+                                        onDateSelect={setSelectedDate}
+                                        onTimeSelect={setSelectedTime}
+                                        onConfirm={() => setShowDateTimePicker(false)}
+                                        showPicker={showDateTimePicker}
+                                        togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
+                                        pickerPosition="right"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -518,8 +336,8 @@ function ExploreContent() {
                                         </span>
                                     </div>
                                     <div className="text-gray-600 mb-4">
-                                        {format(event.start_date, 'MMM d, yyyy')}
-                                        {event.end_date && ` - ${format(event.end_date, 'MMM d, yyyy')}`}
+                                        {format(event.selected_date, 'MMM d, yyyy')}
+                                        {event.selected_time && ` at ${event.selected_time}`}
                                     </div>
                                     <p className="text-gray-700 mb-4 line-clamp-3">
                                         {event.description || 'No description available'}
