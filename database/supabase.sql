@@ -110,6 +110,12 @@ CREATE TABLE chat_requests (
   venue_name TEXT,
   event_date DATE,
   status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  requirements TEXT,
+  special_requests TEXT,
+  instagram_handle TEXT,
+  website TEXT,
+  guest_count INTEGER,
+  collaboration_types TEXT[],
   created_at TIMESTAMP DEFAULT now()
 );
 
