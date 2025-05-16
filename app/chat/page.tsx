@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/app/lib/supabase';
 import { format } from 'date-fns';
 import NavBar from '@/app/components/NavBar';
-import Image from 'next/image';
 
 interface User {
     id: string;
@@ -31,6 +30,15 @@ interface ChatRoom {
             name: string;
         };
     };
+}
+
+interface ChatMessage {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_id: string;
+    sender_name: string;
+
 }
 
 interface ChatRequest {
@@ -80,15 +88,8 @@ interface Venue {
     venue_images?: VenueImage[];
 }
 
-interface ChatMessage {
-    id: string;
-    content: string;
-    created_at: string;
-    sender_id: string;
-    sender_name: string;
-}
-
-export default function ChatHomePage() {
+// Create a separate component that uses useSearchParams
+function ChatContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [user, setUser] = useState<User | null>(null);
@@ -102,6 +103,7 @@ export default function ChatHomePage() {
     const [selectedSpace, setSelectedSpace] = useState<Venue | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+    console.log('chatMEssages', chatMessages)
     // Helper function to scroll to bottom
     const scrollToBottom = () => {
         if (messagesContainerRef.current) {
@@ -387,7 +389,8 @@ export default function ChatHomePage() {
         }
 
         fetchUserAndChats();
-    }, [])
+    }, []);
+
     useEffect(() => {
         // Get the chatRoomId from URL query params
         const chatRoomId = searchParams.get('chatRoomId');
@@ -396,7 +399,7 @@ export default function ChatHomePage() {
             loadChatRoom(chatRoomId);
         } else if (!chatRoomId && chatRooms.length > 0) {
             // Optionally set the first room as default if no ID is specified
-            // router.push(`/chat?chatRoomId=${chatRooms[0].id}`);
+            // router.push(`/chat/chat?chatRoomId=${chatRooms[0].id}`);
         }
     }, [searchParams, chatRooms]);
 
@@ -655,14 +658,11 @@ export default function ChatHomePage() {
                     <div className="col-span-1 bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col p-2">
                         {selectedSpace?.venue_images && selectedSpace.venue_images.length > 0 ? (
                             <div className="relative w-full h-72">
-                                <Image
+                                <img
                                     src={selectedSpace.venue_images[0].image_url}
                                     alt={selectedSpace?.name || "Venue"}
-                                    className="rounded-lg object-cover"
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 33vw"
+                                    className="w-full h-72 object-cover rounded-lg"
                                     onError={(e) => {
-                                        // Using unoptimized fallback image
                                         e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Venue';
                                     }}
                                 />
@@ -710,5 +710,21 @@ export default function ChatHomePage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Main component that wraps the ChatContent in Suspense
+export default function ChatHomePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen">
+                <NavBar />
+                <div className="flex items-center justify-center h-[calc(100vh-64px)]">
+                    <p>Loading conversations...</p>
+                </div>
+            </div>
+        }>
+            <ChatContent />
+        </Suspense>
     );
 } 
