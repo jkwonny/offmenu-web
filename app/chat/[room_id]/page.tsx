@@ -283,7 +283,7 @@ export default function ChatRoomPage() {
     }, [messages]);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     };
 
     // Handle typing indicator
@@ -559,42 +559,44 @@ export default function ChatRoomPage() {
     return (
         <>
             <NavBar />
-            <div className="max-w-4xl mx-auto px-4 pt-4 pb-4 flex flex-col h-[calc(100vh-128px)]">
+            <div className="max-w-4xl mx-auto px-4 flex flex-col h-[calc(100vh-64px)]">
                 {/* Header with venue info */}
-                <div className="bg-white rounded-t-lg shadow-sm p-4 border-b flex justify-between items-center">
-                    <div>
-                        <h1 className="font-semibold text-lg">{roomDetails?.popup_name} at {roomDetails.venue_name || 'Chat'}</h1>
+                <div className="bg-white rounded-t-lg shadow-sm p-2 border-b flex flex-wrap justify-between items-start">
+                    <div className="mr-2 mb-1 max-w-[40%]">
+                        <h1 className="font-semibold text-lg truncate">{roomDetails?.popup_name} at {roomDetails.venue_name || 'Chat'}</h1>
                     </div>
-                    <div>
+                    <div className="mr-2 mb-1 max-w-[40%]">
                         <h3 className="text-sm text-gray-500">Event Date: {roomDetails.selected_date?.includes('-') ? new Date(roomDetails.selected_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : roomDetails.selected_date} at {roomDetails.selected_time} EST</h3>
                     </div>
-                    <div>
+                    <div className="mr-2 mb-1 max-w-[25%]">
                         <h3 className="text-sm text-gray-500">Open to:</h3>
-                        <ul className="text-xs text-gray-500 list-disc pl-5">
+                        <div className="flex flex-wrap gap-1 text-xs text-gray-500">
                             {roomDetails.collaboration_types?.includes('minimumSpend') && (
-                                <li>Minimum Spend</li>
+                                <span className="bg-gray-100 px-1 rounded">Minimum Spend</span>
                             )}
                             {roomDetails.collaboration_types?.includes('revenueShare') && (
-                                <li>Revenue Share</li>
+                                <span className="bg-gray-100 px-1 rounded">Revenue Share</span>
                             )}
                             {roomDetails.collaboration_types?.includes('fixedRental') && (
-                                <li>Fixed Rental</li>
+                                <span className="bg-gray-100 px-1 rounded">Fixed Rental</span>
                             )}
                             {roomDetails.collaboration_types?.includes('freePromotion') && (
-                                <li>Free Promotion</li>
+                                <span className="bg-gray-100 px-1 rounded">Free Promotion</span>
                             )}
-                        </ul>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => router.push('/chat')}
-                        className="text-sm text-amber-600 hover:text-amber-700"
-                    >
-                        Back
-                    </button>
+                    <div className="mb-1">
+                        <button
+                            onClick={() => router.push('/chat')}
+                            className="text-sm text-amber-600 hover:text-amber-700"
+                        >
+                            Back
+                        </button>
+                    </div>
                 </div>
 
-                {/* Messages Section */}
-                <div className="flex-1 overflow-y-auto bg-white p-4 space-y-4">
+                {/* Messages Section - Adjusted to prevent overflow */}
+                <div className="flex-1 overflow-y-auto bg-white px-3 py-2 space-y-3">
                     {loading ? (
                         <div className="flex justify-center items-center h-full">
                             <p>Loading messages...</p>
@@ -613,10 +615,10 @@ export default function ChatRoomPage() {
                             return (
                                 <div
                                     key={message.id}
-                                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-2`}
                                 >
                                     <div
-                                        className={`max-w-[75%] rounded-lg p-3 ${isCurrentUser
+                                        className={`max-w-[75%] rounded-lg p-2 ${isCurrentUser
                                             ? 'bg-amber-600 text-white rounded-tr-none'
                                             : 'bg-gray-100 text-gray-800 rounded-tl-none'
                                             }`}
@@ -628,18 +630,18 @@ export default function ChatRoomPage() {
                                         )}
 
                                         {/* Message content */}
-                                        {message.content && <p className="mb-2">{message.content}</p>}
+                                        {message.content && <p className="mb-1 text-sm">{message.content}</p>}
 
                                         {/* Attachment handling */}
                                         {message.attachment_url && message.attachment_type === 'image' && (
-                                            <div className="mb-2">
+                                            <div className="mb-1">
                                                 <Image
                                                     src={message.attachment_url}
                                                     alt="Attachment"
-                                                    className="rounded-md max-w-full max-h-64 object-contain"
+                                                    className="rounded-md max-w-full max-h-48 object-contain"
                                                     onError={() => handleImageError(message.id, message.attachment_url || '')}
-                                                    width={300}
-                                                    height={200}
+                                                    width={250}
+                                                    height={150}
                                                 />
                                                 {refreshingUrls[message.id] && (
                                                     <p className="text-xs mt-1 text-amber-100">Refreshing image...</p>
@@ -648,11 +650,11 @@ export default function ChatRoomPage() {
                                         )}
 
                                         {message.attachment_url && message.attachment_type === 'video' && (
-                                            <div className="mb-2">
+                                            <div className="mb-1">
                                                 <video
                                                     src={message.attachment_url}
                                                     controls
-                                                    className="rounded-md max-w-full max-h-64"
+                                                    className="rounded-md max-w-full max-h-48"
                                                     onError={() => handleImageError(message.id, message.attachment_url || '')}
                                                 />
                                                 {refreshingUrls[message.id] && (
@@ -662,12 +664,12 @@ export default function ChatRoomPage() {
                                         )}
 
                                         {message.attachment_url && message.attachment_type === 'document' && (
-                                            <div className="mb-2">
+                                            <div className="mb-1">
                                                 <a
                                                     href={message.attachment_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex items-center space-x-2 p-2 bg-white rounded-md border text-amber-600"
+                                                    className="flex items-center space-x-2 p-1 bg-white rounded-md border text-amber-600 text-sm"
                                                     onClick={(e) => {
                                                         if (message.attachment_url?.includes('jwt expired')) {
                                                             e.preventDefault();
@@ -686,7 +688,7 @@ export default function ChatRoomPage() {
                                         {/* Timestamp */}
                                         <p
                                             className={`text-xs ${isCurrentUser ? 'text-amber-100' : 'text-gray-500'
-                                                } text-right`}
+                                                } text-right mt-1`}
                                         >
                                             {formatMessageDate(message.created_at)}
                                         </p>
@@ -698,11 +700,11 @@ export default function ChatRoomPage() {
 
                     {/* Typing indicator */}
                     {typingUsers.length > 0 && (
-                        <div className="flex items-center text-sm text-gray-500 mt-2">
-                            <div className="flex space-x-1 mr-2">
-                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
-                                <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-200"></div>
+                        <div className="flex items-center text-xs text-gray-500 mt-1 mb-1">
+                            <div className="flex space-x-1 mr-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce delay-100"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce delay-200"></div>
                             </div>
                             {typingUsers.length === 1
                                 ? `${participants.find(p => p.id === typingUsers[0])?.name || 'Someone'} is typing...`
@@ -711,16 +713,16 @@ export default function ChatRoomPage() {
                     )}
 
                     {/* Auto-scroll anchor */}
-                    <div ref={messagesEndRef} />
+                    <div ref={messagesEndRef} className="h-1" />
                 </div>
 
                 {/* Message Input */}
-                <div className="bg-white rounded-b-lg shadow-sm p-4 border-t">
+                <div className="bg-white rounded-b-lg shadow-sm p-2 border-t sticky bottom-0">
                     {/* File preview */}
                     {fileToUpload && (
-                        <div className="mb-3 p-2 border rounded-md bg-gray-50 flex justify-between items-center">
+                        <div className="mb-2 p-1 border rounded-md bg-gray-50 flex justify-between items-center">
                             <div className="flex items-center">
-                                <div className="w-10 h-10 bg-amber-100 rounded-md flex items-center justify-center mr-2">
+                                <div className="w-8 h-8 bg-amber-100 rounded-md flex items-center justify-center mr-2">
                                     {fileToUpload.type.startsWith('image/') ? '🖼️' :
                                         fileToUpload.type.startsWith('video/') ? '🎥' : '📄'}
                                 </div>
@@ -742,10 +744,10 @@ export default function ChatRoomPage() {
 
                     {/* Upload progress */}
                     {isUploading && (
-                        <div className="mb-3">
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className="mb-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                    className="bg-amber-600 h-2.5 rounded-full"
+                                    className="bg-amber-600 h-2 rounded-full"
                                     style={{ width: `${uploadProgress}%` }}
                                 ></div>
                             </div>
@@ -756,11 +758,11 @@ export default function ChatRoomPage() {
                     <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
                         <label
                             htmlFor="file-upload"
-                            className="p-2 text-gray-500 hover:text-amber-600 cursor-pointer"
+                            className="p-1 text-gray-500 hover:text-amber-600 cursor-pointer flex-shrink-0"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6"
+                                className="h-5 w-5"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -790,14 +792,14 @@ export default function ChatRoomPage() {
                                 handleTyping();
                             }}
                             placeholder="Type a message..."
-                            className="flex-1 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="flex-1 p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
                             disabled={sending || isUploading}
                         />
 
                         <button
                             type="submit"
                             disabled={(!newMessage.trim() && !fileToUpload) || sending || isUploading}
-                            className="p-3 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+                            className="p-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 flex-shrink-0"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"

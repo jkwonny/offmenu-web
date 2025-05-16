@@ -64,6 +64,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Set a safety timeout to prevent infinite loading state
+    useEffect(() => {
+        if (isLoading) {
+            const timeoutId = setTimeout(() => {
+                console.warn('Auth loading timeout reached - resetting loading state');
+                setIsLoading(false);
+            }, 10000); // 10 seconds timeout
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [isLoading]);
+
     // Initialize auth
     useEffect(() => {
         // Set initial loading state
@@ -72,7 +84,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Check for active session on mount
         const initializeAuth = async () => {
             try {
-
                 // Check if supabase is properly initialized
                 if (!supabase) {
                     console.error('Supabase client is not properly initialized');
@@ -83,7 +94,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
                 if (error) {
                     console.error('Error getting session:', error);
-                    setIsLoading(false);
                     return;
                 }
 
@@ -93,15 +103,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
                     const profile = await fetchUserProfile(data.session.user.id);
                     setUserProfile(profile);
-                    setIsLoading(false);
                 } else {
                     setSession(null);
                     setUser(null);
                     setUserProfile(null);
-                    setIsLoading(false);
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
+                // Clear user states on error
+                setSession(null);
+                setUser(null);
+                setUserProfile(null);
             } finally {
                 setIsLoading(false);
             }
@@ -113,19 +125,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Listen for auth changes
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, newSession) => {
+                try {
+                    // Set loading to true when auth state changes
+                    setIsLoading(true);
 
-                // Only update if we have good data (avoid wiping during initialization)
-                setSession(newSession);
+                    // Only update if we have good data (avoid wiping during initialization)
+                    setSession(newSession);
 
-                // Don't set user to null during page refreshes
-                if (newSession?.user) {
-                    setUser(newSession.user);
-                    const profile = await fetchUserProfile(newSession.user.id);
-                    setUserProfile(profile);
-                } else if (event === 'SIGNED_OUT') {
-                    // Only clear user on explicit sign out
+                    // Don't set user to null during page refreshes
+                    if (newSession?.user) {
+                        setUser(newSession.user);
+                        const profile = await fetchUserProfile(newSession.user.id);
+                        setUserProfile(profile);
+                    } else if (event === 'SIGNED_OUT') {
+                        // Only clear user on explicit sign out
+                        setUser(null);
+                        setUserProfile(null);
+                    }
+                } catch (error) {
+                    console.error('Error in auth state change:', error);
+                    // Clear user states on error to prevent stuck states
                     setUser(null);
                     setUserProfile(null);
+                } finally {
+                    // Always update loading state when done
+                    setIsLoading(false);
                 }
             }
         );
@@ -198,9 +222,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Sign out
     const signOut = async () => {
         setIsLoading(true);
-        await supabase.auth.signOut();
-        setUserProfile(null);
-        setIsLoading(false);
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Error signing out:', error);
+            }
+            // Clear user data regardless of error
+            setSession(null);
+            setUserProfile(null);
+            setUser(null);
+        } catch (error) {
+            console.error('Exception during sign out:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // Add updateUserProfile function
