@@ -33,3 +33,18 @@ export interface VenueFormData {
   rules: string;
   tags: string;
 } 
+
+export interface VenueImage {
+  image_url: string;
+  sort_order?: number;
+}
+
+export interface Venue {
+  id: number;
+  name: string;
+  address?: string;
+  description?: string;
+  neighborhood?: string;
+  image_url?: string;
+  venue_images?: VenueImage[];
+}
