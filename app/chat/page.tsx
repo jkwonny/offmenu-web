@@ -103,7 +103,6 @@ function ChatContent() {
     const [selectedSpace, setSelectedSpace] = useState<Venue | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    console.log('chatMEssages', chatMessages)
     // Helper function to scroll to bottom
     const scrollToBottom = () => {
         if (messagesContainerRef.current) {

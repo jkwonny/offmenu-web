@@ -3,10 +3,33 @@
 import Link from 'next/link';
 import { useUser } from '../context/UserContext';
 import { useState, Suspense, useRef, useEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import FeedbackModal from './FeedbackModal';
 import Image from 'next/image';
 import { useProfilePictureUrl } from '../lib/queries/user';
+import { supabase } from '../lib/supabase';
+import { BiSolidMessageRounded } from "react-icons/bi";
+import { IoMdClose } from "react-icons/io";
+
+
+
+// Define ChatRoom interface for the dropdown
+interface ChatRoom {
+    id: string;
+    created_at: string;
+    venue_id: number;
+    venue_name?: string;
+    venue: {
+        name: string;
+    };
+    latest_message?: {
+        content: string;
+        created_at: string;
+        sender: {
+            name: string;
+        };
+    };
+}
 
 function TabsSection() {
     const searchParams = useSearchParams();
@@ -54,12 +77,135 @@ export default function NavBar() {
     const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [chatDropdownOpen, setChatDropdownOpen] = useState(false);
+    const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+    const [loadingChats, setLoadingChats] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
     const isAdmin = userProfile?.role === 'admin';
     const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const chatDropdownRef = useRef<HTMLDivElement>(null);
     const { data: profilePictureUrl } = useProfilePictureUrl(userProfile?.profile_picture);
+    const router = useRouter();
 
+    // Fetch chat rooms for the current user
+    const fetchChatRooms = async () => {
+        if (!user?.id) return;
+
+        setLoadingChats(true);
+        try {
+            // Fetch chat rooms where the user is a participant
+            // First, get rooms where user is the sender
+            const { data: senderRooms, error: senderError } = await supabase
+                .from('chat_rooms')
+                .select(`   
+                    id, 
+                    created_at, 
+                    venue_id, 
+                    venue_name,
+                    venue:venues(name),
+                    chat_request:chat_requests!inner(sender_id, recipient_id, status)
+                `)
+                .eq('chat_request.sender_id', user.id);
+
+            if (senderError) throw senderError;
+
+            // Then, get rooms where user is the recipient
+            const { data: recipientRooms, error: recipientError } = await supabase
+                .from('chat_rooms')
+                .select(`
+                    id, 
+                    created_at, 
+                    venue_id,
+                    venue_name,
+                    venue:venues(name),
+                    chat_request:chat_requests!inner(sender_id, recipient_id, status)
+                `)
+                .eq('chat_request.recipient_id', user.id);
+
+            if (recipientError) throw recipientError;
+
+            // Combine the results
+            const combinedRooms = [...(senderRooms || []), ...(recipientRooms || [])];
+
+            // Remove duplicates based on room id
+            const uniqueRoomIds = new Set();
+            const uniqueRooms = combinedRooms.filter(room => {
+                if (uniqueRoomIds.has(room.id)) {
+                    return false;
+                }
+                uniqueRoomIds.add(room.id);
+                return true;
+            });
+
+            // Fetch the latest message for each room
+            const roomsWithMessages = await Promise.all(
+                uniqueRooms.map(async (room) => {
+                    const { data: messages } = await supabase
+                        .from('chat_messages')
+                        .select(`
+                            content, 
+                            created_at,
+                            sender:users!sender_id(name)
+                        `)
+                        .eq('room_id', room.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    const latestMessage = messages && messages.length > 0
+                        ? {
+                            content: messages[0].content,
+                            created_at: messages[0].created_at,
+                            sender: {
+                                name: (() => {
+                                    const sender = messages[0].sender;
+                                    if (!sender) return 'Unknown';
+
+                                    // Use type assertion
+                                    const senderData = Array.isArray(sender)
+                                        ? (sender as { name?: string }[])[0]
+                                        : sender as { name?: string };
+
+                                    return senderData?.name || 'Unknown';
+                                })()
+                            }
+                        }
+                        : undefined;
+
+                    // Transform the data to match the ChatRoom interface
+                    const chatRoom: ChatRoom = {
+                        id: room.id,
+                        created_at: room.created_at,
+                        venue_id: room.venue_id,
+                        venue_name: room.venue_name,
+                        venue: {
+                            name: room.venue && Array.isArray(room.venue) && room.venue[0]?.name ? room.venue[0].name : 'Unknown Venue'
+                        },
+                        latest_message: latestMessage
+                    };
+
+                    return chatRoom;
+                })
+            );
+
+            // Sort by latest message time or created_at if no messages
+            const sortedRooms = roomsWithMessages.sort((a, b) => {
+                const aTime = a.latest_message
+                    ? new Date(a.latest_message.created_at).getTime()
+                    : new Date(a.created_at).getTime();
+                const bTime = b.latest_message
+                    ? new Date(b.latest_message.created_at).getTime()
+                    : new Date(b.created_at).getTime();
+                return bTime - aTime;
+            });
+
+            setChatRooms(sortedRooms);
+        } catch (err) {
+            console.error('Error fetching chat rooms:', err);
+        } finally {
+            setLoadingChats(false);
+        }
+    };
 
     const openFeedbackModal = () => {
         setFeedbackModalOpen(true);
@@ -68,11 +214,51 @@ export default function NavBar() {
         setDropdownOpen(false);
     };
 
+    const handleChatClick = () => {
+        if (!user) {
+            router.push('/auth/sign-in');
+            return;
+        }
+
+        setChatDropdownOpen(!chatDropdownOpen);
+        if (!chatDropdownOpen) {
+            fetchChatRooms();
+        }
+    };
+
+    const handleChatRoomClick = (roomId: string) => {
+        router.push(`/chat?chatRoomId=${roomId}`);
+        setChatDropdownOpen(false);
+    };
+
+    // Format date to display time or date
+    const formatMessageDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date >= today) {
+            // Today, show time
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (date >= yesterday) {
+            // Yesterday
+            return 'Yesterday';
+        } else {
+            // Show date
+            return date.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
+        }
+    };
+
     // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setDropdownOpen(false);
+            }
+            if (chatDropdownRef.current && !chatDropdownRef.current.contains(event.target as Node)) {
+                setChatDropdownOpen(false);
             }
         }
 
@@ -81,6 +267,13 @@ export default function NavBar() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    // Fetch chat rooms when user is authenticated or when component mounts
+    useEffect(() => {
+        if (user?.id && !loadingChats && chatRooms.length === 0) {
+            fetchChatRooms();
+        }
+    }, [user]);
 
     return (
         <nav className="w-full py-2 px-4 rounded-lg">
@@ -126,6 +319,87 @@ export default function NavBar() {
                         <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black whitespace-nowrap">
                             Explore
                         </Link>
+
+                        {/* Chat Icon with dropdown */}
+                        <div className="relative" ref={chatDropdownRef}>
+                            <button
+                                onClick={handleChatClick}
+                                className="flex items-center cursor-pointer text-gray-700 hover:text-black relative border border-gray-300 rounded-full overflow-hidden p-2"
+                                aria-label="Messages"
+                            >
+                                <div className="relative w-6 h-6">
+                                    <div className={`absolute inset-0 transition-all duration-300 ${chatDropdownOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`}>
+                                        <BiSolidMessageRounded className="w-6 h-6" />
+                                    </div>
+                                    <div className={`absolute inset-0 transition-all duration-300 ${chatDropdownOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-0'}`}>
+                                        <IoMdClose className="w-6 h-6" />
+                                    </div>
+                                </div>
+                                {/* {chatRooms.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                        {chatRooms.length > 9 ? '9+' : chatRooms.length}
+                                    </span>
+                                )} */}
+                            </button>
+
+                            {chatDropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-20 origin-top-right animate-dropdown overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-100">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-semibold text-gray-900">Messages</h3>
+                                            <Link
+                                                href="/chat"
+                                                className="text-sm text-blue-600 hover:text-blue-800"
+                                                onClick={() => setChatDropdownOpen(false)}
+                                            >
+                                                See all
+                                            </Link>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-80 overflow-y-auto">
+                                        {loadingChats ? (
+                                            <div className="flex justify-center items-center py-6">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                            </div>
+                                        ) : chatRooms.length === 0 ? (
+                                            <div className="py-4 px-4 text-center text-gray-500">
+                                                No messages yet
+                                            </div>
+                                        ) : (
+                                            chatRooms.map((room) => (
+                                                <div
+                                                    key={room.id}
+                                                    onClick={() => handleChatRoomClick(room.id)}
+                                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-start gap-3 border-b border-gray-100 last:border-b-0"
+                                                >
+                                                    <div className="w-10 h-10 bg-amber-100 rounded-full flex-shrink-0 flex items-center justify-center text-amber-600 uppercase">
+                                                        {room.venue_name ? room.venue_name.charAt(0) : '?'}
+                                                    </div>
+                                                    <div className="flex-grow min-w-0">
+                                                        <div className="flex justify-between items-start">
+                                                            <h4 className="font-medium text-gray-900 truncate max-w-[180px]">
+                                                                {room.venue_name || room.venue.name || 'Unknown Venue'}
+                                                            </h4>
+                                                            {room.latest_message && (
+                                                                <span className="text-xs text-gray-500">
+                                                                    {formatMessageDate(room.latest_message.created_at)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-500 truncate">
+                                                            {room.latest_message
+                                                                ? `${room.latest_message.sender.name}: ${room.latest_message.content}`
+                                                                : 'No messages yet'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
 
                         {isLoading ? (
@@ -275,18 +549,23 @@ export default function NavBar() {
                                 Account
                             </Link>
                             <Link
+                                href="/chat"
+                                className="flex items-center gap-2 py-2 text-gray-700 hover:text-black"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <span>Messages</span>
+                                {chatRooms.length > 0 && (
+                                    <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                        {chatRooms.length > 9 ? '9+' : chatRooms.length}
+                                    </span>
+                                )}
+                            </Link>
+                            <Link
                                 href="/submit-venue"
                                 className="block py-2 text-gray-700 hover:text-black"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 Become a Host
-                            </Link>
-                            <Link
-                                href="/chat"
-                                className="block py-2 text-gray-700 hover:text-black"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Messages
                             </Link>
                             {isAdmin && (
                                 <Link
