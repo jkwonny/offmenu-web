@@ -22,6 +22,7 @@ export interface Venue {
   tags: string[];
   venue_images: string[];
   owner_id?: string;
+  neighborhood?: string;
 }
 
 // Function to fetch venues from Supabase

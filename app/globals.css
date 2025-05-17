@@ -124,3 +124,24 @@ body {
 .animate-menu-open {
   animation: menuOpen 0.2s ease-out forwards;
 }
+
+/* Chat dropdown animation */
+@keyframes dropdownSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 600px;
+  }
+}
+
+.animate-dropdown {
+  animation: dropdownSlide 0.25s ease-out forwards;
+  transform-origin: top center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
