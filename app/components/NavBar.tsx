@@ -1,211 +1,33 @@
 'use client';
 
-import Link from 'next/link';
 import { useUser } from '../context/UserContext';
 import { useState, Suspense, useRef, useEffect } from 'react';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import FeedbackModal from './FeedbackModal';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useProfilePictureUrl } from '../lib/queries/user';
-import { supabase } from '../lib/supabase';
 import { BiSolidMessageRounded } from "react-icons/bi";
 import { IoMdClose } from "react-icons/io";
+import { TabsSection, TabsSkeletonLoader } from './Navbar/index';
+import Link from 'next/link';
+import FeedbackModal from './FeedbackModal';
+import Image from 'next/image';
+import { useChatRooms } from '../lib/hooks/useChatRooms';
 
-
-
-// Define ChatRoom interface for the dropdown
-interface ChatRoom {
-    id: string;
-    created_at: string;
-    venue_id: number;
-    venue_name?: string;
-    venue: {
-        name: string;
-    };
-    latest_message?: {
-        content: string;
-        created_at: string;
-        sender: {
-            name: string;
-        };
-    };
-}
-
-function TabsSection() {
-    const searchParams = useSearchParams();
-    const pathname = usePathname();
-    const isExplorePage = pathname === '/explore';
-    const view = searchParams.get('view');
-
-    if (!isExplorePage) return null;
-
-    return (
-        <div className="flex overflow-hidden rounded-full">
-            <Link
-                href="/explore?view=spaces"
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${!view || view === 'spaces'
-                    ? 'bg-black text-white'
-                    : 'bg-white text-black'
-                    }`}
-            >
-                Spaces
-            </Link>
-            <Link
-                href="/explore?view=popups"
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
-                    ? 'bg-black text-white'
-                    : 'bg-white text-black'
-                    }`}
-            >
-                Pop-ups
-            </Link>
-        </div>
-    );
-}
-
-// Fallback UI while suspense is loading
-function TabsSkeletonLoader() {
-    return (
-        <div className="flex rounded-lg overflow-hidden shadow-sm w-full max-w-[200px] mx-auto">
-            <div className="px-3 md:px-6 py-2 bg-gray-200 animate-pulse w-full" />
-            <div className="px-3 md:px-6 py-2 bg-gray-200 animate-pulse w-full" />
-        </div>
-    );
-}
 
 export default function NavBar() {
     const { user, userProfile, signOut, isLoading } = useUser();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [chatDropdownOpen, setChatDropdownOpen] = useState(false);
-    const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-    const [loadingChats, setLoadingChats] = useState(false);
+    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
     const isSpacesHost = userProfile?.spaces_host || false;
     const isAdmin = userProfile?.role === 'admin';
-    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const chatDropdownRef = useRef<HTMLDivElement>(null);
     const { data: profilePictureUrl } = useProfilePictureUrl(userProfile?.profile_picture);
     const router = useRouter();
 
-    // Fetch chat rooms for the current user
-    const fetchChatRooms = async () => {
-        if (!user?.id) return;
-
-        setLoadingChats(true);
-        try {
-            // Fetch chat rooms where the user is a participant
-            // First, get rooms where user is the sender
-            const { data: senderRooms, error: senderError } = await supabase
-                .from('chat_rooms')
-                .select(`   
-                    id, 
-                    created_at, 
-                    venue_id, 
-                    venue_name,
-                    venue:venues(name),
-                    chat_request:chat_requests!inner(sender_id, recipient_id, status)
-                `)
-                .eq('chat_request.sender_id', user.id);
-
-            if (senderError) throw senderError;
-
-            // Then, get rooms where user is the recipient
-            const { data: recipientRooms, error: recipientError } = await supabase
-                .from('chat_rooms')
-                .select(`
-                    id, 
-                    created_at, 
-                    venue_id,
-                    venue_name,
-                    venue:venues(name),
-                    chat_request:chat_requests!inner(sender_id, recipient_id, status)
-                `)
-                .eq('chat_request.recipient_id', user.id);
-
-            if (recipientError) throw recipientError;
-
-            // Combine the results
-            const combinedRooms = [...(senderRooms || []), ...(recipientRooms || [])];
-
-            // Remove duplicates based on room id
-            const uniqueRoomIds = new Set();
-            const uniqueRooms = combinedRooms.filter(room => {
-                if (uniqueRoomIds.has(room.id)) {
-                    return false;
-                }
-                uniqueRoomIds.add(room.id);
-                return true;
-            });
-
-            // Fetch the latest message for each room
-            const roomsWithMessages = await Promise.all(
-                uniqueRooms.map(async (room) => {
-                    const { data: messages } = await supabase
-                        .from('chat_messages')
-                        .select(`
-                            content, 
-                            created_at,
-                            sender:users!sender_id(name)
-                        `)
-                        .eq('room_id', room.id)
-                        .order('created_at', { ascending: false })
-                        .limit(1);
-
-                    const latestMessage = messages && messages.length > 0
-                        ? {
-                            content: messages[0].content,
-                            created_at: messages[0].created_at,
-                            sender: {
-                                name: (() => {
-                                    const sender = messages[0].sender;
-                                    if (!sender) return 'Unknown';
-
-                                    // Use type assertion
-                                    const senderData = Array.isArray(sender)
-                                        ? (sender as { name?: string }[])[0]
-                                        : sender as { name?: string };
-
-                                    return senderData?.name || 'Unknown';
-                                })()
-                            }
-                        }
-                        : undefined;
-
-                    // Transform the data to match the ChatRoom interface
-                    const chatRoom: ChatRoom = {
-                        id: room.id,
-                        created_at: room.created_at,
-                        venue_id: room.venue_id,
-                        venue_name: room.venue_name,
-                        venue: {
-                            name: room.venue && Array.isArray(room.venue) && room.venue[0]?.name ? room.venue[0].name : 'Unknown Venue'
-                        },
-                        latest_message: latestMessage
-                    };
-
-                    return chatRoom;
-                })
-            );
-
-            // Sort by latest message time or created_at if no messages
-            const sortedRooms = roomsWithMessages.sort((a, b) => {
-                const aTime = a.latest_message
-                    ? new Date(a.latest_message.created_at).getTime()
-                    : new Date(a.created_at).getTime();
-                const bTime = b.latest_message
-                    ? new Date(b.latest_message.created_at).getTime()
-                    : new Date(b.created_at).getTime();
-                return bTime - aTime;
-            });
-
-            setChatRooms(sortedRooms);
-        } catch (err) {
-            console.error('Error fetching chat rooms:', err);
-        } finally {
-            setLoadingChats(false);
-        }
-    };
+    // Use the custom hook to fetch chat rooms
+    const { rooms: chatRooms, isLoading: loadingChats } = useChatRooms(user?.id);
 
     const openFeedbackModal = () => {
         setFeedbackModalOpen(true);
@@ -221,9 +43,6 @@ export default function NavBar() {
         }
 
         setChatDropdownOpen(!chatDropdownOpen);
-        if (!chatDropdownOpen) {
-            fetchChatRooms();
-        }
     };
 
     const handleChatRoomClick = (roomId: string) => {
@@ -267,13 +86,6 @@ export default function NavBar() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
-
-    // Fetch chat rooms when user is authenticated or when component mounts
-    useEffect(() => {
-        if (user?.id && !loadingChats && chatRooms.length === 0) {
-            fetchChatRooms();
-        }
-    }, [user]);
 
     return (
         <nav className="w-full py-2 px-4 rounded-lg">
