@@ -314,7 +314,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                             {filteredVenues.length > 0 ? (
                                 filteredVenues.map((venue) => {
                                     const venueImages = venue.venue_images && venue.venue_images.length > 0
-                                        ? venue.venue_images.map((img: any) => getImageUrl(img))
+                                        ? venue.venue_images.map((img: VenueImage) => getImageUrl(img))
                                         : [venue.image_url || '/images/default-venue-image.jpg'];
 
                                     const currentIndex = currentImageIndices[venue.id] || 0;
@@ -576,7 +576,7 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
     // Add a ref to track the previous selected venue ID to prevent unnecessary map re-centering
     const previousSelectedVenueIdRef = useRef<string | null>(null);
     // Add a ref to store React roots for popup containers
-    const popupRootsRef = useRef<{ [key: string]: any }>({});
+    const popupRootsRef = useRef<{ [key: string]: import('react-dom/client').Root }>({});
 
     // Helper function to create a popup for a venue
     const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
@@ -686,12 +686,11 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
 
         // Keep track of current popup venue for restoration
         const currentOpenPopupVenueId = openPopupVenueIdRef.current;
-        let popupToRestore: mapboxgl.Popup | null = null;
 
         // If we have an open popup and we're going to rebuild markers,
         // capture its state so we can restore it after
         if (currentOpenPopupVenueId && popupRef.current) {
-            popupToRestore = popupRef.current;
+            // No need to store the popup since we're not using it
         }
 
         // Close existing popup if any
