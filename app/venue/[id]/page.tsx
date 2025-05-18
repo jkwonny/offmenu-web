@@ -16,6 +16,8 @@ export default function VenuePage() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    console.log('params', venue)
+
     const toggleModal = () => {
         setIsModalOpen(!isModalOpen);
     };

@@ -15,7 +15,7 @@ export const TabsSection = () => {
             <Link
                 href="/explore?view=spaces"
                 className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${!view || view === 'spaces'
-                    ? 'bg-black text-white'
+                    ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
                     }`}
             >
@@ -24,7 +24,7 @@ export const TabsSection = () => {
             <Link
                 href="/explore?view=popups"
                 className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
-                    ? 'bg-black text-white'
+                    ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
                     }`}
             >

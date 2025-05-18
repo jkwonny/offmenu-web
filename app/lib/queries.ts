@@ -63,7 +63,7 @@ async function fetchVenues() {
         min_hours: venue.min_hours ? parseInt(venue.min_hours) : undefined,
         description: venue.description || '',
         capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
-        tags: venue.rental_type || [],
+        tags: venue.tags || [],
         venue_images: venue.venue_images || [],
         neighborhood: venue.neighborhood || '',
         owner_id: venue.owner_id,

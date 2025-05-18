@@ -7,8 +7,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { createRoot } from 'react-dom/client';
 import { Venue } from '@/types/Venue';
-import { useVenues } from '../lib/queries';
-import { useEvents } from '../lib/queries';
+import { useVenues, useEvents } from '../lib/queries';
 import NavBar from '../components/NavBar';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../context/UserContext';
@@ -17,7 +16,7 @@ import { LuMapPin } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
 import DateTimePicker from '../components/DateTimePicker';
 
-// Define types for venue images
+// Define local VenueImage interface to avoid import case issues
 interface VenueImage {
     image_url: string;
     sort_order?: number;
@@ -59,7 +58,7 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
         const target = e.target as HTMLElement;
         const isButton = target.tagName === 'BUTTON' ||
             target.closest('button') !== null ||
-            target.classList.contains('z-20');
+            target.classList.contains('z-5');
 
         if (!isButton) {
             window.open(`/venue/${venue.id}`, '_blank');
@@ -67,13 +66,13 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
     };
 
     return (
-        <div className="p-0 w-[300px] z-[1000] bg-[#4A4A4A] p-2 text-white relative">
+        <div className="p-0 w-[300px] z-[5] bg-[#E9EDF4] p-2 text-black relative">
             <button
                 onClick={onClose}
-                className="absolute top-2 right-2 z-[1001] bg-white bg-opacity-70 p-1 rounded-full text-gray-800 hover:bg-opacity-100 transition-all"
+                className="absolute top-3 right-3 z-[5] bg-[#E9EDF4] bg-opacity-70 p-1 rounded-full text-gray-800 hover:bg-opacity-100 transition-all"
                 aria-label="Close popup"
             >
-                <IoClose size={20} />
+                <IoClose size={18} />
             </button>
             <div
                 id={`carousel-container-${venue.id}`}
@@ -92,10 +91,10 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
                 <h3 className="font-bold text-xl mb-1 font-heading">
                     {venue.name}
                 </h3>
-                <p className="text-sm mb-2 flex items-center text-[#E7E7E7]">
+                <p className="text-sm mb-2 flex items-center">
                     <LuMapPin className="mr-1" /> {venue.neighborhood}
                 </p>
-                <p className="text-sm mb-2 flex items-center text-[#E7E7E7]">
+                <p className="text-sm mb-2 flex items-center">
                     <FaRegHandshake className="mr-1" /> {priceDisplay}
                 </p>
                 <a
@@ -106,6 +105,18 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
                 >
                     View Details
                 </a>
+
+                {/* Tags section */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                    {venue.tags && venue.tags.map((tag, index) => (
+                        <span
+                            key={index}
+                            className="px-2 py-0.5 bg-transparent border text-black rounded-full text-xs font-medium capitalize"
+                        >
+                            {tag.replace(/_/g, ' ')}
+                        </span>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -116,8 +127,13 @@ const formatText = (text: string) => {
     return text.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
+// Helper function to get image URL from VenueImage or string
+const getImageUrl = (image: VenueImage | string): string => {
+    return typeof image === 'string' ? image : image.image_url;
+};
+
 // Create a client component for the content that uses useSearchParams
-function ExploreContent() {
+function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | null) => void }) {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
     const [capacityFilter, setCapacityFilter] = useState<string>('');
@@ -213,12 +229,12 @@ function ExploreContent() {
     }, []);
 
     return (
-        <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full z-5">
             {/* Content container - floating on top of the map */}
             <div className="w-full p-6 bg-white rounded-lg shadow-lg max-h-[calc(100vh-120px)] overflow-y-auto">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#06048D]"></div>
                     </div>
                 ) : error ? (
                     <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
@@ -298,26 +314,35 @@ function ExploreContent() {
                             {filteredVenues.length > 0 ? (
                                 filteredVenues.map((venue) => {
                                     const venueImages = venue.venue_images && venue.venue_images.length > 0
-                                        ? venue.venue_images
-                                        : [{ image_url: venue.image_url }];
-
-                                    const normalizedImages = venueImages.map((img: VenueImage | string) =>
-                                        typeof img === 'string' ? img : img.image_url
-                                    );
+                                        ? venue.venue_images.map((img: any) => getImageUrl(img))
+                                        : [venue.image_url || '/images/default-venue-image.jpg'];
 
                                     const currentIndex = currentImageIndices[venue.id] || 0;
                                     const isFirstImage = currentIndex === 0;
-                                    const isLastImage = currentIndex === normalizedImages.length - 1;
+                                    const isLastImage = currentIndex === venueImages.length - 1;
 
                                     return (
                                         <div
                                             key={venue.id}
-                                            className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#ca0013]' : ''}`}
+                                            className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#06048D]' : ''}`}
                                             onClick={() => handleVenueClick(venue.id)}
+                                            onMouseEnter={() => {
+                                                // Only trigger hover event if this isn't the currently selected venue
+                                                // This prevents re-centering the map when hovering over the already selected venue
+                                                if (venue.id !== selectedVenueId) {
+                                                    onVenueHover(venue.id);
+                                                }
+                                            }}
+                                            onMouseLeave={() => {
+                                                // Only clear hover if this isn't the selected venue
+                                                if (venue.id !== selectedVenueId) {
+                                                    onVenueHover(null);
+                                                }
+                                            }}
                                         >
                                             <div className="aspect-square w-full overflow-hidden rounded-xl relative group">
                                                 <Image
-                                                    src={normalizedImages[currentIndex]}
+                                                    src={venueImages[currentIndex]}
                                                     alt={venue.name}
                                                     className="h-full w-full object-cover transition-all duration-500"
                                                     width={300}
@@ -328,7 +353,7 @@ function ExploreContent() {
                                                 {!isFirstImage && (
                                                     <button
                                                         className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-1.5 rounded-full opacity-0 group-hover:opacity-80 transition-opacity shadow-md"
-                                                        onClick={(e) => handleImageNav(e, venue.id, 'prev', normalizedImages.length - 1)}
+                                                        onClick={(e) => handleImageNav(e, venue.id, 'prev', venueImages.length - 1)}
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -339,7 +364,7 @@ function ExploreContent() {
                                                 {!isLastImage && (
                                                     <button
                                                         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-1.5 rounded-full opacity-0 group-hover:opacity-80 transition-opacity shadow-md"
-                                                        onClick={(e) => handleImageNav(e, venue.id, 'next', normalizedImages.length - 1)}
+                                                        onClick={(e) => handleImageNav(e, venue.id, 'next', venueImages.length - 1)}
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -348,9 +373,9 @@ function ExploreContent() {
                                                 )}
 
                                                 {/* Image indicators */}
-                                                {normalizedImages.length > 1 && (
+                                                {venueImages.length > 1 && (
                                                     <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-                                                        {normalizedImages.map((_: string, index: number) => (
+                                                        {venueImages.map((_: string, index: number) => (
                                                             <div
                                                                 key={index}
                                                                 className={`h-1.5 w-1.5 rounded-full ${currentIndex === index ? 'bg-white' : 'bg-white/50'}`}
@@ -447,6 +472,8 @@ function ExploreContent() {
 }
 
 export default function ExplorePage() {
+    const [hoveredVenueId, setHoveredVenueId] = useState<string | null>(null);
+
     return (
         <div className="relative h-screen w-screen">
             {/* Map takes up the entire screen */}
@@ -454,23 +481,23 @@ export default function ExplorePage() {
                 <Suspense fallback={<div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
                 </div>}>
-                    <ExploreMap />
+                    <ExploreMap hoveredVenueId={hoveredVenueId} />
                 </Suspense>
             </div>
 
             {/* Floating navbar with margin on all sides */}
-            <div className="absolute top-0 left-0 right-0 m-3">
+            <div className="absolute top-0 left-0 right-0 m-3 z-[60]">
                 <div className="bg-white rounded-lg shadow-lg">
                     <NavBar />
                 </div>
             </div>
 
             {/* Floating content container below navbar */}
-            <div className="absolute top-22 left-3 w-full lg:w-1/2 max-w-[1/2]">
+            <div className="absolute top-22 left-3 w-full lg:w-1/2 max-w-[1/2] z-50">
                 <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
                 </div>}>
-                    <ExploreContent />
+                    <ExploreContent onVenueHover={setHoveredVenueId} />
                 </Suspense>
             </div>
         </div>
@@ -478,7 +505,7 @@ export default function ExplorePage() {
 }
 
 // Map component that will receive venue data
-function ExploreMap() {
+function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const { user } = useUser();
@@ -494,8 +521,20 @@ function ExploreMap() {
     const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
 
     const handleMarkerClick = useCallback((venueId: string) => {
+        // If venueId is empty string, it means deselect
+        if (venueId === '') {
+            setSelectedVenueId(null);
+            return;
+        }
+
+        // If clicking on the already selected venue, do nothing
+        // (we let the popup handle this case now)
+        if (venueId === selectedVenueId) {
+            return;
+        }
+
         setSelectedVenueId(venueId);
-    }, []);
+    }, [selectedVenueId]);
 
     if (venuesLoading) {
         return (
@@ -510,6 +549,7 @@ function ExploreMap() {
         <MapboxMapComponent
             venues={selectedView === 'spaces' ? venues : []}
             selectedVenueId={selectedVenueId}
+            hoveredVenueId={hoveredVenueId}
             onMarkerClick={handleMarkerClick}
         />
     );
@@ -519,10 +559,11 @@ function ExploreMap() {
 interface MapboxMapProps {
     venues: Venue[];
     selectedVenueId: string | null;
+    hoveredVenueId?: string | null;
     onMarkerClick: (venueId: string) => void;
 }
 
-function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMapProps) {
+function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerClick }: MapboxMapProps) {
     const [error, setError] = useState<string | null>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -530,6 +571,12 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const mapInitializedRef = useRef<boolean>(false);
     const markerClickedRef = useRef<boolean>(false);
+    // Add a ref to store the ID of the venue with an open popup to stabilize hover behavior
+    const openPopupVenueIdRef = useRef<string | null>(null);
+    // Add a ref to track the previous selected venue ID to prevent unnecessary map re-centering
+    const previousSelectedVenueIdRef = useRef<string | null>(null);
+    // Add a ref to store React roots for popup containers
+    const popupRootsRef = useRef<{ [key: string]: any }>({});
 
     // Helper function to create a popup for a venue
     const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
@@ -547,7 +594,7 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
 
         // Get venue images for carousel
         const venueImages = Array.isArray(venue.venue_images)
-            ? venue.venue_images.map(img => img.image_url)
+            ? venue.venue_images.map(img => getImageUrl(img))
             : undefined;
 
         // Create a new popup with custom content rendered with React
@@ -565,26 +612,86 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
         const popupContainer = document.createElement('div');
         popup.setDOMContent(popupContainer);
 
+        // Create a flag to track if this popup has been opened before
+        let hasOpened = false;
+
         // When the popup opens, render the React component into the container
         popup.on('open', () => {
-            const root = createRoot(popupContainer);
-            root.render(
+            // Check if we already have a root for this venue
+            if (!popupRootsRef.current[venue.id]) {
+                // Create a new root if one doesn't exist
+                popupRootsRef.current[venue.id] = createRoot(popupContainer);
+            }
+
+            // Render using the existing or new root
+            popupRootsRef.current[venue.id].render(
                 <PopupContent
                     venue={venue}
                     priceDisplay={priceDisplay}
                     venueImages={venueImages}
-                    onClose={() => popup.remove()}
+                    onClose={() => {
+                        // This handler is ONLY for the explicit close button click
+                        // Set a flag to indicate this is a manual close action
+                        // to distinguish from hover-related actions
+                        markerClickedRef.current = true;
+
+                        // Remove the popup
+                        popup.remove();
+
+                        // Reset selectedVenueId since user explicitly closed it
+                        onMarkerClick('');
+
+                        // Clear the open popup venue ID
+                        openPopupVenueIdRef.current = null;
+                        // Also clear the previous selected venue ID
+                        previousSelectedVenueIdRef.current = null;
+
+                        // Reset flag after a short delay
+                        setTimeout(() => {
+                            markerClickedRef.current = false;
+                        }, 100);
+                    }}
                 />
             );
+
+            hasOpened = true;
+        });
+
+        // Clean up root when popup closes
+        popup.on('close', () => {
+            // Don't automatically reset selectedVenueId when popup closes
+            // We only reset it when the close button is explicitly clicked (handled in onClose)
+            // This prevents hover from closing popups
+
+            if (popupRef.current === popup) {
+                popupRef.current = null;
+            }
+
+            // Clean up React roots only if component is unmounting or popup won't be reused
+            if (!mapRef.current || !hasOpened) {
+                if (popupRootsRef.current[venue.id]) {
+                    delete popupRootsRef.current[venue.id];
+                }
+            }
         });
 
         return popup;
-    }, []);
+    }, [onMarkerClick]);
 
     // Function to update markers
     const updateMarkers = useCallback((venues: Venue[]): void => {
         if (!mapRef.current) {
             return;
+        }
+
+        // Keep track of current popup venue for restoration
+        const currentOpenPopupVenueId = openPopupVenueIdRef.current;
+        let popupToRestore: mapboxgl.Popup | null = null;
+
+        // If we have an open popup and we're going to rebuild markers,
+        // capture its state so we can restore it after
+        if (currentOpenPopupVenueId && popupRef.current) {
+            popupToRestore = popupRef.current;
         }
 
         // Close existing popup if any
@@ -606,33 +713,37 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
                 return;
             }
 
-            // Create price tag container
+            // Create marker container
             const container = document.createElement('div');
             container.className = 'marker-container';
             container.setAttribute('data-venue-id', venue.id);
 
-            // Create price tag element
-            const priceTag = document.createElement('div');
-            priceTag.className = 'price-tag';
+            // Create circular image marker
+            const imageMarker = document.createElement('div');
+            imageMarker.className = 'image-marker';
 
-            // Use actual price instead of random price
-            let markerPrice = 'TBD';
-            if (venue.price) {
-                if (venue.pricing_type === 'hourly' && venue.min_hours) {
-                    // For hourly pricing, show total price (hourly rate × minimum hours)
-                    const totalCost = venue.price * venue.min_hours;
-                    markerPrice = `$${totalCost.toFixed(0)}`;
-                } else {
-                    markerPrice = `$${venue.price}`;
-                }
+            // Get the venue image URL
+            let imageUrl = '/images/default-venue-image.jpg'; // Default image
+            if (venue.venue_images && venue.venue_images.length > 0) {
+                // Use the first image from venue_images array
+                imageUrl = getImageUrl(venue.venue_images[0]);
+            } else if (venue.image_url) {
+                // Fallback to the main image_url if venue_images is empty
+                imageUrl = venue.image_url;
             }
-            priceTag.innerHTML = `<span>${markerPrice}</span>`;
 
-            container.appendChild(priceTag);
+            // Set the background image
+            imageMarker.style.backgroundImage = `url('${imageUrl}')`;
 
-            // Style for selected state
-            if (venue.id === selectedVenueId) {
-                priceTag.classList.add('selected');
+            container.appendChild(imageMarker);
+
+            // Apply initial styling based on selection and open popup state
+            if (venue.id === openPopupVenueIdRef.current) {
+                imageMarker.classList.add('selected');
+            } else if (venue.id === selectedVenueId) {
+                imageMarker.classList.add('selected');
+            } else if (venue.id === hoveredVenueId) {
+                imageMarker.classList.add('hovered');
             }
 
             // Create the popup for this marker but don't show it yet
@@ -652,23 +763,30 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
                 e.stopPropagation();
                 e.preventDefault(); // Prevent any default behavior
 
-                // If this marker is already selected with popup open, do nothing
-                const currentPopup = marker.getPopup();
-                if (selectedVenueId === venue.id && currentPopup && currentPopup.isOpen()) {
-                    return;
-                }
-
                 // Set the flag before calling onMarkerClick to ensure it's set before any effects run
                 markerClickedRef.current = true;
+
+                // First update the selected venue ID before showing the popup
+                // This ensures the hover effect doesn't interfere with the selected state
+                onMarkerClick(venue.id);
+
+                // Store the venue ID with open popup
+                openPopupVenueIdRef.current = venue.id;
 
                 // Get the popup and ensure it's positioned correctly
                 const popup = marker.getPopup();
                 if (popup) {
-                    popup.setLngLat([venue.longitude, venue.latitude]);
-                }
+                    // Close any existing popup before showing this one
+                    if (popupRef.current && popupRef.current !== popup) {
+                        popupRef.current.remove();
+                    }
 
-                // Now call the click handler
-                onMarkerClick(venue.id);
+                    popup.setLngLat([venue.longitude, venue.latitude]);
+
+                    // Always show the popup when marker is clicked
+                    popup.addTo(mapRef.current!);
+                    popupRef.current = popup;
+                }
 
                 // Reset after a short delay to ensure all effects complete
                 setTimeout(() => {
@@ -679,16 +797,17 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
 
         markersRef.current = markers;
 
-        // If there's a selected venue, show its popup after creating all markers
-        if (selectedVenueId && markersRef.current[selectedVenueId]) {
-            const selectedMarker = markersRef.current[selectedVenueId];
-            const popup = selectedMarker.getPopup();
+        // Restore popup if needed
+        if (currentOpenPopupVenueId && markersRef.current[currentOpenPopupVenueId]) {
+            const marker = markersRef.current[currentOpenPopupVenueId];
+            const popup = marker.getPopup();
+
             if (popup) {
                 popup.addTo(mapRef.current);
                 popupRef.current = popup;
             }
         }
-    }, [onMarkerClick]);
+    }, [createVenuePopup, selectedVenueId, hoveredVenueId, onMarkerClick]);
 
     const mapContainer = useCallback((node: HTMLDivElement | null) => {
         nodeRef.current = node;
@@ -767,6 +886,7 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
         if (!mapRef.current || !venues?.length) return;
 
         // Update markers when venues data changes
+        // Only update markers when venues change, not on hover
         updateMarkers(venues);
     }, [venues, updateMarkers]);
 
@@ -776,12 +896,28 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
             return;
         }
 
-        if (!selectedVenueId) {
-            // Clear popup if no venue is selected
+        // If we're deselecting (clearing selection)
+        if (!selectedVenueId || selectedVenueId === '') {
+            // Clear the open popup venue ID if it was set
+            if (openPopupVenueIdRef.current) {
+                openPopupVenueIdRef.current = null;
+            }
+
+            // Clear the previous selected venue ID
+            previousSelectedVenueIdRef.current = null;
+
+            // Close any open popup
             if (popupRef.current) {
                 popupRef.current.remove();
                 popupRef.current = null;
             }
+
+            return;
+        }
+
+        // Check if this is the same venue that was previously selected
+        // If so, don't re-center the map (prevents re-centering on hover)
+        if (previousSelectedVenueIdRef.current === selectedVenueId) {
             return;
         }
 
@@ -797,39 +933,46 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
             return;
         }
 
+        // Update the previous selected venue ID ref
+        previousSelectedVenueIdRef.current = selectedVenueId;
+
+        // Get map container dimensions
+        const containerWidth = mapRef.current.getContainer().clientWidth;
+        const containerHeight = mapRef.current.getContainer().clientHeight;
+
+        // Calculate the offset to position marker in bottom-right quadrant
+        // Project the marker coordinates to pixel space
+        const markerCoords: [number, number] = [selectedVenue.longitude, selectedVenue.latitude];
+        const point = mapRef.current.project(markerCoords);
+
+        // Apply offset to move marker to bottom-right quadrant
+        const offsetX = -containerWidth * 0.25; // Move left by 25% of container width
+        const offsetY = -containerHeight * 0.25; // Move up by 25% of container height
+
+        // Unproject back to geographic coordinates
+        const offsetPoint = mapRef.current.unproject([point.x + offsetX, point.y + offsetY]);
+
+        // Animate the map to the new center position
+        mapRef.current.easeTo({
+            center: offsetPoint,
+            zoom: 12,
+            duration: 1000
+        });
+
         // Find the marker for the selected venue
         const marker = markersRef.current[selectedVenueId];
 
         if (marker) {
+            // Store this venue ID as having an open popup
+            openPopupVenueIdRef.current = selectedVenueId;
+
             const popup = marker.getPopup();
 
-            // If a marker was clicked, we don't need to remove and re-add the popup
-            // Just ensure it's positioned correctly and visible
-            if (markerClickedRef.current && popup) {
-                // If there's already a popup shown and it's not for the selected venue,
-                // remove it before showing the new one
-                if (popupRef.current && popupRef.current !== popup) {
-                    popupRef.current.remove();
-                }
-
-                // Only add the popup if it's not already on the map
-                if (!popup.isOpen()) {
-                    popup.setLngLat([selectedVenue.longitude, selectedVenue.latitude]);
-                    popup.addTo(mapRef.current);
-                }
-
+            // Only set up the popup if it's not already open
+            if (popup && !popup.isOpen() && popup !== popupRef.current) {
+                popup.setLngLat([selectedVenue.longitude, selectedVenue.latitude]);
+                popup.addTo(mapRef.current);
                 popupRef.current = popup;
-            } else {
-                // For non-marker clicks (e.g., list selection), handle normally
-                if (popupRef.current) {
-                    popupRef.current.remove();
-                    popupRef.current = null;
-                }
-
-                if (popup) {
-                    popup.addTo(mapRef.current);
-                    popupRef.current = popup;
-                }
             }
         }
 
@@ -838,13 +981,13 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
             const marker = markersRef.current[venue.id];
             if (marker) {
                 const element = marker.getElement();
-                const priceTag = element.querySelector('.price-tag');
+                const imageMarker = element.querySelector('.image-marker');
 
-                if (priceTag) {
+                if (imageMarker) {
                     if (venue.id === selectedVenueId) {
-                        priceTag.classList.add('selected');
+                        imageMarker.classList.add('selected');
                     } else {
-                        priceTag.classList.remove('selected');
+                        imageMarker.classList.remove('selected');
                     }
                 }
             }
@@ -871,36 +1014,37 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
                 z-index: 1;
             }
             
-            .price-tag {
-                background-color: white;
-                border-radius: 24px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                color: #222;
-                font-size: 14px;
-                font-weight: 600;
-                padding: 6px 12px;
-                text-align: center;
-                transition: transform 0.2s;
-                min-width: 50px;
-                white-space: nowrap;
+            .image-marker {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background-size: cover;
+                background-position: center;
+                border: 3px solid white;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
             }
             
-            .price-tag.selected {
-                background-color: #B45309;
-                color: white;
+            .image-marker.selected {
                 transform: scale(1.1);
+                border-color: #06048D;
+                box-shadow: 0 2px 10px rgba(6, 4, 141, 0.5);
                 z-index: 2;
             }
             
-            .price-tag:hover {
-                transform: scale(1.05);
-                background-color: #FFF9F5;
-                border: 1px solid #B45309;
+            .image-marker.hovered {
+                transform: scale(1.1);
+                border-color: #06048D;
+                z-index: 2;
             }
             
-            .price-tag.selected:hover {
-                background-color: #B45309;
-                border: none;
+            .image-marker:hover {
+                transform: scale(1.05);
+                border-color: #06048D;
+            }
+            
+            .image-marker.selected:hover {
+                border-color: #06048D;
             }
             
             /* Ensure the popup container is properly positioned */
@@ -914,7 +1058,7 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
             }
             
             .mapboxgl-popup {
-                z-index: 500 !important;
+                z-index: 20 !important;
             }
             
             /* Style for clickable carousel */
@@ -929,7 +1073,7 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(180, 83, 9, 0.2);
+                background-color: rgba(6, 4, 141, 0.2);
                 z-index: 2;
             }
         `;
@@ -940,15 +1084,62 @@ function MapboxMapComponent({ venues, selectedVenueId, onMarkerClick }: MapboxMa
         };
     }, []);
 
-    // Cleanup on unmount
+    // Cleanup on unmount - add clearing of React roots
     useEffect(() => {
         return () => {
             if (popupRef.current) {
                 popupRef.current.remove();
                 popupRef.current = null;
             }
+            // Clean up all React roots
+            Object.values(popupRootsRef.current).forEach(root => {
+                if (root && typeof root.unmount === 'function') {
+                    root.unmount();
+                }
+            });
+            popupRootsRef.current = {};
         };
     }, []);
+
+    // Add effect to handle hovering on venue cards
+    useEffect(() => {
+        if (!mapRef.current) return;
+
+        // Only update styles based on hover - don't open or close popups
+        venues.forEach(venue => {
+            const marker = markersRef.current[venue.id];
+            if (marker) {
+                const element = marker.getElement();
+                const imageMarker = element.querySelector('.image-marker');
+
+                if (imageMarker) {
+                    // First check if this venue has an open popup - it overrides all other styles
+                    if (venue.id === openPopupVenueIdRef.current) {
+                        imageMarker.classList.add('selected');
+                        imageMarker.classList.remove('hovered');
+                    }
+                    // Otherwise, handle selected state (this maintains selection between card hovers)
+                    else if (venue.id === selectedVenueId) {
+                        imageMarker.classList.add('selected');
+                        imageMarker.classList.remove('hovered');
+                    } else {
+                        imageMarker.classList.remove('selected');
+
+                        // Then handle hover state for non-selected markers
+                        if (venue.id === hoveredVenueId) {
+                            imageMarker.classList.add('hovered');
+                        } else {
+                            imageMarker.classList.remove('hovered');
+                        }
+                    }
+                }
+            }
+        });
+
+        // IMPORTANT: Do not manipulate popups in this effect!
+        // This effect is only for styling markers on hover
+        // Popup manipulation should only happen when markers are clicked
+    }, [hoveredVenueId, selectedVenueId, venues]);
 
     return (
         <div className="relative w-full h-full">

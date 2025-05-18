@@ -41,7 +41,7 @@ function DashboardTabs({ view }: { view: string }) {
             <Link
                 href="/manage/dashboard?view=spaces"
                 className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'spaces'
-                    ? 'bg-black text-white'
+                    ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
                     }`}
             >
@@ -50,7 +50,7 @@ function DashboardTabs({ view }: { view: string }) {
             <Link
                 href="/manage/dashboard?view=popups"
                 className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
-                    ? 'bg-black text-white'
+                    ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
                     }`}
             >
