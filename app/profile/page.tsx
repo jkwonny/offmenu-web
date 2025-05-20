@@ -226,7 +226,7 @@ export default function Profile() {
     }
 
     return (
-        <div className="min-h-screen bg-[#FFF9F5]">
+        <div className="min-h-screen">
             <NavBar />
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
                 <h1 className="text-3xl font-bold text-center text-gray-800 mb-10">Personal Information</h1>
@@ -322,7 +322,7 @@ export default function Profile() {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full p-3 border border-gray-200 rounded-md bg-gray-100"
+                                className="w-full p-3 border border-gray-200 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
@@ -340,19 +340,8 @@ export default function Profile() {
                                         value={phone}
                                         onChange={handlePhoneChange}
                                         placeholder="(xxx) xxx-xxxx"
-                                        className="w-full p-3 pr-12 border border-gray-200 rounded-md bg-gray-100"
+                                        className="w-full p-3 pr-12 border border-gray-200 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
-                                    {phone && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setPhone('')}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                                        >
-                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    )}
                                 </div>
                             </div>
 
@@ -367,16 +356,8 @@ export default function Profile() {
                                         type="email"
                                         value={user.email || ''}
                                         readOnly
-                                        className="w-full p-3 pr-12 border border-gray-200 rounded-md bg-gray-100"
+                                        className="w-full p-3 pr-12 border border-gray-200 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
-                                    <button
-                                        type="button"
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                                    >
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -392,7 +373,7 @@ export default function Profile() {
                                 onChange={(e) => setAbout(e.target.value)}
                                 rows={6}
                                 placeholder="Enter something about yourself"
-                                className="w-full p-3 border border-gray-200 rounded-md bg-gray-100 resize-none"
+                                className="w-full p-3 border border-gray-200 rounded-md bg-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
@@ -425,7 +406,7 @@ export default function Profile() {
                                     onClick={handleSave}
                                     disabled={!hasChanged || isSaving}
                                     className={`px-5 py-2 rounded-md ${hasChanged && !isSaving
-                                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                        ? 'bg-[#06048D] hover:bg-[#06048D]/80 text-white'
                                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                         } transition-colors`}
                                 >

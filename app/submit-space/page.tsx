@@ -9,6 +9,129 @@ import { SpaceFormData } from '@/app/types/space';
 import GoogleAutoComplete from '../components/GoogleAutoComplete';
 import Image from 'next/image';
 import { VenueFormData } from '@/app/types/venue';
+import { handleAuthError } from '../lib/supabase';
+
+// Add VenueServicesFormStep component definition
+const VenueServicesFormStep = ({
+    selectedServices,
+    onServicesChange
+}: {
+    selectedServices: string[];
+    onServicesChange: (services: string[]) => void;
+}) => {
+    const [customService, setCustomService] = useState<string>('');
+
+    // Preset service options - can be moved to props if needed
+    const presetServices = [
+        'DJ Booth', 'Kitchen Access', 'Moveable Tables', 'Live Music Allowed',
+        'Staff On Site', 'Projector/AV', 'Wifi', 'Outdoor Space', 'Parking',
+        'Wine', 'Liquor', 'Outside Food Allowed', 'Catering Available', 'Smoking Area',
+        'Wheelchair Accessible', 'Sound System', 'Patio', 'Rooftop'
+    ];
+
+    const addCustomService = () => {
+        if (customService.trim() && !selectedServices.includes(customService.trim())) {
+            onServicesChange([...selectedServices, customService.trim()]);
+            setCustomService('');
+        }
+    };
+
+    const toggleService = (service: string) => {
+        if (selectedServices.includes(service)) {
+            onServicesChange(selectedServices.filter(s => s !== service));
+        } else {
+            onServicesChange([...selectedServices, service]);
+        }
+    };
+
+    const removeService = (service: string) => {
+        onServicesChange(selectedServices.filter(s => s !== service));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addCustomService();
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">
+                    What services or features does your space offer?
+                </h3>
+
+                {/* Preset service tags grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+                    {presetServices.map((service) => (
+                        <button
+                            key={service}
+                            type="button"
+                            onClick={() => toggleService(service)}
+                            className={`py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${selectedServices.includes(service)
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
+                                }`}
+                            aria-pressed={selectedServices.includes(service)}
+                        >
+                            {service}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Custom service input */}
+                <div className="flex mt-4">
+                    <input
+                        type="text"
+                        value={customService}
+                        onChange={(e) => setCustomService(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Add a custom service"
+                        className="flex-grow p-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        aria-label="Add a custom service"
+                    />
+                    <button
+                        type="button"
+                        onClick={addCustomService}
+                        disabled={!customService.trim()}
+                        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        + Add
+                    </button>
+                </div>
+            </div>
+
+            {/* Selected services display */}
+            {selectedServices.length > 0 && (
+                <div className="mt-6">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Services</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {selectedServices.map((service) => (
+                            <div
+                                key={service}
+                                className="inline-flex items-center bg-blue-50 text-blue-700 rounded-full px-3 py-1 text-sm"
+                            >
+                                {service}
+                                <button
+                                    type="button"
+                                    onClick={() => removeService(service)}
+                                    className="ml-2 rounded-full h-5 w-5 flex items-center justify-center bg-blue-200 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    aria-label={`Remove ${service}`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+};
 
 export default function SubmitSpacePage() {
     const router = useRouter();
@@ -31,24 +154,13 @@ export default function SubmitSpacePage() {
         longitude: '',
         category: '',
         rental_type: [] as string[],
-        pricing_type: '',
-        price: '',
-        min_hours: '',
+        collaboration_type: '',
         website: '',
         instagram_handle: '',
-        alcohol_served: false,
-        byob_allowed: false,
-        byob_pricing_type: '',
-        byob_price: '',
-        outside_cake_allowed: false,
-        cake_fee_type: '',
-        cake_fee_amount: '',
-        cleaning_fee: '',
-        setup_fee: '',
-        overtime_fee_per_hour: '',
         max_guests: '',
         rules: '',
         tags: '',
+        services: [], // Add services array to the form data
     };
 
     // State for managing form data
@@ -67,9 +179,25 @@ export default function SubmitSpacePage() {
     // Get the current authenticated user
     useEffect(() => {
         async function getUser() {
-            const { data } = await supabase.auth.getUser();
-            setCurrentUser(data.user);
+            try {
+                const { data, error } = await supabase.auth.getUser();
 
+                if (error) {
+                    console.error('Auth error:', error.message);
+                    // Use the handleAuthError helper for consistent error handling
+                    handleAuthError(error);
+                    // Don't set currentUser if there's an error
+                    return;
+                }
+
+                setCurrentUser(data.user);
+            } catch (error) {
+                console.error('Failed to get user:', error);
+                // Use handleAuthError here too for consistency
+                handleAuthError(error as Error);
+                // In case of any error, make sure we don't have a stale user
+                setCurrentUser(null);
+            }
             // Don't redirect here, will only check auth at submission time
         }
 
@@ -97,6 +225,14 @@ export default function SubmitSpacePage() {
         }
     };
 
+    // Add a handler for updating services
+    const handleServicesChange = (services: string[]) => {
+        setFormData(prev => ({
+            ...prev,
+            services,
+        }));
+    };
+
     const validateStep = (currentStep: number): boolean => {
         const errors: Record<string, string> = {};
 
@@ -114,28 +250,14 @@ export default function SubmitSpacePage() {
             if (!formData.neighborhood.trim()) errors.neighborhood = 'Neighborhood is required';
         } else if (currentStep === 3) {
             // Capacity and pricing validation
-            if (!formData.pricing_type) {
-                errors.pricing_type = 'Pricing type is required';
-            }
-            if (!formData.price) {
-                errors.price = 'Price is required';
+            if (!formData.collaboration_type) {
+                errors.collaboration_type = 'Collaboration type is required';
             }
             if (!formData.max_guests) {
                 errors.max_guests = 'Maximum guests is required';
             }
-            if (formData.pricing_type === 'hourly' && !formData.min_hours) {
-                errors.min_hours = 'Please enter minimum hours required';
-            }
             if (formData.max_guests && parseInt(formData.max_guests) <= 0) {
                 errors.max_guests = 'Maximum guests must be a positive number';
-            }
-        } else if (currentStep === 4) {
-            // Policies validation
-            if (formData.byob_allowed && !formData.byob_pricing_type) {
-                errors.byob_pricing_type = 'Please select a BYOB fee type';
-            }
-            if (formData.outside_cake_allowed && !formData.cake_fee_type) {
-                errors.cake_fee_type = 'Please select a cake fee type';
             }
         }
         // For steps 5 and 6, no validation needed, they're optional fields
@@ -185,6 +307,23 @@ export default function SubmitSpacePage() {
         setSuccess(null);
 
         try {
+            // Verify user session is still valid
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+            if (sessionError) {
+                // Handle auth error with the helper function
+                const errorMessage = handleAuthError(sessionError);
+                setError(errorMessage);
+                router.push('/auth/signin?redirect=/submit-space');
+                return;
+            }
+
+            if (!sessionData.session) {
+                setError('Your session has expired. Please sign in again.');
+                router.push('/auth/signin?redirect=/submit-space');
+                return;
+            }
+
             // Prepare submission data
             const submissionData = {
                 ...formData,
@@ -192,9 +331,7 @@ export default function SubmitSpacePage() {
                 owner_id: currentUser.id,
                 // Convert rental_type to string format if needed by the API
                 rental_type: formData.rental_type,
-                pricing_type: formData.pricing_type || null,
-                price: formData.price ? parseFloat(formData.price) : null,
-                min_hours: formData.min_hours ? parseInt(formData.min_hours, 10) : null,
+                collaboration_type: formData.collaboration_type || null,
                 website: formData.website.trim() || null,
                 instagram_handle: formData.instagram_handle.trim() || null,
                 street_number: formData.street_number.trim() || null,
@@ -205,14 +342,10 @@ export default function SubmitSpacePage() {
                 postal_code: formData.postal_code.trim() || null,
                 latitude: formData.latitude ? parseFloat(formData.latitude) : null,
                 longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-                byob_price: formData.byob_price ? parseFloat(formData.byob_price) : null,
-                cake_fee_amount: formData.cake_fee_amount ? parseFloat(formData.cake_fee_amount) : null,
-                cleaning_fee: formData.cleaning_fee ? parseFloat(formData.cleaning_fee) : null,
-                setup_fee: formData.setup_fee ? parseFloat(formData.setup_fee) : null,
-                overtime_fee_per_hour: formData.overtime_fee_per_hour ? parseFloat(formData.overtime_fee_per_hour) : null,
                 max_guests: formData.max_guests ? parseInt(formData.max_guests, 10) : null,
                 tags: formData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== ''), // Convert comma-separated string to array
                 status: 'pending',
+                services: formData.services,
             };
 
             console.log("Submitting space data:", submissionData); // Data to be sent to API
@@ -576,7 +709,7 @@ export default function SubmitSpacePage() {
             case 3: // Capacity and Pricing (moved up from step 4)
                 return (
                     <div className="mt-6">
-                        <h2 className="text-2xl font-bold mb-4 text-center">Capacity & Pricing Information</h2>
+                        <h2 className="text-2xl font-bold mb-4 text-center">Capacity & Collaboration</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_guests">
@@ -600,251 +733,39 @@ export default function SubmitSpacePage() {
                             </div>
 
                             <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="pricing_type">
-                                    Pricing Type <span className="text-red-500">*</span>
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="collaboration_type">
+                                    Collaboration Type <span className="text-red-500">*</span>
                                 </label>
                                 <select
-                                    id="pricing_type"
-                                    name="pricing_type"
-                                    value={formData.pricing_type}
+                                    id="collaboration_type"
+                                    name="collaboration_type"
+                                    value={formData.collaboration_type}
                                     onChange={handleChange}
                                     className={`w-full p-3 border ${validationErrors.pricing_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
                                 >
-                                    <option value="">Select Pricing Type</option>
-                                    <option value="hourly">Hourly Rate</option>
+                                    <option value="">Select Collaboration Type</option>
+                                    <option value="open_venue">Open Venue</option>
                                     <option value="flat">Flat Fee</option>
                                     <option value="minimum_spend">Minimum Spend</option>
+                                    <option value="revenue_share">Revenue Share</option>
                                 </select>
                                 {validationErrors.pricing_type ? (
                                     <p className="mt-1 text-sm text-red-500">{validationErrors.pricing_type}</p>
                                 ) : (
-                                    <p className="mt-1 text-sm text-gray-500">How do you charge for space rental?</p>
+                                    <p className="mt-1 text-sm text-gray-500">How do you want to collaborate with Pop-ups?</p>
                                 )}
                             </div>
-
-                            <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="price">
-                                    Price <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span className="text-gray-500 sm:text-sm">$</span>
-                                    </div>
-                                    <input
-                                        id="price"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        name="price"
-                                        value={formData.price}
-                                        onChange={handleChange}
-                                        className={`w-full pl-7 p-3 border ${validationErrors.price ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                        placeholder={formData.pricing_type === 'hourly' ? "e.g. 150.00 per hour" : "e.g. 1000.00"}
-                                    />
-                                </div>
-                                {validationErrors.price && (
-                                    <p className="mt-1 text-sm text-red-500">{validationErrors.price}</p>
-                                )}
-                            </div>
-
-                            {formData.pricing_type === 'hourly' && (
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="min_hours">
-                                        Minimum Hours
-                                    </label>
-                                    <input
-                                        id="min_hours"
-                                        type="number"
-                                        min="0"
-                                        name="min_hours"
-                                        value={formData.min_hours}
-                                        onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="e.g. 3"
-                                    />
-                                    <p className="mt-1 text-sm text-gray-500">Minimum number of hours required for booking</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 );
-            case 4: // Policies and Fees
+            case 4: // Services and Policies - Replace with new component
                 return (
                     <div className="mt-6">
-                        <h2 className="text-2xl font-bold mb-4 text-center">Policies & Fees</h2>
-                        <div className="space-y-6">
-                            <div className="flex items-center py-1">
-                                <input
-                                    id="alcohol_served"
-                                    type="checkbox"
-                                    name="alcohol_served"
-                                    checked={formData.alcohol_served}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <label htmlFor="alcohol_served" className="ml-3 font-medium text-gray-700">
-                                    Alcohol Served
-                                </label>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center py-1">
-                                    <input
-                                        id="byob_allowed"
-                                        type="checkbox"
-                                        name="byob_allowed"
-                                        checked={formData.byob_allowed}
-                                        onChange={handleChange}
-                                        className="h-5 w-5 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="byob_allowed" className="ml-3 font-medium text-gray-700">
-                                        BYOB Allowed
-                                    </label>
-                                </div>
-
-                                {formData.byob_allowed && (
-                                    <div className="mt-2 ml-8 space-y-2">
-                                        <div>
-                                            <label className="block text-gray-700 text-sm font-medium mb-1" htmlFor="byob_pricing_type">
-                                                BYOB Fee Type
-                                            </label>
-                                            <select
-                                                id="byob_pricing_type"
-                                                name="byob_pricing_type"
-                                                value={formData.byob_pricing_type}
-                                                onChange={handleChange}
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                            >
-                                                <option value="">Select BYOB Fee Type</option>
-                                                <option value="per_person">Per Person</option>
-                                                <option value="per_bottle">Per Bottle</option>
-                                                <option value="flat_fee">Flat Fee</option>
-                                                <option value="none">No Fee</option>
-                                            </select>
-                                            {validationErrors.byob_pricing_type && (
-                                                <p className="mt-1 text-sm text-red-500">{validationErrors.byob_pricing_type}</p>
-                                            )}
-                                        </div>
-
-                                        {formData.byob_pricing_type && formData.byob_pricing_type !== 'none' && (
-                                            <div>
-                                                <label className="block text-gray-700 text-sm font-medium mb-1" htmlFor="byob_price">
-                                                    BYOB Price ($)
-                                                </label>
-                                                <input
-                                                    id="byob_price"
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    name="byob_price"
-                                                    value={formData.byob_price}
-                                                    onChange={handleChange}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="e.g. 15.00"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <div className="flex items-center py-1">
-                                    <input
-                                        id="outside_cake_allowed"
-                                        type="checkbox"
-                                        name="outside_cake_allowed"
-                                        checked={formData.outside_cake_allowed}
-                                        onChange={handleChange}
-                                        className="h-5 w-5 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="outside_cake_allowed" className="ml-3 font-medium text-gray-700">
-                                        Outside Cake Allowed
-                                    </label>
-                                </div>
-
-                                {formData.outside_cake_allowed && (
-                                    <div className="mt-2 ml-8 space-y-2">
-                                        <div>
-                                            <label className="block text-gray-700 text-sm font-medium mb-1" htmlFor="cake_fee_type">
-                                                Cake Fee Type
-                                            </label>
-                                            <select
-                                                id="cake_fee_type"
-                                                name="cake_fee_type"
-                                                value={formData.cake_fee_type}
-                                                onChange={handleChange}
-                                                className={`w-full p-2 border ${validationErrors.cake_fee_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}
-                                            >
-                                                <option value="">Select Cake Fee Type</option>
-                                                <option value="per_person">Per Person</option>
-                                                <option value="per_item">Per Item</option>
-                                                <option value="flat_fee">Flat Fee</option>
-                                                <option value="none">No Fee</option>
-                                            </select>
-                                            {validationErrors.cake_fee_type && (
-                                                <p className="mt-1 text-sm text-red-500">{validationErrors.cake_fee_type}</p>
-                                            )}
-                                        </div>
-
-                                        {formData.cake_fee_type && formData.cake_fee_type !== 'none' && (
-                                            <div>
-                                                <label className="block text-gray-700 text-sm font-medium mb-1" htmlFor="cake_fee_amount">
-                                                    Cake Fee Amount ($)
-                                                </label>
-                                                <input
-                                                    id="cake_fee_amount"
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    name="cake_fee_amount"
-                                                    value={formData.cake_fee_amount}
-                                                    onChange={handleChange}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="e.g. 25.00"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1" htmlFor="cleaning_fee">
-                                        Cleaning Fee ($)
-                                    </label>
-                                    <input
-                                        id="cleaning_fee"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        name="cleaning_fee"
-                                        value={formData.cleaning_fee}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="e.g. 150.00"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-gray-700 text-sm font-medium mb-1" htmlFor="setup_fee">
-                                        Setup Fee ($)
-                                    </label>
-                                    <input
-                                        id="setup_fee"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        name="setup_fee"
-                                        value={formData.setup_fee}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="e.g. 200.00"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <h2 className="text-2xl font-bold mb-4 text-center">Services & Policies</h2>
+                        <VenueServicesFormStep
+                            selectedServices={formData.services || []}
+                            onServicesChange={handleServicesChange}
+                        />
                     </div>
                 );
             case 5: // Tags
@@ -994,7 +915,7 @@ export default function SubmitSpacePage() {
                         <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
                             <div
                                 style={{ width: `${progress}%` }}
-                                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-[#ca0013] transition-all duration-300"
+                                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-[#06048D] rounded-r-full transition-all duration-300"
                             ></div>
                         </div>
                     </div>
@@ -1046,7 +967,7 @@ export default function SubmitSpacePage() {
                                     <button
                                         type="button"
                                         onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleSubmit(e as unknown as FormEvent<HTMLFormElement>)}
-                                        className="px-6 py-2 bg-[#ca0013] text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-6 py-2 bg-[#06048D] text-white font-medium rounded-md hover:bg-[#06048D] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                         disabled={isLoading || isUploading}
                                     >
                                         {isLoading || isUploading ? (
@@ -1057,7 +978,7 @@ export default function SubmitSpacePage() {
                                                 </svg>
                                                 {isUploading ? 'Uploading Images...' : 'Submitting...'}
                                             </span>
-                                        ) : 'Submit Questionnaire'}
+                                        ) : 'Submit Space'}
                                     </button>
                                 )}
                             </div>

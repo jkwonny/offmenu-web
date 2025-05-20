@@ -17,6 +17,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
+// Helper function to handle auth errors
+export const handleAuthError = (error: Error | { message?: string }) => {
+  console.error('Auth error:', error?.message || error);
+  
+  // Check for specific auth error types
+  if (error?.message?.includes('Invalid Refresh Token')) {
+    // Clear localStorage auth data to ensure clean slate
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('offmenu-auth-token');
+    }
+    
+    return 'Your session has expired. Please sign in again.';
+  }
+  
+  return error?.message || 'Authentication error occurred';
+};
+
 // Create a Supabase client with the public URL and anon key
 export const supabase = createClient(
     supabaseUrl || 'https://placeholder-url.supabase.co', // Fallback to prevent crash
@@ -41,3 +58,17 @@ export const supabase = createClient(
       },
     }
 );
+
+// Set up auth state listener (separate from client creation to avoid type errors)
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, _session) => {
+    console.log('Auth state updated:', _session);
+    if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+      console.log('Auth state updated:', event);
+    } else if (event === 'SIGNED_OUT') {
+      console.log('User signed out');
+    } else if (event === 'USER_UPDATED') {
+      console.log('User profile updated');
+    }
+  });
+}

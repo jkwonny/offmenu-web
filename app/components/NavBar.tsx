@@ -250,7 +250,7 @@ export default function NavBar() {
                                         <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
                                             Account
                                         </Link>
-                                        <Link href="/submit-venue" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                        <Link href="/submit-space" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
                                             Become a Host
                                         </Link>
                                         <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
@@ -373,7 +373,7 @@ export default function NavBar() {
                                 )}
                             </Link>
                             <Link
-                                href="/submit-venue"
+                                href="/submit-space"
                                 className="block py-2 text-gray-700 hover:text-black"
                                 onClick={() => setMobileMenuOpen(false)}
                             >

@@ -46,11 +46,6 @@ export async function POST(request: Request) {
             venueData.rental_type = venueData.rental_type.split(',').filter((type: string) => type.trim() !== '');
         }
 
-        // Process tags if it's a string or comma-separated string
-        if (venueData.tags && typeof venueData.tags === 'string' && !Array.isArray(venueData.tags)) {
-            venueData.tags = venueData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== '');
-        }
-
         // Insert data into Supabase
         const { data, error } = await supabase
             .from('venues')

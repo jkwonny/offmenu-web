@@ -12,22 +12,11 @@ export interface SpaceFormData {
   longitude: string;
   category: string;
   rental_type: string[];
-  pricing_type: string;
-  price: string;
-  min_hours: string;
+  collaboration_type: string;
   website: string;
   instagram_handle: string;
-  alcohol_served: boolean;
-  byob_allowed: boolean;
-  byob_pricing_type: string;
-  byob_price: string;
-  outside_cake_allowed: boolean;
-  cake_fee_type: string;
-  cake_fee_amount: string;
-  cleaning_fee: string;
-  setup_fee: string;
-  overtime_fee_per_hour: string;
   max_guests: string;
   rules: string;
   tags: string;
+  services: string[];
 } 

@@ -3,37 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
-
-// Define a type for the user profile from the database
-type UserProfile = {
-    id: string;
-    email: string;
-    name?: string;
-    phone?: string;
-    profile_picture?: string | null;
-    about?: string;
-    role: string;
-    spaces_host: boolean;
-    created_at?: string;
-    updated_at?: string;
-};
-
-type UserContextType = {
-    user: User | null;
-    userProfile: UserProfile | null;
-    session: Session | null;
-    isLoading: boolean;
-    signUp: (email: string, password: string, name?: string, phone?: string) => Promise<{
-        success: boolean;
-        error: Error | null;
-    }>;
-    signIn: (email: string, password: string) => Promise<{
-        success: boolean;
-        error: Error | null;
-    }>;
-    signOut: () => Promise<void>;
-    updateUserProfile: (fields: Partial<Pick<UserProfile, 'name' | 'phone' | 'profile_picture' | 'about'>>) => Promise<{ success: boolean; error: Error | null }>;
-};
+import { UserProfile, UserContextType } from '../types/user';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
@@ -119,44 +89,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        // Initialize auth immediately
+        // Initialize auth immediately          
         initializeAuth();
 
         // Listen for auth changes
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-            async (event, newSession) => {
-                try {
-                    // Set loading to true when auth state changes
-                    setIsLoading(true);
+        // const { data: authListener } = supabase.auth.onAuthStateChange(
+        //     async (event, newSession) => {
+        //         try {
+        //             // Set loading to true when auth state changes
+        //             setIsLoading(true);
 
-                    // Only update if we have good data (avoid wiping during initialization)
-                    setSession(newSession);
+        //             // Only update if we have good data (avoid wiping during initialization)
+        //             setSession(newSession);
 
-                    // Don't set user to null during page refreshes
-                    if (newSession?.user) {
-                        setUser(newSession.user);
-                        const profile = await fetchUserProfile(newSession.user.id);
-                        setUserProfile(profile);
-                    } else if (event === 'SIGNED_OUT') {
-                        // Only clear user on explicit sign out
-                        setUser(null);
-                        setUserProfile(null);
-                    }
-                } catch (error) {
-                    console.error('Error in auth state change:', error);
-                    // Clear user states on error to prevent stuck states
-                    setUser(null);
-                    setUserProfile(null);
-                } finally {
-                    // Always update loading state when done
-                    setIsLoading(false);
-                }
-            }
-        );
+        //             // Don't set user to null during page refreshes
+        //             if (newSession?.user) {
+        //                 setUser(newSession.user);
+        //                 const profile = await fetchUserProfile(newSession.user.id);
+        //                 setUserProfile(profile);
+        //             } else if (event === 'SIGNED_OUT') {
+        //                 // Only clear user on explicit sign out
+        //                 setUser(null);
+        //                 setUserProfile(null);
+        //             }
+        //         } catch (error) {
+        //             console.error('Error in auth state change:', error);
+        //             // Clear user states on error to prevent stuck states
+        //             setUser(null);
+        //             setUserProfile(null);
+        //         } finally {
+        //             // Always update loading state when done
+        //             setIsLoading(false);
+        //         }
+        //     }
+        // );
 
-        return () => {
-            authListener.subscription.unsubscribe();
-        };
+        // return () => {
+        //     authListener.subscription.unsubscribe();
+        // };
     }, []);
 
     // Sign up with email and password
