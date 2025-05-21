@@ -6,9 +6,6 @@ export interface Venue {
     city: string;
     address?: string;
     state?: string;
-    price?: number;
-    pricing_type?: string; // 'hourly', 'flat', 'minimum_spend'
-    min_hours?: number;
     alcohol_served?: boolean;
     outside_cake_allowed?: boolean;
     website?: string;
@@ -36,4 +33,5 @@ export interface Venue {
     neighborhood?: string;
     owner_id: string;
     status?: 'pending' | 'approved' | 'declined';
+    collaboration_type?: string;
 }

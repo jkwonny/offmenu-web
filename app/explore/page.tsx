@@ -573,19 +573,6 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
 
     // Helper function to create a popup for a venue
     const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
-        // Format price display for popup
-        let priceDisplay = 'Price upon request';
-        if (venue.price) {
-            if (venue.pricing_type === 'hourly' && venue.min_hours) {
-                // For hourly pricing, calculate total cost
-                const totalCost = venue.price * venue.min_hours;
-                priceDisplay = `$${totalCost.toFixed(0)} for ${venue.min_hours} hour${venue.min_hours > 1 ? 's' : ''}`;
-            } else if (venue.pricing_type === 'flat') {
-                priceDisplay = `$${venue.price} flat rate`;
-            }
-        }
-
-        // Get venue images for carousel
         const venueImages = Array.isArray(venue.venue_images)
             ? venue.venue_images.map(img => getImageUrl(img))
             : undefined;
@@ -620,7 +607,7 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
             popupRootsRef.current[venue.id].render(
                 <PopupContent
                     venue={venue}
-                    priceDisplay={priceDisplay}
+                    priceDisplay={collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp]}
                     venueImages={venueImages}
                     onClose={() => {
                         // This handler is ONLY for the explicit close button click
