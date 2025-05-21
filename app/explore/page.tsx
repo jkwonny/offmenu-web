@@ -15,6 +15,7 @@ import { FaRegHandshake } from "react-icons/fa";
 import { LuMapPin } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
 import DateTimePicker from '../components/DateTimePicker';
+import { collaborationTypeLookUp } from '@/utils/collaborationTypeLookUp';
 
 // Define local VenueImage interface to avoid import case issues
 interface VenueImage {
@@ -390,18 +391,10 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                     <LuMapPin className="w-4 h-4 mr-1" />
                                                     {venue.address}
                                                 </p>
-                                                {venue.pricing_type === 'no_minimum_spend' ? (
-                                                    <p className="text-sm mt-1 font-medium flex items-center">
-                                                        <FaRegHandshake className="w-4 h-4 mr-1" />
-                                                        No Minimum Spend
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-sm mt-1 font-medium flex items-center">
-                                                        <FaRegHandshake className="w-4 h-4 mr-1" />
-                                                        ${venue.price}
-                                                        {venue.pricing_type === 'hourly' && ' / hour'}
-                                                    </p>
-                                                )}
+                                                <p className="text-sm mt-1 font-medium flex items-center">
+                                                    <FaRegHandshake className="w-4 h-4 mr-1" />
+                                                    {collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp]}
+                                                </p>
                                             </div>
                                         </div>
                                     );

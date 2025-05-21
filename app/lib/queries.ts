@@ -12,9 +12,6 @@ export interface Venue {
   city: string;
   address?: string;
   state?: string;
-  price?: number;
-  pricing_type?: string;
-  min_hours?: number;
   avg_rating?: number;
   review_count?: number;
   description: string;
@@ -23,6 +20,7 @@ export interface Venue {
   venue_images: string[];
   owner_id?: string;
   neighborhood?: string;
+  collaboration_type?: string;
 }
 
 // Function to fetch venues from Supabase
@@ -58,9 +56,6 @@ async function fetchVenues() {
         city: venue.city,
         address: venue.address,
         state: venue.state,
-        price: venue.price ? parseFloat(venue.price) : undefined,
-        pricing_type: venue.pricing_type,
-        min_hours: venue.min_hours ? parseInt(venue.min_hours) : undefined,
         description: venue.description || '',
         capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
         tags: venue.tags || [],
@@ -68,6 +63,7 @@ async function fetchVenues() {
         neighborhood: venue.neighborhood || '',
         owner_id: venue.owner_id,
         status: venue.status || 'approved',
+        collaboration_type: venue.collaboration_type || '',
       };
     });
   }
