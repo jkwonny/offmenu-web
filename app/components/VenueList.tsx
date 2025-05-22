@@ -35,20 +35,6 @@ export default function VenueList({
         }
     }, [selectedVenueId]);
 
-    const formatPrice = (venue: Venue) => {
-        if (!venue.price) return 'Price upon request';
-
-        if (venue.pricing_type === 'hourly' && venue.min_hours) {
-            return `$${venue.price}/hr · ${venue.min_hours} hr min`;
-        } else if (venue.pricing_type === 'flat') {
-            return `$${venue.price} flat rate`;
-        } else if (venue.pricing_type === 'minimum_spend') {
-            return `$${venue.price} minimum spend`;
-        }
-
-        return `$${venue.price}`;
-    };
-
     const handleWebsiteClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.stopPropagation(); // Prevent the venue card click event from firing
     };
@@ -126,7 +112,7 @@ export default function VenueList({
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                                             </svg>
-                                            <span>{formatPrice(venue)}</span>
+                                            <span>{venue.collaboration_type}</span>
                                         </div>
 
                                         <div className="flex items-center text-sm">

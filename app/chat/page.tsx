@@ -9,6 +9,7 @@ import { User } from '@/app/types/user';
 import { ChatRoom, ChatRequest, ChatMessage } from '@/app/types/chat';
 import { Venue } from '@/app/types/venue';
 import { useChatRooms } from '@/app/lib/hooks/useChatRooms';
+import Image from 'next/image';
 
 // Type for raw response from Supabase
 interface SupabaseRequestResponse {
@@ -494,12 +495,15 @@ function ChatContent() {
                     <div className="col-span-1 bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col p-2">
                         {selectedSpace?.venue_images && selectedSpace.venue_images.length > 0 ? (
                             <div className="relative w-full h-72">
-                                <img
+                                <Image
                                     src={selectedSpace.venue_images[0].image_url}
                                     alt={selectedSpace?.name || "Venue"}
-                                    className="w-full h-72 object-cover rounded-lg"
-                                    onError={(e) => {
-                                        e.currentTarget.src = 'https://via.placeholder.com/800x400?text=Venue';
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="rounded-lg"
+                                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = 'https://via.placeholder.com/800x400?text=Venue';
                                     }}
                                 />
                             </div>

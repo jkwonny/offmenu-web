@@ -5,6 +5,7 @@ import { BookingProvider } from "./lib/context";
 import QueryProvider from "./lib/query-provider";
 import { EventProvider } from "./context/EventContext";
 import { UserProvider } from "./context/UserContext";
+import { ToastProvider } from './context/ToastContext';
 
 
 
@@ -26,11 +27,13 @@ export default function RootLayout({
       >
         <QueryProvider>
           <UserProvider>
-            <BookingProvider>
-              <EventProvider>
-                {children}
-              </EventProvider>
-            </BookingProvider>
+            <ToastProvider>
+              <BookingProvider>
+                <EventProvider>
+                  {children}
+                </EventProvider>
+              </BookingProvider>
+            </ToastProvider>
           </UserProvider>
         </QueryProvider>
       </body>

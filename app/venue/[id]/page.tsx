@@ -80,21 +80,6 @@ export default function VenuePage() {
         );
     }
 
-    // Format price display
-    const formatPrice = () => {
-        if (!venue.price) return 'Price upon request';
-
-        if (venue.pricing_type === 'hourly' && venue.min_hours) {
-            return `$${venue.price}/hr · ${venue.min_hours} hr min`;
-        } else if (venue.pricing_type === 'flat') {
-            return `$${venue.price} flat rate`;
-        } else if (venue.pricing_type === 'minimum_spend') {
-            return `$${venue.price} minimum spend`;
-        }
-
-        return `$${venue.price}`;
-    };
-
     return (
         <div className="min-h-screen">
             <NavBar />
@@ -287,7 +272,7 @@ export default function VenuePage() {
                     <div className="lg:col-span-1 text-black">
                         <div className="sticky top-8 border border-gray-200 rounded-lg p-6 bg-white border-gray-200">
                             <div className="text-2xl font-semibold mb-4 text-black">
-                                {formatPrice()}
+                                {venue.collaboration_type}
                             </div>
                             <button
                                 className="w-full cursor-pointer py-3 px-4 rounded-lg font-medium transition-colors border border-gray-200"

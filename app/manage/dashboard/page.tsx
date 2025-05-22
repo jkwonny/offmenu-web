@@ -173,12 +173,20 @@ function DashboardContent() {
                                                         }`}>
                                                         {venue.status?.charAt(0).toUpperCase() + venue.status?.slice(1)}
                                                     </span>
-                                                    <Link
-                                                        href={`/venue/${venue.id}`}
-                                                        className="text-black hover:underline text-sm"
-                                                    >
-                                                        View Details
-                                                    </Link>
+                                                    <div className="flex space-x-2">
+                                                        <Link
+                                                            href={`/venue/${venue.id}`}
+                                                            className="text-black hover:underline text-sm"
+                                                        >
+                                                            View
+                                                        </Link>
+                                                        <Link
+                                                            href="/manage/dashboard/availability"
+                                                            className="text-black hover:underline text-sm"
+                                                        >
+                                                            Availability
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

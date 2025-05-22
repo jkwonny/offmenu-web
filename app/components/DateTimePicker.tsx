@@ -146,7 +146,7 @@ export default function DateTimePicker({
                     <div className="flex items-center w-full justify-between">
                         <span className="text-gray-800 text-center">
                             {selectedDate && selectedTime ?
-                                `${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}` :
+                                `${new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${selectedTime}` :
                                 "Select date & time"
                             }
                         </span>
@@ -195,15 +195,21 @@ export default function DateTimePicker({
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    if (day.isAvailable) onDateSelect(day.dateString);
+                                                    if (day.isAvailable) {
+                                                        onDateSelect(day.dateString);
+                                                        // Close picker if both date and time are selected
+                                                        if (selectedTime) {
+                                                            onConfirm();
+                                                        }
+                                                    }
                                                 }}
                                                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
-                          ${day.isToday ? 'border border-amber-500' : ''}
-                          ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
-                          ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
-                          ${day.dateString === selectedDate ? 'bg-[#ca0013] text-white border-2 border-[#ca0013]' :
+                                                  ${day.isToday ? 'border border-amber-500' : ''}
+                                                  ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
+                                                  ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
+                                                  ${day.dateString === selectedDate ? 'bg-[#ca0013] text-white border-2 border-[#ca0013]' :
                                                         (day.isAvailable && !day.isToday ? 'hover:bg-[#f5d6d8]' : '')}
-                        `}
+                                                `}
                                                 disabled={!day.isAvailable}
                                                 type="button"
                                             >
@@ -228,6 +234,10 @@ export default function DateTimePicker({
                                         onClick={(e) => {
                                             e.preventDefault();
                                             onTimeSelect(time);
+                                            // Close picker if both date and time are selected
+                                            if (selectedDate) {
+                                                onConfirm();
+                                            }
                                         }}
                                         className={`w-full text-left px-3 py-2 rounded text-sm 
                                           ${selectedTime === time ? 'bg-[#ca0013] text-white' : 'hover:bg-[#f5d6d8]'}`}

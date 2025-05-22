@@ -16,6 +16,7 @@ import { LuMapPin } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
 import DateTimePicker from '../components/DateTimePicker';
 import { collaborationTypeLookUp } from '@/utils/collaborationTypeLookUp';
+import { useQuery } from '@tanstack/react-query';
 
 // Define local VenueImage interface to avoid import case issues
 interface VenueImage {
@@ -134,12 +135,10 @@ const getImageUrl = (image: VenueImage | string): string => {
 };
 
 // Create a client component for the content that uses useSearchParams
-function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | null) => void }) {
+function ExploreContent({ onVenueHover, selectedDate, selectedTime, onDateTimeUpdate }: { onVenueHover: (venueId: string | null) => void, selectedDate: string, selectedTime: string, onDateTimeUpdate: (date: string, time: string) => void }) {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
     const [capacityFilter, setCapacityFilter] = useState<string>('');
-    const [selectedDate, setSelectedDate] = useState<string>('');
-    const [selectedTime, setSelectedTime] = useState<string>('');
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
     const searchParams = useSearchParams();
@@ -153,6 +152,52 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     // Use React Query to fetch venues and events
     const { data: allVenues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
     const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
+
+    // Fetch available venue IDs if date/time filters are active
+    const {
+        data: availabilityData,
+        isLoading: availabilityLoading,
+        error: availabilityError
+    } = useQuery({
+        queryKey: ['venueAvailability', selectedDate, selectedTime],
+        queryFn: async () => {
+            if (!selectedDate) return null;
+
+            // Calculate end date (default to same day if not provided)
+            const endDate = selectedDate;
+
+            // Construct API URL with query parameters
+            const params = new URLSearchParams();
+            params.append('startDate', selectedDate);
+            params.append('endDate', endDate);
+
+            if (selectedTime) {
+                // Add time parameters if time is selected
+                params.append('startTime', selectedTime);
+
+                // Default end time is 2 hours after start time if not provided
+                const [hours, minutes] = selectedTime.split(':').map(Number);
+                let endHours = hours + 2;
+
+                // Handle overflow into next day
+                if (endHours >= 24) {
+                    endHours = 23;
+                    params.append('endTime', '23:59');
+                } else {
+                    params.append('endTime', `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+                }
+            }
+
+            const response = await fetch(`/api/calendar/check-availability?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch venue availability');
+            }
+
+            return response.json();
+        },
+        enabled: !!selectedDate,
+    });
 
     // Filter out venues and events owned by the current user
     const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
@@ -171,14 +216,12 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
             }
         }
 
-        // If date and time filters are active, check availability
-        // This is a simplified implementation - you'd need to check
-        // against actual venue availability data from your database
-        if (selectedDate && selectedTime) {
-            // Check if the venue has any bookings that conflict with the selected date/time
-            // For now, we'll assume all venues are available on all dates/times
-            // You would need to implement actual availability checking based on your data model
-            return true;
+        // If date and time filters are active, check availability using the API response
+        if (selectedDate && availabilityData) {
+            // Exclude unavailable venues based on the API response
+            if (availabilityData.availableVenueIds && !availabilityData.availableVenueIds.includes(venue.id)) {
+                return false;
+            }
         }
 
         return true;
@@ -186,8 +229,9 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
 
     const events = allEvents.filter(event => (event.owner_id !== user?.id && event.user_id !== user?.id));
 
-    const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
-    const error = selectedView === 'spaces' ? venuesError : eventsError;
+    const isLoading = (selectedView === 'spaces' ? venuesLoading : eventsLoading) ||
+        (selectedDate && availabilityLoading);
+    const error = selectedView === 'spaces' ? venuesError || availabilityError : eventsError;
 
     const handleVenueClick = (venueId: string) => {
         // Set the selected venue ID
@@ -300,8 +344,14 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                     <DateTimePicker
                                         selectedDate={selectedDate}
                                         selectedTime={selectedTime}
-                                        onDateSelect={setSelectedDate}
-                                        onTimeSelect={setSelectedTime}
+                                        onDateSelect={(date) => {
+                                            onDateTimeUpdate(date, selectedTime);
+                                            setShowDateTimePicker(false);
+                                        }}
+                                        onTimeSelect={(time) => {
+                                            onDateTimeUpdate(selectedDate, time);
+                                            setShowDateTimePicker(false);
+                                        }}
                                         onConfirm={() => setShowDateTimePicker(false)}
                                         showPicker={showDateTimePicker}
                                         togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
@@ -310,6 +360,18 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                 </div>
                             </div>
                         </div>
+
+                        {selectedDate && (
+                            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>
+                                    {filteredVenues.length} venue{filteredVenues.length !== 1 ? 's' : ''} available on {selectedDate}
+                                    {selectedTime ? ` at ${selectedTime}` : ''}
+                                </span>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {filteredVenues.length > 0 ? (
@@ -411,52 +473,52 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                        {events.map((event: Event) => (
-                            <div
-                                key={event.id}
-                                className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
-                            >
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                        <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium whitespace-nowrap">
-                                            {formatText(event.event_type)}
-                                        </span>
-                                    </div>
-                                    <div className="text-gray-600 mb-4">
-                                        {format(event.selected_date, 'MMM d, yyyy')}
-                                        {event.selected_time && ` at ${event.selected_time}`}
-                                    </div>
-                                    <p className="text-gray-700 mb-4 line-clamp-3">
-                                        {event.description || 'No description available'}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {event.assets_needed?.map((tag: string, index: number) => (
-                                            <span
-                                                key={index}
-                                                className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm"
-                                            >
-                                                {formatText(tag)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <div className="text-sm text-gray-600">
-                                            {event.expected_capacity_min && event.expected_capacity_max
-                                                ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                : 'Guest count not specified'}
+                    <div className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">{events.length} Events</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                            {events.map((event: Event) => (
+                                <div
+                                    key={event.id}
+                                    className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                                >
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h2 className="text-2xl font-semibold">{event.title}</h2>
                                         </div>
-                                        <button
-                                            className="px-4 py-2 bg-[#ca0013] text-white rounded hover:bg-[#ca0013] transition-colors duration-200"
-                                            onClick={() => {/* TODO: Implement messaging */ }}
-                                        >
-                                            Message
-                                        </button>
+                                        <div className="text-gray-600 mb-4">
+                                            {format(event.selected_date, 'MMM d, yyyy')}
+                                            {event.selected_time && ` at ${event.selected_time}`}
+                                        </div>
+                                        <p className="text-gray-700 mb-4 line-clamp-3">
+                                            {event.description || 'No description available'}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {event.assets_needed?.map((tag: string, index: number) => (
+                                                <span
+                                                    key={index}
+                                                    className="px-3 py-1 bg-[#06048D]/90 text-white rounded-full text-sm"
+                                                >
+                                                    {formatText(tag)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-sm text-gray-600">
+                                                {event.expected_capacity_min && event.expected_capacity_max
+                                                    ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                    : 'Guest count not specified'}
+                                            </div>
+                                            <button
+                                                className="px-4 py-2 bg-[#06048D] text-white rounded hover:bg-[#06048D] transition-colors duration-200"
+                                                onClick={() => {/* TODO: Implement messaging */ }}
+                                            >
+                                                Message
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
@@ -466,39 +528,45 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
 
 export default function ExplorePage() {
     const [hoveredVenueId, setHoveredVenueId] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [selectedTime, setSelectedTime] = useState<string>('');
+
+    // Handler for date/time updates
+    const handleDateTimeUpdate = (date: string, time: string) => {
+        setSelectedDate(date);
+        setSelectedTime(time);
+    };
 
     return (
-        <div className="relative h-screen w-screen">
-            {/* Map takes up the entire screen */}
-            <div className="absolute inset-0">
-                <Suspense fallback={<div className="flex items-center justify-center h-full">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
-                </div>}>
-                    <ExploreMap hoveredVenueId={hoveredVenueId} />
-                </Suspense>
-            </div>
-
-            {/* Floating navbar with margin on all sides */}
-            <div className="absolute top-0 left-0 right-0 m-3 z-[60]">
-                <div className="bg-white rounded-lg shadow-lg">
-                    <NavBar />
+        <div className="flex flex-col h-screen">
+            <NavBar />
+            <div className="flex-grow flex flex-col md:flex-row">
+                <div className="md:w-1/3 p-0 md:p-4 md:overflow-y-auto">
+                    <Suspense fallback={<div>Loading...</div>}>
+                        <ExploreContent
+                            onVenueHover={setHoveredVenueId}
+                            selectedDate={selectedDate}
+                            selectedTime={selectedTime}
+                            onDateTimeUpdate={handleDateTimeUpdate}
+                        />
+                    </Suspense>
                 </div>
-            </div>
-
-            {/* Floating content container below navbar */}
-            <div className="absolute top-22 left-3 w-full lg:w-1/2 max-w-[1/2] z-50">
-                <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
-                </div>}>
-                    <ExploreContent onVenueHover={setHoveredVenueId} />
-                </Suspense>
+                <div className="hidden md:block md:w-2/3 relative">
+                    <Suspense fallback={<div>Loading Map...</div>}>
+                        <ExploreMap
+                            hoveredVenueId={hoveredVenueId}
+                            selectedDate={selectedDate}
+                            selectedTime={selectedTime}
+                        />
+                    </Suspense>
+                </div>
             </div>
         </div>
     );
 }
 
 // Map component that will receive venue data
-function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
+function ExploreMap({ hoveredVenueId, selectedDate, selectedTime }: { hoveredVenueId: string | null, selectedDate: string, selectedTime: string }) {
     const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const { user } = useUser();
@@ -510,8 +578,60 @@ function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
     // Use React Query to fetch venues
     const { data: allVenues = [], isLoading: venuesLoading } = useVenues();
 
+    // Fetch available venue IDs if date/time filters are active
+    const {
+        data: availabilityData,
+        isLoading: availabilityLoading
+    } = useQuery({
+        queryKey: ['mapVenueAvailability', selectedDate, selectedTime],
+        queryFn: async () => {
+            if (!selectedDate) return null;
+
+            // Calculate end date (default to same day if not provided)
+            const endDate = selectedDate;
+
+            // Construct API URL with query parameters
+            const params = new URLSearchParams();
+            params.append('startDate', selectedDate);
+            params.append('endDate', endDate);
+
+            if (selectedTime) {
+                // Add time parameters if time is selected
+                params.append('startTime', selectedTime);
+
+                // Default end time is 2 hours after start time if not provided
+                const [hours, minutes] = selectedTime.split(':').map(Number);
+                let endHours = hours + 2;
+
+                // Handle overflow into next day
+                if (endHours >= 24) {
+                    endHours = 23;
+                    params.append('endTime', '23:59');
+                } else {
+                    params.append('endTime', `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+                }
+            }
+
+            const response = await fetch(`/api/calendar/check-availability?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch venue availability');
+            }
+
+            return response.json();
+        },
+        enabled: !!selectedDate,
+    });
+
     // Filter out venues owned by the current user
-    const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
+    let venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
+
+    // Apply date/time filter if needed
+    if (selectedDate && availabilityData?.availableVenueIds) {
+        venues = venues.filter(venue =>
+            availabilityData.availableVenueIds.includes(venue.id)
+        );
+    }
 
     const handleMarkerClick = useCallback((venueId: string) => {
         // If venueId is empty string, it means deselect
@@ -529,7 +649,7 @@ function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
         setSelectedVenueId(venueId);
     }, [selectedVenueId]);
 
-    if (venuesLoading) {
+    if (venuesLoading || (selectedDate && availabilityLoading)) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
@@ -544,6 +664,7 @@ function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
             selectedVenueId={selectedVenueId}
             hoveredVenueId={hoveredVenueId}
             onMarkerClick={handleMarkerClick}
+            hasAvailabilityFilter={!!selectedDate}
         />
     );
 }
@@ -554,9 +675,10 @@ interface MapboxMapProps {
     selectedVenueId: string | null;
     hoveredVenueId?: string | null;
     onMarkerClick: (venueId: string) => void;
+    hasAvailabilityFilter?: boolean;
 }
 
-function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerClick }: MapboxMapProps) {
+function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerClick, hasAvailabilityFilter = false }: MapboxMapProps) {
     const [error, setError] = useState<string | null>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -714,8 +836,6 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
             // Set the background image
             imageMarker.style.backgroundImage = `url('${imageUrl}')`;
 
-            container.appendChild(imageMarker);
-
             // Apply initial styling based on selection and open popup state
             if (venue.id === openPopupVenueIdRef.current) {
                 imageMarker.classList.add('selected');
@@ -724,6 +844,31 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
             } else if (venue.id === hoveredVenueId) {
                 imageMarker.classList.add('hovered');
             }
+
+            // Add filter for availability indication when date/time filter is active
+            if (hasAvailabilityFilter) {
+                // Add an availability indicator to the marker
+                const availabilityBadge = document.createElement('div');
+                availabilityBadge.className = 'availability-badge';
+                availabilityBadge.innerHTML = '✓';
+                availabilityBadge.style.position = 'absolute';
+                availabilityBadge.style.top = '-5px';
+                availabilityBadge.style.right = '-5px';
+                availabilityBadge.style.backgroundColor = '#22c55e'; // Green color
+                availabilityBadge.style.color = 'white';
+                availabilityBadge.style.borderRadius = '50%';
+                availabilityBadge.style.width = '20px';
+                availabilityBadge.style.height = '20px';
+                availabilityBadge.style.display = 'flex';
+                availabilityBadge.style.alignItems = 'center';
+                availabilityBadge.style.justifyContent = 'center';
+                availabilityBadge.style.fontSize = '12px';
+                availabilityBadge.style.fontWeight = 'bold';
+
+                container.appendChild(availabilityBadge);
+            }
+
+            container.appendChild(imageMarker);
 
             // Create the popup for this marker but don't show it yet
             const popup = createVenuePopup(venue);
@@ -749,44 +894,59 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
                 // This ensures the hover effect doesn't interfere with the selected state
                 onMarkerClick(venue.id);
 
-                // Store the venue ID with open popup
+                // Update the open popup venue ID
                 openPopupVenueIdRef.current = venue.id;
 
-                // Get the popup and ensure it's positioned correctly
-                const popup = marker.getPopup();
-                if (popup) {
-                    // Close any existing popup before showing this one
-                    if (popupRef.current && popupRef.current !== popup) {
-                        popupRef.current.remove();
-                    }
+                // Show the popup (this will also center the map)
+                marker.togglePopup();
 
-                    popup.setLngLat([venue.longitude, venue.latitude]);
-
-                    // Always show the popup when marker is clicked
-                    popup.addTo(mapRef.current!);
-                    popupRef.current = popup;
-                }
-
-                // Reset after a short delay to ensure all effects complete
+                // Reset the flag after a short delay
                 setTimeout(() => {
                     markerClickedRef.current = false;
-                }, 500);
+                }, 100);
+            });
+
+            // Add hover events to marker
+            container.addEventListener('mouseenter', () => {
+                // If we're in the process of handling a click event, or if this venue already has a popup open,
+                // don't trigger hover behavior
+                if (markerClickedRef.current || openPopupVenueIdRef.current === venue.id) {
+                    return;
+                }
+
+                // Apply hovered class
+                imageMarker.classList.add('hovered');
+            });
+
+            container.addEventListener('mouseleave', () => {
+                // If we're in the process of handling a click event, don't remove hover styling
+                if (markerClickedRef.current) {
+                    return;
+                }
+
+                // Remove hovered class if this venue is not the selected one
+                if (venue.id !== selectedVenueId && venue.id !== openPopupVenueIdRef.current) {
+                    imageMarker.classList.remove('hovered');
+                }
             });
         });
 
+        // Store markers
         markersRef.current = markers;
 
-        // Restore popup if needed
-        if (currentOpenPopupVenueId && markersRef.current[currentOpenPopupVenueId]) {
-            const marker = markersRef.current[currentOpenPopupVenueId];
-            const popup = marker.getPopup();
-
-            if (popup) {
-                popup.addTo(mapRef.current);
-                popupRef.current = popup;
+        // Restore any open popup
+        if (currentOpenPopupVenueId && markers[currentOpenPopupVenueId]) {
+            const marker = markers[currentOpenPopupVenueId];
+            if (marker) {
+                // Toggle popup for the marker
+                marker.togglePopup();
+                const popup = marker.getPopup();
+                if (popup) {
+                    popupRef.current = popup;
+                }
             }
         }
-    }, [createVenuePopup, selectedVenueId, hoveredVenueId, onMarkerClick]);
+    }, [hoveredVenueId, selectedVenueId, onMarkerClick, createVenuePopup, hasAvailabilityFilter]);
 
     const mapContainer = useCallback((node: HTMLDivElement | null) => {
         nodeRef.current = node;

@@ -227,19 +227,7 @@ export default function AdminDashboard() {
 // Venue Card Component for the Admin Dashboard
 function VenueCard({ venue, actionButtons }: { venue: AdminVenue, actionButtons: React.ReactNode }) {
     // Format price display
-    const formatPrice = (venue: AdminVenue) => {
-        if (!venue.price) return 'Price upon request';
 
-        if (venue.pricing_type === 'hourly' && venue.min_hours) {
-            return `$${venue.price}/hr · ${venue.min_hours} hr min`;
-        } else if (venue.pricing_type === 'flat') {
-            return `$${venue.price} flat rate`;
-        } else if (venue.pricing_type === 'minimum_spend') {
-            return `$${venue.price} minimum spend`;
-        }
-
-        return `$${venue.price}`;
-    };
 
     return (
         <div className="flex flex-col rounded-xl overflow-hidden shadow-md bg-white">
@@ -260,7 +248,7 @@ function VenueCard({ venue, actionButtons }: { venue: AdminVenue, actionButtons:
 
                 {/* Price badge */}
                 <div className="absolute bottom-3 left-3 bg-amber-500/90 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {formatPrice(venue)}
+                    {venue.collaboration_type}
                 </div>
             </div>
 

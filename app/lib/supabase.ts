@@ -61,14 +61,10 @@ export const supabase = createClient(
 
 // Set up auth state listener (separate from client creation to avoid type errors)
 if (typeof window !== 'undefined') {
-  supabase.auth.onAuthStateChange((event, _session) => {
-    console.log('Auth state updated:', _session);
+  supabase.auth.onAuthStateChange((event) => {
     if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-      console.log('Auth state updated:', event);
     } else if (event === 'SIGNED_OUT') {
-      console.log('User signed out');
     } else if (event === 'USER_UPDATED') {
-      console.log('User profile updated');
     }
   });
 }

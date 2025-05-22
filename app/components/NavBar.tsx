@@ -269,6 +269,13 @@ export default function NavBar() {
                                             </Link>
                                         )}
 
+                                        <Link
+                                            href="/manage/dashboard/availability"
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Manage Availability
+                                        </Link>
+
                                         <button
                                             onClick={openFeedbackModal}
                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -397,6 +404,14 @@ export default function NavBar() {
                                     Manager Dashboard
                                 </Link>
                             )}
+
+                            <Link
+                                href="/manage/dashboard/availability"
+                                className="block py-2 text-gray-700 hover:text-black"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Manage Availability
+                            </Link>
 
                             <button
                                 onClick={openFeedbackModal}
