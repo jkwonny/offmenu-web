@@ -85,6 +85,14 @@ CREATE TABLE events (
   owner_id UUID REFERENCES users(id)
 );
 
+-- Create event_images table to store images for each event
+CREATE TABLE event_images (
+  id BIGSERIAL PRIMARY KEY,
+  event_id uuid REFERENCES events(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT now()
+);
 
 -- Chat functionality
 CREATE TABLE chat_requests (

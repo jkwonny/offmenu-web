@@ -348,8 +348,6 @@ export default function SubmitSpacePage() {
                 services: formData.services,
             };
 
-            console.log("Submitting space data:", submissionData); // Data to be sent to API
-
             // Make API call to save space
             const response = await fetch('/api/venues', {
                 method: 'POST',

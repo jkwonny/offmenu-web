@@ -10,8 +10,8 @@ interface EventFormData {
   expected_capacity_max: number;
   assets_needed: string[];
   event_type: string;
-  image_file?: File;
   event_status?: "private_pending" | "public_pending" | "public_approved" | "private_approved";
+  duration: number;
 }
 
 export async function createEvent(formData: EventFormData) {
@@ -22,7 +22,7 @@ export async function createEvent(formData: EventFormData) {
   }
 
   console.log('Creating event');
-  // First create the event
+  // Create the event
   const { data, error } = await supabase
     .from('events')
     .insert({
@@ -36,44 +36,15 @@ export async function createEvent(formData: EventFormData) {
       assets_needed: formData.assets_needed || [],
       event_type: formData.event_type,
       is_active: true,
-      event_status: formData.event_status || 'private_pending'
+      event_status: formData.event_status || 'private_pending',
+      duration: formData.duration,
     })
     .select()
     .single();
 
   if (error) {
+    console.error('Error creating event:', error);
     throw error;
-  }
-
-  // Handle image upload if provided
-  if (formData.image_file && data.id) {
-    console.log('Uploading image to storage');
-    const fileExt = formData.image_file.name.split('.').pop();
-    const filePath = `event-photos/${data.id}/${Date.now()}.${fileExt}`;
-    
-    // Upload the image to storage
-    const { error: uploadError } = await supabase
-      .storage
-      .from('event-photos')
-      .upload(filePath, formData.image_file, {
-        upsert: true,
-        contentType: formData.image_file.type
-      });
-    
-    if (uploadError) {
-      console.error('Error uploading event image:', uploadError);
-      // We don't throw here to avoid failing the entire event creation
-    } else {
-      // Update the event with the image path
-      const { error: updateError } = await supabase
-        .from('events')
-        .update({ image_url: filePath })
-        .eq('id', data.id);
-      
-      if (updateError) {
-        console.error('Error updating event with image:', updateError);
-      }
-    }
   }
 
   return data;

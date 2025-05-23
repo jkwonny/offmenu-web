@@ -35,7 +35,7 @@ interface Event {
     expected_capacity_min?: number;
     expected_capacity_max?: number;
     image_url: string;
-    event_photos?: VenueImage[];
+    event_images?: VenueImage[];
     address: string;
     pricing_type: string;
     price?: number;
@@ -235,10 +235,10 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
             <div className="w-full p-6 bg-white rounded-lg shadow-lg max-h-[calc(100vh-120px)] overflow-y-auto">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#06048D]"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                     </div>
                 ) : error ? (
-                    <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-lg m-4">
+                    <div className="p-4 bg-[#273287]/10 text-[#273287] border border-[#273287]/20 rounded-lg m-4">
                         {error instanceof Error ? error.message : 'An error occurred while fetching data'}
                     </div>
                 ) : selectedView === 'spaces' ? (
@@ -325,7 +325,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                     return (
                                         <div
                                             key={venue.id}
-                                            className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#06048D]' : ''}`}
+                                            className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#273287]' : ''}`}
                                             onClick={() => handleVenueClick(venue.id)}
                                             onMouseEnter={() => {
                                                 // Only trigger hover event if this isn't the currently selected venue
@@ -412,51 +412,73 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                        {events.map((event: Event) => (
-                            <div
-                                key={event.id}
-                                className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
-                            >
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                        <span className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm font-medium whitespace-nowrap">
-                                            {formatText(event.event_type)}
-                                        </span>
-                                    </div>
-                                    <div className="text-gray-600 mb-4">
-                                        {format(event.selected_date, 'MMM d, yyyy')}
-                                        {event.selected_time && ` at ${event.selected_time}`}
-                                    </div>
-                                    <p className="text-gray-700 mb-4 line-clamp-3">
-                                        {event.description || 'No description available'}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {event.assets_needed?.map((tag: string, index: number) => (
-                                            <span
-                                                key={index}
-                                                className="px-3 py-1 bg-[#ca0013] text-white rounded-full text-sm"
-                                            >
-                                                {formatText(tag)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <div className="text-sm text-gray-600">
-                                            {event.expected_capacity_min && event.expected_capacity_max
-                                                ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                : 'Guest count not specified'}
+                        {events.map((event: Event) => {
+                            // Determine the image URL for the event
+                            console.log('event', event)
+                            let eventImageUrl: string | undefined = undefined;
+                            if (event.event_images && event.event_images.length > 0) {
+                                eventImageUrl = getImageUrl(event.event_images[0]);
+                            } else if (event.image_url) {
+                                eventImageUrl = event.image_url;
+                            }
+
+                            return (
+                                <div
+                                    key={event.id}
+                                    className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                                >
+                                    {eventImageUrl && (
+                                        <div className="w-full h-48 relative">
+                                            <Image
+                                                src={eventImageUrl}
+                                                alt={event.title}
+                                                layout="fill"
+                                                objectFit="cover"
+                                                className="transition-transform duration-300 group-hover:scale-105"
+                                            />
                                         </div>
-                                        <button
-                                            className="px-4 py-2 bg-[#ca0013] text-white rounded hover:bg-[#ca0013] transition-colors duration-200"
-                                            onClick={() => {/* TODO: Implement messaging */ }}
-                                        >
-                                            Message
-                                        </button>
+                                    )}
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h2 className="text-2xl font-semibold">{event.title}</h2>
+                                            <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
+                                                {formatText(event.event_type)}
+                                            </span>
+                                        </div>
+                                        <div className="text-gray-600 mb-4">
+                                            {format(event.selected_date, 'MMM d, yyyy')}
+                                            {event.selected_time && ` at ${event.selected_time}`}
+                                        </div>
+                                        <p className="text-gray-700 mb-4 line-clamp-3">
+                                            {event.description || 'No description available'}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {event.assets_needed?.map((tag: string, index: number) => (
+                                                <span
+                                                    key={index}
+                                                    className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
+                                                >
+                                                    {formatText(tag)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-sm text-gray-600">
+                                                {event.expected_capacity_min && event.expected_capacity_max
+                                                    ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                    : 'Guest count not specified'}
+                                            </div>
+                                            <button
+                                                className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
+                                                onClick={() => {/* TODO: Implement messaging */ }}
+                                            >
+                                                Message
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -472,7 +494,7 @@ export default function ExplorePage() {
             {/* Map takes up the entire screen */}
             <div className="absolute inset-0">
                 <Suspense fallback={<div className="flex items-center justify-center h-full">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                 </div>}>
                     <ExploreMap hoveredVenueId={hoveredVenueId} />
                 </Suspense>
@@ -488,7 +510,7 @@ export default function ExplorePage() {
             {/* Floating content container below navbar */}
             <div className="absolute top-22 left-3 w-full lg:w-1/2 max-w-[1/2] z-50">
                 <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                 </div>}>
                     <ExploreContent onVenueHover={setHoveredVenueId} />
                 </Suspense>
@@ -532,7 +554,7 @@ function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
     if (venuesLoading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
             </div>
         );
     }
@@ -1006,24 +1028,24 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
             
             .image-marker.selected {
                 transform: scale(1.1);
-                border-color: #06048D;
-                box-shadow: 0 2px 10px rgba(6, 4, 141, 0.5);
+                border-color: #273287;
+                box-shadow: 0 2px 10px rgba(27, 50, 135, 0.5);
                 z-index: 2;
             }
             
             .image-marker.hovered {
                 transform: scale(1.1);
-                border-color: #06048D;
+                border-color: #273287;
                 z-index: 2;
             }
             
             .image-marker:hover {
                 transform: scale(1.05);
-                border-color: #06048D;
+                border-color: #273287;
             }
             
             .image-marker.selected:hover {
-                border-color: #06048D;
+                border-color: #273287;
             }
             
             /* Ensure the popup container is properly positioned */
@@ -1052,7 +1074,7 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(6, 4, 141, 0.2);
+                background-color: rgba(27, 50, 135, 0.2);
                 z-index: 2;
             }
         `;
@@ -1124,8 +1146,8 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
         <div className="relative w-full h-full">
             <div ref={mapContainer} className="w-full h-full" />
             {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-50">
-                    <div className="text-red-600 p-4 bg-white rounded shadow">{error}</div>
+                <div className="absolute inset-0 flex items-center justify-center bg-[#273287]/10 bg-opacity-50">
+                    <div className="text-[#273287] p-4 bg-white rounded shadow">{error}</div>
                 </div>
             )}
         </div>

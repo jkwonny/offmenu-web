@@ -61,7 +61,7 @@ export default function Page() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="px-8 py-3 rounded-full font-semibold transition-colors shadow-md border cursor-pointer hover:shadow-lg hover:scale-105" style={{ background: '#fff', color: 'var(--foreground)', borderColor: 'var(--foreground)' }}
-              onClick={() => router.push('/list-event')}
+              onClick={() => router.push('/submit-event')}
             >
               List Your Event
             </button>
