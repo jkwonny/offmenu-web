@@ -45,7 +45,7 @@ export default function Page() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+    <div className="min-h-screen bg-white">
       <NavBar />
       {/* Hero Section */}
       <section className="px-4 pt-16 pb-12 md:pt-24 md:pb-20 border-b">
@@ -147,7 +147,7 @@ export default function Page() {
       </section>
 
       {/* How It Works Section */}
-      <section className="px-4 py-14 md:py-20 bg-[#fbfbfa]">
+      <section className="px-4 py-14 md:py-20">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center font-heading" style={{ color: 'var(--foreground)' }}>What are you planning?</h2>
           <p className="text-center text-lg mb-12">
@@ -290,7 +290,7 @@ export default function Page() {
                     </div>
                     <button
                       onClick={() => router.push(`/venue/${listing.id}`)}
-                      className="mt-auto px-5 py-2 rounded-full font-semibold transition-colors cursor-pointer hover:bg-amber-100 hover:shadow-lg hover:scale-105"
+                      className="mt-auto px-5 py-2 rounded-full font-semibold transition-colors cursor-pointer hover:shadow-lg hover:scale-105"
                       style={{ background: '#fff', color: 'var(--foreground)', border: '1px solid var(--foreground)' }}
                     >
                       View
