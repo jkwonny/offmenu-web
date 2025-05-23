@@ -100,7 +100,7 @@ export async function GET(request: Request) {
     // Start building the query
     let query = supabase
       .from('events')
-      .select('*')
+      .select('*, event_images(*)')
       .eq('is_active', true);
     
     // Filter out inquiries unless specifically requested

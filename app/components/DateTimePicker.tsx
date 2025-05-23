@@ -204,11 +204,11 @@ export default function DateTimePicker({
                                                     }
                                                 }}
                                                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
-                                                  ${day.isToday ? 'border border-amber-500' : ''}
+                                                  ${day.isToday ? 'border border-[#273287]' : ''}
                                                   ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
                                                   ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
-                                                  ${day.dateString === selectedDate ? 'bg-[#ca0013] text-white border-2 border-[#ca0013]' :
-                                                        (day.isAvailable && !day.isToday ? 'hover:bg-[#f5d6d8]' : '')}
+                                                  ${day.dateString === selectedDate ? 'bg-[#273287] text-white border-2 border-[#273287]' :
+                                                        (day.isAvailable && !day.isToday ? 'hover:bg-[#273287]/10' : '')}
                                                 `}
                                                 disabled={!day.isAvailable}
                                                 type="button"
@@ -240,7 +240,7 @@ export default function DateTimePicker({
                                             }
                                         }}
                                         className={`w-full text-left px-3 py-2 rounded text-sm 
-                                          ${selectedTime === time ? 'bg-[#ca0013] text-white' : 'hover:bg-[#f5d6d8]'}`}
+                                          ${selectedTime === time ? 'bg-[#273287] text-white' : 'hover:bg-[#273287]/10'}`}
                                         type="button"
                                     >
                                         {time}
@@ -257,7 +257,7 @@ export default function DateTimePicker({
                                 onConfirm();
                             }}
                             className={`px-4 py-2 rounded font-medium text-sm
-                              ${selectedDate && selectedTime ? 'bg-[#ca0013] text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                              ${selectedDate && selectedTime ? 'bg-[#273287] text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                             disabled={!selectedDate || !selectedTime}
                             type="button"
                         >

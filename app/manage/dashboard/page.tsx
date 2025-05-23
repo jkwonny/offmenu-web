@@ -200,7 +200,7 @@ function DashboardContent() {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-semibold">My Pop-ups ({userEvents.length})</h2>
                             <Link
-                                href="/list-event"
+                                href="/submit-event"
                                 className="bg-black text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800"
                             >
                                 + Create New Pop-up
@@ -212,7 +212,7 @@ function DashboardContent() {
                                 <h3 className="text-lg font-medium mb-2">You don&apos;t have any pop-ups yet</h3>
                                 <p className="text-gray-600 mb-4">Create your first event pop-up to get started.</p>
                                 <Link
-                                    href="/list-event"
+                                    href="/submit-event"
                                     className="inline-block bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
                                 >
                                     Create a Pop-up
