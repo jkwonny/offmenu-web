@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { LuMapPin } from 'react-icons/lu';
 import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Define types
 interface VenueImage {
@@ -64,7 +65,7 @@ function DashboardContent() {
     const searchParams = useSearchParams();
     const { user, isLoading: userLoading } = useUser();
     const view = searchParams.get('view') || 'spaces';
-
+    const router = useRouter();
     // Fetch venues and events data
     const { data: venues = [], isLoading: venuesLoading } = useVenues();
     const { data: events = [], isLoading: eventsLoading } = useEvents<Event[]>();
@@ -229,6 +230,7 @@ function DashboardContent() {
                                         <div
                                             key={event.id}
                                             className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                                            onClick={() => router.push(`/event/${event.id}`)}
                                         >
                                             <div className="aspect-[4/3] relative">
                                                 <Image

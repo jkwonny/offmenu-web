@@ -16,6 +16,7 @@ import { LuMapPin } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
 import DateTimePicker from '../components/DateTimePicker';
 import { collaborationTypeLookUp } from '@/utils/collaborationTypeLookUp';
+import Link from 'next/link';
 
 // Define local VenueImage interface to avoid import case issues
 interface VenueImage {
@@ -423,60 +424,61 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                             }
 
                             return (
-                                <div
-                                    key={event.id}
-                                    className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
-                                >
-                                    {eventImageUrl && (
-                                        <div className="w-full h-48 relative">
-                                            <Image
-                                                src={eventImageUrl}
-                                                alt={event.title}
-                                                layout="fill"
-                                                objectFit="cover"
-                                                className="transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                            <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
-                                                {formatText(event.event_type)}
-                                            </span>
-                                        </div>
-                                        <div className="text-gray-600 mb-4">
-                                            {format(event.selected_date, 'MMM d, yyyy')}
-                                            {event.selected_time && ` at ${event.selected_time}`}
-                                        </div>
-                                        <p className="text-gray-700 mb-4 line-clamp-3">
-                                            {event.description || 'No description available'}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2 mb-4">
-                                            {event.assets_needed?.map((tag: string, index: number) => (
-                                                <span
-                                                    key={index}
-                                                    className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
-                                                >
-                                                    {formatText(tag)}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-sm text-gray-600">
-                                                {event.expected_capacity_min && event.expected_capacity_max
-                                                    ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                    : 'Guest count not specified'}
+                                <Link key={event.id} href={`/event/${event.id}`} passHref>
+                                    <div
+                                        className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                                    >
+                                        {eventImageUrl && (
+                                            <div className="w-full h-48 relative">
+                                                <Image
+                                                    src={eventImageUrl}
+                                                    alt={event.title}
+                                                    layout="fill"
+                                                    objectFit="cover"
+                                                    className="transition-transform duration-300 group-hover:scale-105"
+                                                />
                                             </div>
-                                            <button
-                                                className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
-                                                onClick={() => {/* TODO: Implement messaging */ }}
-                                            >
-                                                Message
-                                            </button>
+                                        )}
+                                        <div className="p-6">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h2 className="text-2xl font-semibold">{event.title}</h2>
+                                                <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
+                                                    {formatText(event.event_type)}
+                                                </span>
+                                            </div>
+                                            <div className="text-gray-600 mb-4">
+                                                {format(event.selected_date, 'MMM d, yyyy')}
+                                                {event.selected_time && ` at ${event.selected_time}`}
+                                            </div>
+                                            <p className="text-gray-700 mb-4 line-clamp-3">
+                                                {event.description || 'No description available'}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2 mb-4">
+                                                {event.assets_needed?.map((tag: string, index: number) => (
+                                                    <span
+                                                        key={index}
+                                                        className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
+                                                    >
+                                                        {formatText(tag)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <div className="text-sm text-gray-600">
+                                                    {event.expected_capacity_min && event.expected_capacity_max
+                                                        ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                        : 'Guest count not specified'}
+                                                </div>
+                                                <button
+                                                    className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
+                                                    onClick={() => {/* TODO: Implement messaging */ }}
+                                                >
+                                                    Message
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             );
                         })}
                     </div>
