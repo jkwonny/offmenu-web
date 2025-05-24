@@ -2,12 +2,11 @@
 
 import { useState, FormEvent, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import NavBar from "./NavBar"; // Assuming NavBar is in the same directory or adjust path
-import { useUser } from "../context/UserContext"; // Adjust path as needed
+import { useUser } from "../context/UserContext";
 import Image from "next/image";
-import DateTimePicker from "./DateTimePicker"; // Assuming DateTimePicker is in the same directory or adjust path
-import RangeSlider from "./RangeSlider"; // Assuming RangeSlider is in the same directory or adjust path
-import type { Event, EventImage } from "@/app/event/[id]/page"; // Adjust path to your Event interface
+import DateTimePicker from "./DateTimePicker";
+import RangeSlider from "./RangeSlider";
+import { Event, EventImage } from "@/app/types/event";
 
 type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
 type GuestRange = '1-15' | '16-30' | '31-50' | '51-75' | '75-100' | '100+';
@@ -85,7 +84,6 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
 
     const [duration, setDuration] = useState<DurationType>(durationToString(initialDuration));
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
 
     const [uploadedImages, setUploadedImages] = useState<File[]>([]);
     const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
@@ -175,7 +173,6 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
     const internalHandleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError(null);
-        setSuccess(null);
 
         if (!user) {
             setError("You must be logged in.");

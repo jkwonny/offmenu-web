@@ -7,7 +7,7 @@ import CreateOrEditEventForm from '@/app/components/CreateOrEditEventForm';
 import type { EventFormData } from '@/app/components/CreateOrEditEventForm';
 import { useUpdateEvent } from '@/app/lib/react-query/mutations/events';
 import { useUser } from '@/app/context/UserContext';
-import type { Event } from '../page'; // Assuming Event type is from the parent [id]/page.tsx
+import { Event } from '@/app/types/event';
 
 export default function EditEventPage() {
     const router = useRouter();
@@ -82,7 +82,7 @@ export default function EditEventPage() {
                 if (result.url) {
                     imageUrls.push(result.url);
                 }
-            } catch (uploadError) {
+            } catch {
                 failedUploads.push(file.name);
             }
         }
