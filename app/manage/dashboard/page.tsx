@@ -9,32 +9,7 @@ import Image from 'next/image';
 import { LuMapPin } from 'react-icons/lu';
 import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-
-// Define types
-interface VenueImage {
-    image_url: string;
-    sort_order?: number;
-}
-
-interface Event {
-    id: string;
-    title: string;
-    event_type: string;
-    selected_date: string;
-    selected_time?: string;
-    description?: string;
-    assets_needed?: string[];
-    expected_capacity_min?: number;
-    expected_capacity_max?: number;
-    image_url: string;
-    event_photos?: VenueImage[];
-    address: string;
-    pricing_type: string;
-    price?: number;
-    user_id?: string;
-    owner_id?: string;
-    status?: string;
-}
+import { Event } from '@/app/types/event';
 
 function DashboardTabs({ view }: { view: string }) {
     return (
@@ -151,6 +126,7 @@ function DashboardContent() {
                                         <div
                                             key={venue.id}
                                             className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                                            onClick={() => router.push(`/venue/${venue.id}`)}
                                         >
                                             <div className="aspect-[4/3] relative">
                                                 <Image
@@ -222,8 +198,8 @@ function DashboardContent() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {userEvents.map((event) => {
-                                    const eventImage = event.event_photos && event.event_photos.length > 0
-                                        ? event.event_photos[0].image_url
+                                    const eventImage = event.event_images && event.event_images.length > 0
+                                        ? event.event_images[0].image_url
                                         : event.image_url || '/event-placeholder.jpg';
 
                                     return (
@@ -234,7 +210,7 @@ function DashboardContent() {
                                         >
                                             <div className="aspect-[4/3] relative">
                                                 <Image
-                                                    src={eventImage}
+                                                    src={eventImage as string}
                                                     alt={event.title}
                                                     fill
                                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
