@@ -126,7 +126,7 @@ function DashboardContent() {
                                         <div
                                             key={venue.id}
                                             className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-                                            onClick={() => router.push(`/venue/${venue.id}`)}
+                                            onClick={() => router.push(`/spaces/${venue.id}`)}
                                         >
                                             <div className="aspect-[4/3] relative">
                                                 <Image
@@ -152,7 +152,7 @@ function DashboardContent() {
                                                     </span>
                                                     <div className="flex space-x-2">
                                                         <Link
-                                                            href={`/venue/${venue.id}`}
+                                                            href={`/spaces/${venue.id}`}
                                                             className="text-black hover:underline text-sm"
                                                         >
                                                             View

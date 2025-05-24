@@ -289,7 +289,7 @@ export default function Page() {
                       ))}
                     </div>
                     <button
-                      onClick={() => router.push(`/venue/${listing.id}`)}
+                      onClick={() => router.push(`/spaces/${listing.id}`)}
                       className="mt-auto px-5 py-2 rounded-full font-semibold transition-colors cursor-pointer hover:shadow-lg hover:scale-105"
                       style={{ background: '#fff', color: 'var(--foreground)', border: '1px solid var(--foreground)' }}
                     >

@@ -63,7 +63,7 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
             target.classList.contains('z-5');
 
         if (!isButton) {
-            window.open(`/venue/${venue.id}`, '_blank');
+            window.open(`/spaces/${venue.id}`, '_blank');
         }
     };
 
@@ -100,7 +100,7 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
                     <FaRegHandshake className="mr-1" /> {priceDisplay}
                 </p>
                 <a
-                    href={`/venue/${venue.id}`}
+                    href={`/spaces/${venue.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm hover underline"
@@ -194,7 +194,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         // Set the selected venue ID
         setSelectedVenueId(venueId);
         // Open the venue detail page in a new tab
-        window.open(`/venue/${venueId}`, '_blank');
+        window.open(`/spaces/${venueId}`, '_blank');
     };
 
     const handleImageNav = (
