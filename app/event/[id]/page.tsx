@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import NavBar from '@/app/components/NavBar';
 
-interface EventImage {
+export interface EventImage {
     image_url: string;
     created_at: string;
     event_id: string;
@@ -15,7 +15,7 @@ interface EventImage {
     sort_order: number;
 }
 
-interface Event {
+export interface Event {
     id: string;
     title: string;
     event_type: string;
@@ -33,6 +33,7 @@ interface Event {
     user_id?: string;
     owner_id?: string;
     status?: string;
+    duration?: number;
 }
 
 interface EventPageProps {
@@ -49,6 +50,35 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
 
     const isOwner = eventData && user && eventData.owner_id === user.id;
 
+    const handleDelete = async () => {
+        if (!eventData) return;
+
+        if (window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+            try {
+                const response = await fetch(`/api/events/${params.id}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Error: ${response.status}`);
+                }
+
+                // On successful deletion, redirect to homepage or another appropriate page
+                router.push('/');
+                alert("Event deleted successfully."); // Optional: show a success message
+            } catch (err) {
+                if (err instanceof Error) {
+                    setError(err.message); // Display error message on the page
+                    alert(`Failed to delete event: ${err.message}`);
+                } else {
+                    setError('An unknown error occurred while deleting the event.');
+                    alert('An unknown error occurred while deleting the event.');
+                }
+                console.error("Failed to delete event:", err);
+            }
+        }
+    };
 
     useEffect(() => {
         if (params.id) {
@@ -100,10 +130,6 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
         return dateStr;
     };
 
-    console.log('eventData', eventData.owner_id);
-    console.log('user', user?.id)
-    console.log('isOwner', isOwner)
-
     //     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     //     {/* Number of guests card */}
     //     <div className="bg-stone-100 p-6 rounded-xl shadow flex justify-between items-center">
@@ -124,12 +150,12 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
     //     </div>
     // </div>
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen flex flex-col">
             {/* Header */}
             <NavBar />
 
             {/* Main Content */}
-            <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto px-4 py-8 flex-grow">
                 {/* Back Button */}
                 <button
                     onClick={() => router.back()}
@@ -203,19 +229,18 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                 {isOwner && (
                     <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4 pb-8">
                         <div className="flex space-x-3">
-                            <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center">
+                            <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center" onClick={() => router.push(`/event/${params.id}/edit`)}>
                                 <Edit size={18} className="mr-2" />
                                 Edit Pop-up
                             </button>
-                            <button className="text-red-600 hover:text-red-800 font-medium py-2 px-4 rounded-lg flex items-center">
+                            <button
+                                onClick={handleDelete}
+                                className="text-red-600 hover:text-red-800 font-medium py-2 px-4 rounded-lg flex items-center"
+                            >
                                 <Trash2 size={18} className="mr-2" />
                                 Delete
                             </button>
                         </div>
-                        <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg flex items-center">
-                            <MessageSquare size={18} className="mr-2" />
-                            Message to Space
-                        </button>
                     </div>
                 )}
             </main>

@@ -54,4 +54,52 @@ export const useCreateEvent = () => {
   return useMutation({
     mutationFn: createEvent,
   });
+};
+
+interface UpdateEventFormData extends EventFormData {
+  id: string;
+}
+
+export async function updateEvent(formData: UpdateEventFormData) {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error('Not authenticated');
+  }
+
+  console.log('Updating event');
+  // Update the event
+  const { data, error } = await supabase
+    .from('events')
+    .update({
+      title: formData.title,
+      description: formData.description,
+      selected_date: formData.selected_date,
+      selected_time: formData.selected_time,
+      expected_capacity_min: formData.expected_capacity_min,
+      expected_capacity_max: formData.expected_capacity_max,
+      assets_needed: formData.assets_needed || [],
+      event_type: formData.event_type,
+      event_status: formData.event_status || 'private_pending',
+      duration: formData.duration,
+      // owner_id: session.user.id, // owner_id should not change on update
+      // user_id: session.user.id, // user_id should not change on update
+      // is_active: true, // is_active should likely be managed elsewhere or not updated here
+    })
+    .eq('id', formData.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating event:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export const useUpdateEvent = () => {
+  return useMutation({
+    mutationFn: updateEvent,
+  });
 }; 
