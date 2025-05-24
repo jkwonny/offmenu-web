@@ -7,16 +7,20 @@ import NavBar from '@/app/components/NavBar';
 import { Venue } from '@/types/Venue';
 import { LuMapPin } from 'react-icons/lu';
 import RequestSpaceModal from '@/app/components/RequestSpaceModal';
+import { useUser } from '@/app/context/UserContext';
+import { Edit, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function VenuePage() {
     const params = useParams();
+    const { user } = useUser();
     const [venue, setVenue] = useState<Venue | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    console.log('params', venue)
+    const isOwner = user?.id === venue?.owner_id;
+    const router = useRouter();
 
     const toggleModal = () => {
         setIsModalOpen(!isModalOpen);
@@ -283,7 +287,25 @@ export default function VenuePage() {
                         </div>
                     </div>
                 </div>
+                {isOwner && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4 pb-8">
+                        <div className="flex space-x-3">
+                            <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center" onClick={() => router.push(`/spaces/${params.id}/edit`)}>
+                                <Edit size={18} className="mr-2" />
+                                Edit Space
+                            </button>
+                            <button
+                                // onClick={handleDelete}
+                                className="text-red-600 hover:text-red-800 font-medium py-2 px-4 rounded-lg flex items-center"
+                            >
+                                <Trash2 size={18} className="mr-2" />
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
+
 
             {/* Contact Modal */}
             {isModalOpen && (
