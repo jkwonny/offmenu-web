@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing venueId or URLs, or URLs is not an array or is empty.' }, { status: 400 });
         }
     } catch (error) {
-        return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+        let errorMessage = 'Invalid JSON in request body. Please check the request payload.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+        console.error('Error parsing JSON request body:', error);
+        return NextResponse.json({ error: `Invalid JSON in request body: ${errorMessage}` }, { status: 400 });
     }
 
     const errors: { url: string; message: string }[] = [];

@@ -325,6 +325,7 @@ export default function EditSpacePage() {
                             onCancel={handleCancelEdit}
                             mode="edit"
                             title="Edit Your Space"
+                            isSubmitting={isSubmitting}
                         />
                     )}
                 </div>

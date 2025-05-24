@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, FormEvent, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { SpaceFormData } from '@/app/types/space';
-import { VenueFormData } from '@/app/types/venue'; // Assuming VenueFormData is relevant for GoogleAutoComplete
-import GoogleAutoComplete from './GoogleAutoComplete'; // Assuming this path is correct relative to this new component
+import { VenueFormData } from '@/app/types/venue';
+import GoogleAutoComplete from './GoogleAutoComplete';
 
-// Define SpaceFormDataWithImages if your initialData will include image URLs
 export interface SpaceFormDataWithImages extends SpaceFormData {
     image_urls?: string[];
 }
@@ -22,6 +20,7 @@ export interface CreateOrEditSpaceFormProps {
     onCancel: () => void;
     mode: 'create' | 'edit';
     title: string;
+    isSubmitting?: boolean;
 }
 
 // VenueServicesFormStep component (moved from original page)
@@ -137,8 +136,7 @@ const VenueServicesFormStep = ({
     );
 };
 
-const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title }: CreateOrEditSpaceFormProps) => {
-    const router = useRouter();
+const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, isSubmitting }: CreateOrEditSpaceFormProps) => {
     const [step, setStep] = useState<number>(1);
     const [progress, setProgress] = useState<number>(16.7); // 1/6 of 100% for 6 steps
 
@@ -187,6 +185,12 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title }:
     const [imageUrlsToRemove, setImageUrlsToRemove] = useState<string[]>([]); // URLs of existing images to remove
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (typeof isSubmitting === 'boolean') {
+            setIsLoading(isSubmitting);
+        }
+    }, [isSubmitting]);
 
     useEffect(() => {
         if (initialData) {
@@ -303,7 +307,7 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title }:
 
         try {
             // Destructure to get dataToSend without image_urls, and image_urls separately
-            const { image_urls, ...dataToSendRest } = formData;
+            const { ...dataToSendRest } = formData;
 
             // Ensure all fields of SpaceFormData are present in dataToSendRest, even if empty or default
             const dataToSend: SpaceFormData = {

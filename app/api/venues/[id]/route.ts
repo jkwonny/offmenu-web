@@ -84,15 +84,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await params;
   let updateData;
 
   try {
     updateData = await request.json();
-  } catch (error) {
-    return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+  } catch (_error) {
+    return NextResponse.json({ error: `Invalid JSON in request body: ${_error}` }, { status: 400 });
   }
 
   // Basic validation

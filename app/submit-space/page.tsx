@@ -5,7 +5,7 @@ import NavBar from '../components/NavBar';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import CreateOrEditSpaceForm, { SpaceFormDataWithImages } from '../components/CreateOrEditSpaceForm';
+import CreateOrEditSpaceForm from '../components/CreateOrEditSpaceForm';
 import { SpaceFormData } from '@/app/types/space';
 import { handleAuthError } from '../lib/supabase';
 
@@ -81,7 +81,7 @@ export default function SubmitSpacePage() {
     const handleSubmitCreateSpace = async (
         formData: SpaceFormData,
         newImages: File[],
-        // imageUrlsToRemove is not used in create mode, but part of the shared signature
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         imageUrlsToRemove: string[]
     ): Promise<{ success: boolean; message: string; venueId?: string | number }> => {
         if (!currentUser) {
@@ -203,6 +203,7 @@ export default function SubmitSpacePage() {
                             onCancel={handleCancelCreate}
                             mode="create"
                             title="Submit Your Space"
+                            isSubmitting={isSubmitting}
                         />
                     )}
                 </div>
