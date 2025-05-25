@@ -138,7 +138,7 @@ const VenueServicesFormStep = ({
 
 const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, isSubmitting }: CreateOrEditSpaceFormProps) => {
     const [step, setStep] = useState<number>(1);
-    const [progress, setProgress] = useState<number>(16.7); // 1/6 of 100% for 6 steps
+    const [progress, setProgress] = useState<number>(16.7);
 
     const initialFormStateBase: SpaceFormData = {
         name: '',
@@ -166,11 +166,10 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
     const [formData, setFormData] = useState<SpaceFormDataWithImages>(() => ({
         ...initialFormStateBase,
         ...(initialData || {}),
-        // Ensure services and rental_type are arrays even if initialData doesn't provide them or provides null
         services: initialData?.services || [],
         rental_type: initialData?.rental_type || [],
-        tags: initialData?.tags || '', // Ensure tags is a string
-        image_urls: initialData?.image_urls || [], // Initialize image_urls
+        tags: initialData?.tags || '',
+        image_urls: initialData?.image_urls || [],
     }));
 
     const [isLoading, setIsLoading] = useState(false);
@@ -178,11 +177,10 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
     const [success, setSuccess] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-    // Image states
-    const [uploadedImages, setUploadedImages] = useState<File[]>([]); // New images to upload
-    const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]); // All previews (existing + new)
+    const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+    const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
     const [initialImageUrls, setInitialImageUrls] = useState<string[]>(initialData?.image_urls || []);
-    const [imageUrlsToRemove, setImageUrlsToRemove] = useState<string[]>([]); // URLs of existing images to remove
+    const [imageUrlsToRemove, setImageUrlsToRemove] = useState<string[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -267,58 +265,37 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
         setError(null);
     };
 
-    const internalHandleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (step !== 6 && mode === 'create') { // Only advance step if not final for create mode
-            handleNext();
-            return;
-        }
-        if (step !== 6 && mode === 'edit' && !validateStep(step)) { // For edit mode, allow submitting on any step if valid
-            handleNext(); // Or just validate and proceed if that's the desired UX
-            return;
-        }
-
-
-        // Final validation for all steps if on last step, or for current step if submitting early in edit mode.
-        let allStepsValid = true;
-        if (step === 6) {
-            for (let i = 1; i <= 6; i++) {
-                if (!validateStep(i)) {
-                    allStepsValid = false;
-                    // Optionally, set step to the first invalid step:
-                    // setStep(i);
-                    // setError('Please fix validation errors on all steps.');
-                    break;
-                }
-            }
-        } else { // Validating current step if not on step 6 (e.g. for saving partial edits)
-            allStepsValid = validateStep(step);
-        }
-
-
-        if (!allStepsValid) {
-            setError('Please fix the validation errors before submitting.');
-            return;
-        }
-
+    const handleFinalSubmit = async () => {
         setIsLoading(true);
         setError(null);
         setSuccess(null);
 
-        try {
-            // Destructure to get dataToSend without image_urls, and image_urls separately
-            const { ...dataToSendRest } = formData;
+        // Final validation for all steps
+        let allStepsValid = true;
+        for (let i = 1; i <= 6; i++) {
+            if (!validateStep(i)) {
+                allStepsValid = false;
+                // setStep(i); // Optionally, navigate to the first invalid step
+                // setError('Please fix validation errors on all steps.'); // Display a general error
+                break;
+            }
+        }
 
-            // Ensure all fields of SpaceFormData are present in dataToSendRest, even if empty or default
+        if (!allStepsValid) {
+            setError('Please fix the validation errors on all steps before submitting.');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const { ...dataToSendRest } = formData;
             const dataToSend: SpaceFormData = {
-                ...initialFormStateBase, // Start with base to ensure all keys
-                ...dataToSendRest, // Overlay with actual form data
-                // Ensure specific types are correct, e.g., arrays if they were potentially modified
+                ...initialFormStateBase,
+                ...dataToSendRest,
                 services: formData.services || [],
                 rental_type: formData.rental_type || [],
                 tags: formData.tags || '',
             };
-
 
             const result = await onSubmit(
                 dataToSend,
@@ -328,7 +305,6 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
 
             if (result.success) {
                 setSuccess(result.message);
-                // Parent component will handle redirection or further actions.
             } else {
                 setError(result.message);
             }
@@ -337,6 +313,19 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
             setError(`Submission failed: ${message}`);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const internalHandleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        // This function is now primarily for handling "Enter" key press in form fields.
+        // The main submission logic is in handleFinalSubmit, triggered by the button click.
+        if (step < 6) {
+            // If "Enter" is pressed on steps 1-5, try to advance to the next step.
+            handleNext();
+        } else if (step === 6) {
+            // If "Enter" is pressed on step 6, trigger the final submission.
+            await handleFinalSubmit();
         }
     };
 
@@ -414,6 +403,22 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                     <option value="cafe">Cafe</option>
                                     <option value="event_space">Event Space</option>
                                     <option value="coffee_shop">Coffee Shop</option>
+                                    <option value="gallery">Gallery</option>
+                                    <option value="studio">Studio</option>
+                                    <option value="garden">Garden</option>
+                                    <option value="warehouse">Warehouse</option>
+                                    <option value="loft">Loft</option>
+                                    <option value="theater">Theater</option>
+                                    <option value="library">Library</option>
+                                    <option value="workshop">Workshop</option>
+                                    <option value="performance_space">Performance Space</option>
+                                    <option value="music_venue">Music Venue</option>
+                                    <option value="brewery">Brewery</option>
+                                    <option value="winery">Winery</option>
+                                    <option value="distillery">Distillery</option>
+                                    <option value="museum">Museum</option>
+                                    <option value="pop_up_shop">Pop-up Shop</option>
+                                    <option value="yoga_wellness_space">Yoga/Wellness Space</option>
                                     <option value="other">Other</option>
                                 </select>
                                 {validationErrors.category && <p className="mt-1 text-sm text-red-500">{validationErrors.category}</p>}
@@ -422,8 +427,8 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                 <label className="block text-gray-700 text-sm font-medium mb-2">
                                     Rental Type (select all that apply) <span className="text-red-500">*</span>
                                 </label>
-                                <div className="space-y-2">
-                                    {['full', 'private_room', 'outside', 'semi_private'].map(type => (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                    {['full', 'private_room', 'outside', 'semi_private', 'patio', 'basement', 'studio', 'kitchen', 'rooftop', 'other'].map(type => (
                                         <div className="flex items-center" key={type}>
                                             <input
                                                 id={`rental_type_${type}`} type="checkbox" name={`rental_type_${type}`}
@@ -606,9 +611,9 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
     };
 
     return (
-        <>
+        <div className="w-screen">
             {/* Progress bar moved to parent page or here if self-contained enough */}
-            <div className="mb-8">
+            <div className="mb-8 w-screen">
                 <div className="relative">
                     <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
                         <div style={{ width: `${progress}%` }}
@@ -618,53 +623,55 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                 </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-center mb-8">{title}</h1>
+            <div className='mx-auto max-w-4xl px-4 sm:px-6 lg:px-8'>
+                <h1 className="text-3xl font-bold text-center mb-8">{title}</h1>
 
-            {error && <div className="mb-4 p-4 rounded-md bg-red-50 text-red-600">{error}</div>}
-            {success && <div className="mb-4 p-4 rounded-md bg-green-50 text-green-600">{success}</div>}
+                {error && <div className="mb-4 p-4 rounded-md bg-red-50 text-red-600">{error}</div>}
+                {success && <div className="mb-4 p-4 rounded-md bg-green-50 text-green-600">{success}</div>}
 
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-[#e0d8c3] mb-8">
-                <form onSubmit={internalHandleSubmit}>
-                    {renderStepContent()}
-                    <div className="flex justify-between items-center mt-8">
-                        <div>
-                            {step > 1 && (
-                                <button type="button" onClick={handlePrevious}
-                                    className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                                    Back
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-[#e0d8c3] mb-8">
+                    <form onSubmit={internalHandleSubmit}>
+                        {renderStepContent()}
+                        <div className="flex justify-between items-center mt-8">
+                            <div>
+                                {step > 1 && (
+                                    <button type="button" onClick={handlePrevious}
+                                        className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                        Back
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-x-4">
+                                <button type="button" onClick={onCancel}
+                                    className="px-6 py-2 text-gray-700 font-medium rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                                    {mode === 'edit' ? 'Cancel' : 'Cancel'}
                                 </button>
-                            )}
+                                {step < 6 ? (
+                                    <button type="button" onClick={handleNext}
+                                        className="px-6 py-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                        Next
+                                    </button>
+                                ) : (
+                                    <button type="button" onClick={handleFinalSubmit}
+                                        className="px-6 py-2 bg-[#06048D] text-white font-medium rounded-md hover:bg-[#050370] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                                        disabled={isLoading}>
+                                        {isLoading ? (
+                                            <span className="flex items-center">
+                                                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                {mode === 'edit' ? 'Saving...' : 'Submitting...'}
+                                            </span>
+                                        ) : (mode === 'edit' ? 'Save Changes' : 'Create Space')}
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-x-4">
-                            <button type="button" onClick={onCancel}
-                                className="px-6 py-2 text-gray-700 font-medium rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
-                                {mode === 'edit' ? 'Cancel' : 'Cancel'}
-                            </button>
-                            {step < 6 ? (
-                                <button type="button" onClick={handleNext}
-                                    className="px-6 py-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                                    Next
-                                </button>
-                            ) : (
-                                <button type="submit"
-                                    className="px-6 py-2 bg-[#06048D] text-white font-medium rounded-md hover:bg-[#050370] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                                    disabled={isLoading}>
-                                    {isLoading ? (
-                                        <span className="flex items-center">
-                                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            {mode === 'edit' ? 'Saving...' : 'Submitting...'}
-                                        </span>
-                                    ) : (mode === 'edit' ? 'Save Changes' : 'Create Space')}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </>
+        </div>
     );
 };
 

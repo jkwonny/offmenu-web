@@ -288,9 +288,9 @@ export default function VenuePage() {
                     </div>
                 </div>
                 {isOwner && (
-                    <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4 pb-8">
-                        <div className="flex space-x-3">
-                            <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center" onClick={() => router.push(`/spaces/${params.id}/edit`)}>
+                    <div className="flex flex-col sm:flex-row justify-between items-center w-full space-y-4 sm:space-y-0 sm:space-x-4 pb-8">
+                        <div className="flex space-x-3 justify-between mt-3">
+                            <button className="cursor-pointer bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center" onClick={() => router.push(`/spaces/${params.id}/edit`)}>
                                 <Edit size={18} className="mr-2" />
                                 Edit Space
                             </button>

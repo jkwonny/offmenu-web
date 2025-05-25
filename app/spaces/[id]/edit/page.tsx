@@ -304,16 +304,16 @@ export default function EditSpacePage() {
     return (
         <>
             <NavBar />
-            <div className="min-h-screen bg-[#fffbf6] flex flex-col">
-                <div className="container mx-auto px-4 max-w-4xl flex-grow py-8">
+            <div className="min-h-screen w-screen flex flex-col">
+                <div className="container max-w-4xl flex-grow py-8">
                     {/* Page-level error/success for operations before form might be fully interactive or after submission */}
                     {pageError && initialData && (
-                        <div className="mb-4 p-4 rounded-md bg-red-50 text-red-600">
+                        <div className="mb-4 p-4 mx-auto rounded-md bg-red-50 text-red-600">
                             {pageError}
                         </div>
                     )}
                     {pageSuccess && (
-                        <div className="mb-4 p-4 rounded-md bg-green-50 text-green-600">
+                        <div className="mb-4 p-4 mx-auto rounded-md bg-green-50 text-green-600">
                             {pageSuccess}
                         </div>
                     )}
