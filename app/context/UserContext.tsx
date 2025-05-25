@@ -134,10 +134,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const signIn = async (email: string, password: string) => {
         setIsLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { error, data } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
+
+            if (!error && data.user) {
+                await refetchUserProfile();
+            }
+
             setIsLoading(false);
             return {
                 success: !error,

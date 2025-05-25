@@ -81,7 +81,13 @@ export default function SubmitSpacePage() {
                 tags: formData.tags ? formData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== '') : [],
                 status: 'pending',
                 services: formData.services,
+                name: formData.name,
+                description: formData.description,
+                address: formData.address,
+                category: formData.category,
+                rules: formData.rules
             };
+
 
             console.log('submissionData', submissionData);
 
