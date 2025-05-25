@@ -1,42 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import NavBar from '../components/NavBar';
-import { supabase } from '../lib/supabase';
-import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import CreateOrEditSpaceForm from '../components/CreateOrEditSpaceForm';
 import { SpaceFormData } from '@/app/types/space';
-import { handleAuthError } from '../lib/supabase';
+import { useUser } from '../context/UserContext';
 
 export default function SubmitSpacePage() {
     const router = useRouter();
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [pageError, setPageError] = useState<string | null>(null);
     const [pageSuccess, setPageSuccess] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-        async function getUser() {
-            try {
-                const { data, error } = await supabase.auth.getUser();
-                if (error) {
-                    handleAuthError(error);
-                    router.push('/auth/signin?redirect=/submit-space');
-                    return;
-                }
-                setCurrentUser(data.user);
-                if (!data.user) {
-                    router.push('/auth/signin?redirect=/submit-space');
-                }
-            } catch (error) {
-                handleAuthError(error as Error);
-                setCurrentUser(null);
-                router.push('/auth/signin?redirect=/submit-space');
-            }
-        }
-        getUser();
-    }, [router]);
+    const { user } = useUser();
 
     const uploadImagesToServer = async (venueId: number | string, images: File[]): Promise<string[]> => {
         if (images.length === 0) return [];
@@ -81,27 +57,16 @@ export default function SubmitSpacePage() {
     const handleSubmitCreateSpace = async (
         formData: SpaceFormData,
         newImages: File[],
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        imageUrlsToRemove: string[]
     ): Promise<{ success: boolean; message: string; venueId?: string | number }> => {
-        if (!currentUser) {
-            return { success: false, message: 'You must be logged in to submit a space.' };
-        }
         setIsSubmitting(true);
         setPageError(null);
         setPageSuccess(null);
 
         try {
-            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError || !sessionData.session) {
-                handleAuthError(sessionError || new Error('Session expired'));
-                router.push('/auth/signin?redirect=/submit-space');
-                return { success: false, message: sessionError?.message || 'Your session has expired. Please sign in again.' };
-            }
-
+            const { ...restOfFormData } = formData;
             const submissionData = {
-                ...formData,
-                owner_id: currentUser.id,
+                ...restOfFormData,
+                owner_id: user?.id ?? 'd03d1efd-7b00-4828-ac89-4f3f55b830d4',
                 rental_type: formData.rental_type,
                 collaboration_type: formData.collaboration_type || null,
                 website: formData.website?.trim() || null,
@@ -119,6 +84,8 @@ export default function SubmitSpacePage() {
                 status: 'pending',
                 services: formData.services,
             };
+
+            console.log('submissionData', submissionData);
 
             const response = await fetch('/api/venues', {
                 method: 'POST',
@@ -148,7 +115,7 @@ export default function SubmitSpacePage() {
 
             setPageSuccess(`"${result.name}" space submitted successfully!${imageUploadMessage}`);
             setTimeout(() => {
-                router.push('/events'); // Or a more relevant page like dashboard or the new space's page
+                router.push('/manage/dashboard'); // Or a more relevant page like dashboard or the new space's page
             }, 3000);
             return { success: true, message: `"${result.name}" space submitted successfully!${imageUploadMessage}`, venueId: result.id };
 
@@ -165,35 +132,18 @@ export default function SubmitSpacePage() {
         router.push('/dashboard'); // Or to any other relevant page
     };
 
-    if (!currentUser) {
-        // Optionally show a loading state or a message while user is being fetched/redirected
-        return (
-            <>
-                <NavBar />
-                <div className="min-h-screen bg-[#fffbf6] flex flex-col items-center justify-center">
-                    <p className="text-lg text-gray-700">Loading user information...</p>
-                    {/* Basic spinner */}
-                    <svg className="animate-spin h-8 w-8 text-blue-600 mt-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </div>
-            </>
-        );
-    }
-
     return (
         <>
             <NavBar />
-            <div className="min-h-screen bg-[#fffbf6] flex flex-col">
-                <div className="container mx-auto px-4 max-w-4xl flex-grow py-8">
+            <div className="min-h-screen w-screen flex flex-col">
+                <div className="container max-w-4xl flex-grow py-8">
                     {pageError && (
-                        <div className="mb-4 p-4 rounded-md bg-red-50 text-red-600">
+                        <div className="mb-4 p-4 mx-auto rounded-md bg-red-50 text-red-600">
                             {pageError}
                         </div>
                     )}
                     {pageSuccess && (
-                        <div className="mb-4 p-4 rounded-md bg-green-50 text-green-600">
+                        <div className="mb-4 p-4 mx-auto rounded-md bg-green-50 text-green-600">
                             {pageSuccess}
                         </div>
                     )}

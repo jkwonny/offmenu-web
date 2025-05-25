@@ -33,6 +33,7 @@ export async function POST(request: Request) {
             }, { status: 503 });
         }
 
+        console.log('request', request);
     const venueData = await request.json();
 
         // Validate required fields based on SQL schema

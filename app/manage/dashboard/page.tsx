@@ -125,7 +125,7 @@ function DashboardContent() {
                                     return (
                                         <div
                                             key={venue.id}
-                                            className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                                            className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                                             onClick={() => router.push(`/spaces/${venue.id}`)}
                                         >
                                             <div className="aspect-[4/3] relative">
@@ -153,13 +153,13 @@ function DashboardContent() {
                                                     <div className="flex space-x-2">
                                                         <Link
                                                             href={`/spaces/${venue.id}`}
-                                                            className="text-black hover:underline text-sm"
+                                                            className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
                                                         >
-                                                            View
+                                                            Manage
                                                         </Link>
                                                         <Link
                                                             href="/manage/dashboard/availability"
-                                                            className="text-black hover:underline text-sm"
+                                                            className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
                                                         >
                                                             Availability
                                                         </Link>
@@ -205,7 +205,7 @@ function DashboardContent() {
                                     return (
                                         <div
                                             key={event.id}
-                                            className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                                            className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                                             onClick={() => router.push(`/event/${event.id}`)}
                                         >
                                             <div className="aspect-[4/3] relative">
