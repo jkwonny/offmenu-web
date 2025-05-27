@@ -78,6 +78,8 @@ export default function SubmitSpacePage() {
                 latitude: formData.latitude ? parseFloat(formData.latitude as string) : null,
                 longitude: formData.longitude ? parseFloat(formData.longitude as string) : null,
                 max_guests: formData.max_guests ? parseInt(formData.max_guests as string, 10) : null,
+                max_standing_guests: formData.max_standing_guests || null,
+                max_sitting_guests: formData.max_sitting_guests || null,
                 tags: formData.tags ? formData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== '') : [],
                 status: 'pending',
                 services: formData.services,
@@ -85,7 +87,6 @@ export default function SubmitSpacePage() {
                 description: formData.description,
                 address: formData.address,
                 category: formData.category,
-                rules: formData.rules
             };
 
             const response = await fetch('/api/venues', {

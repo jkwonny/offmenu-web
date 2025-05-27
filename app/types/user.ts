@@ -15,7 +15,7 @@ export type UserProfile = {
     profile_picture?: string | null;
     about?: string;
     role: string;
-    spaces_host: boolean;
+    offmenu_host: boolean;
     created_at?: string;
     updated_at?: string;
 };

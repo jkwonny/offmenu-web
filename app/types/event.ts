@@ -23,6 +23,6 @@ export interface Event {
     price?: number;
     user_id?: string;
     owner_id?: string;
-    status?: string;
+    event_status?: string;
     duration?: number;
 }

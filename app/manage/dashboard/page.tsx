@@ -6,35 +6,10 @@ import { useVenues, useEvents } from '../../lib/queries';
 import NavBar from '../../components/NavBar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LuMapPin } from 'react-icons/lu';
+import { LuMapPin, LuCalendar } from 'react-icons/lu';
 import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Event } from '@/app/types/event';
-
-function DashboardTabs({ view }: { view: string }) {
-    return (
-        <div className="flex overflow-hidden rounded-full">
-            <Link
-                href="/manage/dashboard?view=spaces"
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'spaces'
-                    ? 'bg-[#06048D] text-white'
-                    : 'bg-white text-black'
-                    }`}
-            >
-                Spaces
-            </Link>
-            <Link
-                href="/manage/dashboard?view=popups"
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
-                    ? 'bg-[#06048D] text-white'
-                    : 'bg-white text-black'
-                    }`}
-            >
-                Pop-ups
-            </Link>
-        </div>
-    );
-}
 
 function DashboardContent() {
     const searchParams = useSearchParams();
@@ -78,10 +53,6 @@ function DashboardContent() {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
                     <p className="text-gray-600">Manage your spaces and pop-ups</p>
-                </div>
-
-                <div className="mb-6 flex justify-center">
-                    <DashboardTabs view={view} />
                 </div>
 
                 {isLoading ? (
@@ -200,15 +171,17 @@ function DashboardContent() {
                                 {userEvents.map((event) => {
                                     const eventImage = event.event_images && event.event_images.length > 0
                                         ? event.event_images[0].image_url
-                                        : event.image_url || '/event-placeholder.jpg';
+                                        : ""
 
+                                    const privateEvent = event.event_status === 'private_pending' || event.event_type === 'private_approved'
+                                    const pendingEvent = event.event_status === 'private_pending' || event.event_status === 'public_approved'
                                     return (
                                         <div
                                             key={event.id}
                                             className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                                             onClick={() => router.push(`/event/${event.id}`)}
                                         >
-                                            <div className="aspect-[4/3] relative">
+                                            {eventImage.length > 0 && <div className="aspect-[4/3] relative">
                                                 <Image
                                                     src={eventImage as string}
                                                     alt={event.title}
@@ -216,25 +189,38 @@ function DashboardContent() {
                                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                                     className="object-cover"
                                                 />
-                                            </div>
+                                            </div>}
                                             <div className="p-4">
                                                 <h3 className="font-medium text-lg mb-1">{event.title}</h3>
                                                 <div className="flex items-center text-gray-600 text-sm mb-2">
                                                     <LuMapPin className="mr-1" />
-                                                    <span>{event.address}</span>
+                                                    <span>{event.address ??
+                                                        "TBD"}</span>
                                                 </div>
-                                                <div className="text-sm text-gray-600 mb-2">
-                                                    <p>{event.selected_date} {event.selected_time ? `• ${event.selected_time}` : ''}</p>
+                                                <div className="flex items-center text-gray-600 text-sm mb-2">
+                                                    <LuCalendar className="mr-1" />
+                                                    <span>
+                                                        {event.selected_date && new Date(event.selected_date).toLocaleDateString('en-US', {
+                                                            weekday: 'short',
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                        {event.selected_time && ` • ${new Date(`2000-01-01T${event.selected_time}`).toLocaleTimeString('en-US', {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        })}`}
+                                                    </span>
                                                 </div>
                                                 <div className="flex justify-between items-center mt-4">
-                                                    <span className={`px-2 py-1 text-xs rounded-full ${event.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                        event.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            event.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                                                                event.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                                                                    'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                        {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Draft'}
-                                                    </span>
+                                                    {!privateEvent && <span className={`p-2 text-xs rounded-full ${pendingEvent ? 'bg-yellow-200 text-black' : 'bg-green-100 text-green-800'}`}>
+                                                        {pendingEvent ? 'Pending' : 'Approved'}
+                                                    </span>}
+
+                                                    {privateEvent && <span className={`p-2 text-xs rounded-full ${privateEvent ? 'bg-[#AFDAFF] text-black' : 'bg-green-100 text-green-800'}`}>
+                                                        {privateEvent ? 'Private Event' : 'Public Event'}
+                                                    </span>}
                                                     <Link
                                                         href={`/events/${event.id}`}
                                                         className="text-black hover:underline text-sm"

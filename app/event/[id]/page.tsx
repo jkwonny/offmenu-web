@@ -19,8 +19,9 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { user } = useUser();
-
-    const isOwner = eventData && user && eventData.owner_id === user.id;
+    const privateEvent = eventData?.event_status === 'private_pending' || eventData?.event_type === 'private_approved'
+    const pendingEvent = eventData?.event_status === 'private_pending' || eventData?.event_status === 'public_approved'
+    const isOwner = eventData && user && eventData.owner_id == user.id;
 
     const handleDelete = async () => {
         if (!eventData) return;
@@ -139,16 +140,15 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
 
                 {/* Event Status Tags */}
                 <div className="flex space-x-2 mb-4">
-                    {eventData.status && (
-                        <span className="bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {eventData.status}
-                        </span>
-                    )}
-                    {eventData.event_type && (
-                        <span className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {eventData.event_type}
-                        </span>
-                    )}
+                    <div className="flex justify-between items-center mt-4">
+                        {!privateEvent && <span className={`p-2 text-xs rounded-full ${pendingEvent ? 'bg-yellow-200 text-black' : 'bg-green-100 text-green-800'}`}>
+                            {pendingEvent ? 'Pending' : 'Approved'}
+                        </span>}
+
+                        {privateEvent && <span className={`p-2 text-xs rounded-full ${privateEvent ? 'bg-[#AFDAFF] text-black' : 'bg-green-100 text-green-800'}`}>
+                            {privateEvent ? 'Private Event' : 'Public Event'}
+                        </span>}
+                    </div>
                 </div>
 
                 {/* Event Name */}

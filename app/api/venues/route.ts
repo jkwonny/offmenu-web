@@ -32,10 +32,8 @@ export async function POST(request: Request) {
                 details: connectionCheck.error 
             }, { status: 503 });
         }
-
-        console.log('request', request);
-    const venueData = await request.json();
-
+        
+        const venueData = await request.json();
         // Validate required fields based on SQL schema
         if (!venueData.name) {
             return NextResponse.json({ error: 'Venue name is required' }, { status: 400 });
@@ -56,6 +54,18 @@ export async function POST(request: Request) {
         if (error) {
             console.error('Supabase insertion error:', error);
             return NextResponse.json({ error: 'Failed to create venue', details: error.message }, { status: 500 });
+        }
+
+        // Successfully created venue - now update user's offmenu_host status
+        const { error: userUpdateError } = await supabase
+            .from('users')
+            .update({ offmenu_host: true })
+            .eq('id', venueData.owner_id);
+
+        if (userUpdateError) {
+            console.error('Error updating user offmenu_host status:', userUpdateError);
+            // Don't fail the entire request if user update fails, just log it
+            // The venue was successfully created, which is the primary goal
         }
 
         // Successfully created

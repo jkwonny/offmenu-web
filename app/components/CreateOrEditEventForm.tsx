@@ -21,7 +21,7 @@ export interface EventFormData {
     expected_capacity_min: number;
     expected_capacity_max: number;
     assets_needed: string[];
-    status: "private_pending" | "public_pending" | "public_approved" | "private_approved";
+    event_status: "private_pending" | "public_pending" | "public_approved" | "private_approved";
     duration: number;
     image_urls?: string[]; // For prefilling, not directly submitted here
 }
@@ -59,11 +59,11 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
     const [assetInput, setAssetInput] = useState<string>("");
 
     const determineInitialStatus = (): "private_pending" | "public_pending" | "public_approved" | "private_approved" => {
-        if (initialData?.status) {
+        if (initialData?.event_status) {
             // Ensure the status from initialData is one of the allowed literal types
             const validStatuses = ["private_pending", "public_pending", "public_approved", "private_approved"];
-            if (validStatuses.includes(initialData.status)) {
-                return initialData.status as "private_pending" | "public_pending" | "public_approved" | "private_approved";
+            if (validStatuses.includes(initialData.event_status)) {
+                return initialData.event_status as "private_pending" | "public_pending" | "public_approved" | "private_approved";
             }
         }
         return 'private_pending'; // Default status
@@ -201,7 +201,7 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
             expected_capacity_min: expectedCapacityMin,
             expected_capacity_max: expectedCapacityMax,
             assets_needed: assetsNeeded,
-            status: eventStatus,
+            event_status: eventStatus,
             duration: durationHours,
         };
 
@@ -488,9 +488,9 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                                     // When toggling, we assume it goes to a 'pending' state unless it was already approved.
                                     // This logic might need refinement based on exact status flow.
                                     if (e.target.checked) {
-                                        setEventStatus(initialData?.status === 'public_approved' ? 'public_approved' : 'public_pending');
+                                        setEventStatus(initialData?.event_status === 'public_approved' ? 'public_approved' : 'public_pending');
                                     } else {
-                                        setEventStatus(initialData?.status === 'private_approved' ? 'private_approved' : 'private_pending');
+                                        setEventStatus(initialData?.event_status === 'private_approved' ? 'private_approved' : 'private_pending');
                                     }
                                 }}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"

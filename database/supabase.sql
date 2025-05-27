@@ -11,7 +11,8 @@ CREATE TABLE users (
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'venue_owner', 'admin')),
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now(),
-  spaces_host BOOLEAN DEFAULT FALSE
+  spaces_host BOOLEAN DEFAULT FALSE,
+  offmenu_host BOOLEAN DEFAULT FALSE,
 );
 
 -- Step 2: Create main venues table with updated structure
@@ -31,22 +32,15 @@ CREATE TABLE venues (
   longitude DOUBLE PRECISION,
   category TEXT, -- e.g. 'restaurant', 'bar', 'rooftop'
   rental_type TEXT[], -- ['full', 'private_room', 'outside', 'semi_private']
-
   max_guests INTEGER,
   max_seated_guests INTEGER,
   max_standing_guests INTEGER,
-
   collaboration_type TEXT,
-
-  rules TEXT,
   tags TEXT[], -- e.g. ['rooftop', 'cozy', 'photo-friendly']
   services TEXT[], -- e.g. ['food', 'drink', 'event_planning']
-
   avg_rating NUMERIC(2,1),
   review_count INTEGER DEFAULT 0,
-
   featured BOOLEAN DEFAULT FALSE,
-
   owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
   status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'approved',
 
