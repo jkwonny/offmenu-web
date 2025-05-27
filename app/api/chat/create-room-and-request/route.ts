@@ -45,6 +45,15 @@ export async function POST(request: NextRequest) {
       .eq('recipient_id', recipient_id)
       .single();
 
+    if (roomCheckError && roomCheckError.code !== 'PGRST116') {
+      // PGRST116 is "not found" error, which is expected when no room exists
+      console.error('Error checking for existing chat room:', roomCheckError);
+      return NextResponse.json(
+        { error: 'Failed to check for existing chat room' },
+        { status: 500 }
+      );
+    }
+
     let roomId: string;
 
     if (existingRoom) {
