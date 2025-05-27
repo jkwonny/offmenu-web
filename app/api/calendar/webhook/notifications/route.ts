@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
         
       case 'exists':
         // A change has occurred, sync calendar events
-        console.log('Calendar change notification received');
         
         // Before syncing, clear existing Google events for this venue
         // This ensures deleted events are properly removed
