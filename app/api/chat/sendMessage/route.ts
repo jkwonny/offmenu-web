@@ -5,11 +5,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-interface ChatParticipant {
-  sender_id: string;
-  recipient_id: string;
-}
-
 // Use service role to bypass RLS policies (only for server operations)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -39,12 +34,12 @@ export async function POST(request: NextRequest) {
     if (attachment_url) {
       finalAttachmentUrl = attachment_url;
       
-      // Ensure attachment_type is either "image" or "video"
-      if (attachment_type === "image" || attachment_type === "video") {
+      // Ensure attachment_type is valid
+      if (attachment_type === "image" || attachment_type === "video" || attachment_type === "document") {
         finalAttachmentType = attachment_type;
       } else {
-        // Default to "image" if not specified or invalid
-        finalAttachmentType = "image";
+        // Default to "document" if not specified or invalid
+        finalAttachmentType = "document";
       }
     }
 
@@ -53,8 +48,8 @@ export async function POST(request: NextRequest) {
       .from('chat_rooms')
       .select(`
         id, 
-        request_id,
-        chat_requests!inner(sender_id, recipient_id)
+        sender_id,
+        recipient_id
       `)
       .eq('id', room_id)
       .single();
@@ -67,23 +62,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Verify user is a participant
-    // Based on the console output provided, we know chat_requests looks like:
-    // { sender_id: string, recipient_id: string }
-    const requestData = chatRoom.chat_requests as unknown as ChatParticipant;
-    
-    // Extract participant IDs with type safety
-    let participants: string[] = [];
-    
-    // Use the known structure based on console output
-    if (requestData && typeof requestData === 'object') {
-      const senderID = (requestData as ChatParticipant).sender_id;
-      const recipientID = (requestData as ChatParticipant).recipient_id;
-      
-      if (typeof senderID === 'string' && typeof recipientID === 'string') {
-        participants = [senderID, recipientID];
-      }
-    }
+    // Verify user is a participant - now using direct fields from chat_rooms
+    const participants = [chatRoom.sender_id, chatRoom.recipient_id].filter(Boolean);
 
     if (participants.length === 0) {
       return NextResponse.json(

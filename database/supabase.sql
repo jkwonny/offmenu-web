@@ -95,7 +95,7 @@ CREATE TABLE event_images (
 );
 
 -- Chat functionality
-CREATE TABLE chat_requests (
+CREATE TABLE booking_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   venue_id BIGINT REFERENCES venues(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -110,16 +110,24 @@ CREATE TABLE chat_requests (
   website TEXT,
   guest_count TEXT,
   collaboration_types TEXT[],
+  room_id UUID REFERENCES chat_rooms(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT now()
 );
 
 
 CREATE TABLE chat_rooms (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  request_id UUID REFERENCES chat_requests(id),
+  request_id UUID REFERENCES booking_requests(id),
   venue_id BIGINT REFERENCES venues(id),
   venue_name TEXT,
   event_date DATE,
+  sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  requirements TEXT,
+  special_requests TEXT,
+  instagram_handle TEXT,
+  website TEXT,
+  guest_count TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 
@@ -144,10 +152,15 @@ CREATE POLICY "Users can view messages in their rooms" ON chat_messages
   USING (
     EXISTS (
       SELECT 1 FROM chat_rooms cr
-      JOIN chat_requests req ON cr.request_id = req.id
+      LEFT JOIN booking_requests req ON cr.request_id = req.id
       WHERE 
         chat_messages.room_id = cr.id AND
-        (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+        (
+          -- New structure: direct sender/recipient on chat_rooms
+          (cr.sender_id = auth.uid() OR cr.recipient_id = auth.uid()) OR
+          -- Old structure: sender/recipient via booking_requests
+          (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+        )
     )
   );
 
@@ -156,10 +169,15 @@ CREATE POLICY "Users can insert messages in their rooms" ON chat_messages
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM chat_rooms cr
-      JOIN chat_requests req ON cr.request_id = req.id
+      LEFT JOIN booking_requests req ON cr.request_id = req.id
       WHERE 
         chat_messages.room_id = cr.id AND
-        (req.sender_id = auth.uid() OR req.recipient_id = auth.uid()) AND
+        (
+          -- New structure: direct sender/recipient on chat_rooms
+          (cr.sender_id = auth.uid() OR cr.recipient_id = auth.uid()) OR
+          -- Old structure: sender/recipient via booking_requests
+          (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+        ) AND
         chat_messages.sender_id = auth.uid()
     )
   );
@@ -324,4 +342,40 @@ CREATE POLICY "Users can delete their own webhooks" ON google_calendar_webhooks
   USING (auth.uid() = user_id);
 
 -- Grant access to service role
-GRANT ALL ON google_calendar_webhooks TO service_role; 
+GRANT ALL ON google_calendar_webhooks TO service_role;
+
+-- Add RLS policies for chat_rooms
+ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their chat rooms" ON chat_rooms
+  FOR SELECT
+  USING (
+    sender_id = auth.uid() OR 
+    recipient_id = auth.uid() OR
+    -- Legacy support: check via booking_requests
+    EXISTS (
+      SELECT 1 FROM booking_requests req 
+      WHERE req.id = chat_rooms.request_id 
+      AND (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Users can create chat rooms" ON chat_rooms
+  FOR INSERT
+  WITH CHECK (sender_id = auth.uid());
+
+-- Add RLS policies for booking_requests
+ALTER TABLE booking_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their booking requests" ON booking_requests
+  FOR SELECT
+  USING (sender_id = auth.uid() OR recipient_id = auth.uid());
+
+CREATE POLICY "Users can create booking requests" ON booking_requests
+  FOR INSERT
+  WITH CHECK (sender_id = auth.uid());
+
+CREATE POLICY "Recipients can update booking request status" ON booking_requests
+  FOR UPDATE
+  USING (recipient_id = auth.uid())
+  WITH CHECK (recipient_id = auth.uid()); 

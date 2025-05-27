@@ -238,7 +238,7 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
 
     if (isUserLoading) {
         return (
-            <div className="min-h-screen bg-[#FFF9F5]">
+            <div className="min-h-screen">
                 {/* NavBar might not be needed here if the parent page includes it */}
                 <div className="max-w-4xl mx-auto p-8 mt-8 flex justify-center">
                     <div className="animate-pulse h-6 w-24 bg-gray-300 rounded"></div>

@@ -212,7 +212,7 @@ export default function Profile() {
     // Loading state
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#FFF9F5]">
+            <div className="min-h-screen">
                 <NavBar />
                 <div className="max-w-4xl mx-auto p-8 mt-8 flex justify-center">
                     <div className="animate-pulse h-6 w-24 bg-gray-200 rounded"></div>

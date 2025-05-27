@@ -4,7 +4,15 @@ export interface ChatRoom {
     venue_id: number;
     venue_name?: string;
     event_date?: string;
-    request_id?: string;
+    sender_id: string;
+    recipient_id: string;
+    popup_name?: string;
+    requirements?: string;
+    special_requests?: string;
+    instagram_handle?: string;
+    website?: string;
+    guest_count?: string;
+    collaboration_types?: string[];
     venue: {
         name: string;
     };
@@ -15,6 +23,10 @@ export interface ChatRoom {
             name: string;
         };
     };
+    // Legacy fields for backward compatibility
+    request_id?: string;
+    isRequest?: boolean;
+    status?: string;
 }
 
 export interface ChatMessage {

@@ -14,11 +14,19 @@ async function fetchSenderRooms(userId: string) {
                 venue_id, 
                 venue_name,
                 event_date,
+                sender_id,
+                recipient_id,
+                popup_name,
+                requirements,
+                special_requests,
+                instagram_handle,
+                website,
+                guest_count,
+                collaboration_types,
                 request_id,
-                venue:venues(name),
-                chat_request:chat_requests!inner(sender_id, recipient_id, status)
+                venue:venues(name)
             `)
-        .eq('chat_request.sender_id', userId);
+        .eq('sender_id', userId);
         
     if (error) throw error;
     return data;
@@ -36,15 +44,25 @@ async function fetchRecipientRooms(userId: string) {
             venue_id,
             venue_name,
             event_date,
+            sender_id,
+            recipient_id,
+            popup_name,
+            requirements,
+            special_requests,
+            instagram_handle,
+            website,
+            guest_count,
+            collaboration_types,
             request_id,
-            venue:venues(name),
-            chat_request:chat_requests!inner(sender_id, recipient_id, status)
+            venue:venues(name)
         `)
-        .eq('chat_request.recipient_id', userId);
+        .eq('recipient_id', userId);
         
     if (error) throw error;
     return data;
 }
+
+// Note: Booking request functions removed since we now focus only on chat rooms
 
 // Fetch the latest message for a chat room
 async function fetchLatestMessage(roomId: string) {
@@ -101,47 +119,56 @@ export function useChatRooms(userId: string | undefined) {
         enabled: !!userId,
     });
 
-    // If both queries are successful, combine the rooms
-    const combinedRooms = useMemo(() => {
-        if (!senderRoomsQuery.data && !recipientRoomsQuery.data) return [];
-        
-        // Combine sender and recipient rooms
-        const combined = [
+    // Note: We no longer fetch booking requests separately since chat rooms are created immediately
+
+    // Combine rooms only (since rooms are created immediately now)
+    const combinedItems = useMemo(() => {
+        const rooms = [
             ...(senderRoomsQuery.data || []),
             ...(recipientRoomsQuery.data || [])
         ];
         
-        // Deduplicate rooms by ID
-        const uniqueRoomIds = new Set();
-        const uniqueRooms = combined.filter(room => {
-            if (uniqueRoomIds.has(room.id)) {
+        // Deduplicate by ID
+        const uniqueItemIds = new Set();
+        const uniqueItems = rooms.filter(item => {
+            if (uniqueItemIds.has(item.id)) {
                 return false;
             }
-            uniqueRoomIds.add(room.id);
+            uniqueItemIds.add(item.id);
             return true;
         });
         
-        return uniqueRooms;
+        return uniqueItems;
     }, [senderRoomsQuery.data, recipientRoomsQuery.data]);
 
-    // For each room, fetch its latest message
+    // For each room (not requests), fetch its latest message
     const roomsWithMessagesQueries = useQueries({
-        queries: combinedRooms.map(room => ({
-            queryKey: ['latestMessage', room.id],
-            queryFn: () => fetchLatestMessage(room.id),
-            enabled: combinedRooms.length > 0,
-        })),
+        queries: combinedItems
+            .filter(item => !item.id.startsWith('request_')) // Only fetch messages for actual rooms
+            .map(room => ({
+                queryKey: ['latestMessage', room.id],
+                queryFn: () => fetchLatestMessage(room.id),
+                enabled: combinedItems.length > 0,
+            })),
     });
 
-    // Process the rooms with their latest messages
-    const processedRooms = useMemo(() => {
-        if (combinedRooms.length === 0 || 
-            roomsWithMessagesQueries.some(query => query.isLoading)) {
+    // Process the items with their latest messages
+    const processedItems = useMemo(() => {
+        if (combinedItems.length === 0) {
             return [];
         }
         
-        return combinedRooms.map((room, index) => {
-            const latestMessage = roomsWithMessagesQueries[index].data;
+        // Check if any room message queries are still loading
+        const roomMessagesLoading = combinedItems.length > 0 && 
+            roomsWithMessagesQueries.some(query => query.isLoading);
+        
+        if (roomMessagesLoading) {
+            return [];
+        }
+        
+        // Process rooms with messages
+        const processedRooms = combinedItems.map((room, index) => {
+            const latestMessage = roomsWithMessagesQueries[index]?.data;
             
             return {
                 id: room.id,
@@ -153,9 +180,24 @@ export function useChatRooms(userId: string | undefined) {
                         ? room.venue[0].name 
                         : 'Unknown Venue'
                 },
-                latest_message: latestMessage
+                latest_message: latestMessage,
+                isRequest: false,
+                status: 'approved', // Chat rooms are always approved since they exist
+                request_id: room.request_id,
+                sender_id: room.sender_id,
+                recipient_id: room.recipient_id,
+                popup_name: room.popup_name,
+                requirements: room.requirements,
+                special_requests: room.special_requests,
+                instagram_handle: room.instagram_handle,
+                website: room.website,
+                guest_count: room.guest_count,
+                collaboration_types: room.collaboration_types
             };
-        }).sort((a, b) => {
+        });
+        
+        // Sort by latest activity
+        return processedRooms.sort((a, b) => {
             const aTime = a.latest_message
                 ? new Date(a.latest_message.created_at).getTime()
                 : new Date(a.created_at).getTime();
@@ -164,17 +206,18 @@ export function useChatRooms(userId: string | undefined) {
                 : new Date(b.created_at).getTime();
             return bTime - aTime;
         });
-    }, [combinedRooms, roomsWithMessagesQueries]);
+    }, [combinedItems, roomsWithMessagesQueries]);
 
     return {
-        rooms: processedRooms,
+        rooms: processedItems,
         isLoading: 
             senderRoomsQuery.isLoading || 
-            recipientRoomsQuery.isLoading || 
-            (combinedRooms.length > 0 && roomsWithMessagesQueries.some(query => query.isLoading)),
+            recipientRoomsQuery.isLoading ||
+            (combinedItems.length > 0 && 
+             roomsWithMessagesQueries.some(query => query.isLoading)),
         error: 
             senderRoomsQuery.error || 
-            recipientRoomsQuery.error || 
+            recipientRoomsQuery.error ||
             roomsWithMessagesQueries.find(query => query.error)?.error
     };
 } 
