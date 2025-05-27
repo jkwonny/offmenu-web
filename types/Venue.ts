@@ -34,4 +34,5 @@ export interface Venue {
     owner_id: string;
     status?: 'pending' | 'approved' | 'declined';
     collaboration_type?: string;
+    services?: string[];
 }

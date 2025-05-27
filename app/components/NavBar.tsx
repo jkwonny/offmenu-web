@@ -253,9 +253,6 @@ export default function NavBar() {
                                         <Link href="/submit-space" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
                                             Become a Host
                                         </Link>
-                                        <Link href="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
-                                            Messages
-                                        </Link>
 
                                         {isAdmin && (
                                             <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
@@ -368,18 +365,6 @@ export default function NavBar() {
                                 Account
                             </Link>
                             <Link
-                                href="/chat"
-                                className="flex items-center gap-2 py-2 text-gray-700 hover:text-black"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                <span>Messages</span>
-                                {chatRooms.length > 0 && (
-                                    <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                                        {chatRooms.length > 9 ? '9+' : chatRooms.length}
-                                    </span>
-                                )}
-                            </Link>
-                            <Link
                                 href="/submit-space"
                                 className="block py-2 text-gray-700 hover:text-black"
                                 onClick={() => setMobileMenuOpen(false)}
@@ -395,15 +380,15 @@ export default function NavBar() {
                                     Admin Dashboard
                                 </Link>
                             )}
-                            {isSpacesHost && (
-                                <Link
-                                    href="/manage/dashboard?view=spaces"
-                                    className="block py-2 text-gray-700 hover:text-black"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    Manager Dashboard
-                                </Link>
-                            )}
+
+                            <Link
+                                href="/manage/dashboard?view=spaces"
+                                className="block py-2 text-gray-700 hover:text-black"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Manager Dashboard
+                            </Link>
+
 
                             <Link
                                 href="/manage/dashboard/availability"

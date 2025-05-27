@@ -40,7 +40,7 @@ export default function VenueList({
     };
 
     return (
-        <div className="h-full overflow-y-auto bg-[#FFF9F5] text-black">
+        <div className="h-full overflow-y-auto text-black">
             <div className="p-4">
                 <h2 className="text-2xl font-bold mb-4 text-amber-950">Venues</h2>
                 <div className="space-y-4">

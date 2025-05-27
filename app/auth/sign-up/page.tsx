@@ -190,7 +190,7 @@ function SignUpFormLoading() {
 
 export default function SignUp() {
     return (
-        <div className="min-h-screen bg-[#FFF9F5]">
+        <div className="min-h-screen">
             <NavBar />
 
             <div className="max-w-md mx-auto p-6 mt-16">

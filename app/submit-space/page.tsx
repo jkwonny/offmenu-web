@@ -88,9 +88,6 @@ export default function SubmitSpacePage() {
                 rules: formData.rules
             };
 
-
-            console.log('submissionData', submissionData);
-
             const response = await fetch('/api/venues', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

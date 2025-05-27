@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Venue } from '@/types/Venue';
+import NavBar from '@/app/components/NavBar';
 
 // Extended Venue type with status
 interface AdminVenue extends Venue {
@@ -121,104 +122,112 @@ export default function AdminDashboard() {
 
     if (error) {
         return (
-            <div className="bg-red-50 p-4 rounded-md">
-                <h2 className="text-xl font-semibold text-red-700">Error</h2>
-                <p className="text-red-600">{error}</p>
-                <button
-                    onClick={fetchVenues}
-                    className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition"
-                >
-                    Try Again
-                </button>
+            <div className="min-h-screen bg-white">
+                <NavBar />
+                <div className="container mx-auto px-4 py-8">
+                    <div className="bg-red-50 p-4 rounded-md">
+                        <h2 className="text-xl font-semibold text-red-700">Error</h2>
+                        <p className="text-red-600">{error}</p>
+                        <button
+                            onClick={fetchVenues}
+                            className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold text-amber-900 mb-8">Admin Dashboard</h1>
+        <div className="min-h-screen bg-white">
+            <NavBar />
+            <div className="container mx-auto px-4 py-8">
+                <h1 className="text-3xl font-bold text-amber-900 mb-8">Admin Dashboard</h1>
 
-            {/* Pending Spaces Section */}
-            <div className="mb-12">
-                <h2 className="text-2xl font-semibold text-amber-800 mb-4">Pending Spaces ({pendingVenues.length})</h2>
-                {pendingVenues.length === 0 ? (
-                    <p className="text-gray-500">No pending spaces found.</p>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {pendingVenues.map(venue => (
-                            <VenueCard
-                                key={venue.id}
-                                venue={venue}
-                                actionButtons={
-                                    <>
-                                        <button
-                                            onClick={() => handleStatusChange(venue.id, 'approved')}
-                                            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
-                                        >
-                                            Approve
-                                        </button>
+                {/* Pending Spaces Section */}
+                <div className="mb-12">
+                    <h2 className="text-2xl font-semibold text-amber-800 mb-4">Pending Spaces ({pendingVenues.length})</h2>
+                    {pendingVenues.length === 0 ? (
+                        <p className="text-gray-500">No pending spaces found.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {pendingVenues.map(venue => (
+                                <VenueCard
+                                    key={venue.id}
+                                    venue={venue}
+                                    actionButtons={
+                                        <>
+                                            <button
+                                                onClick={() => handleStatusChange(venue.id, 'approved')}
+                                                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleStatusChange(venue.id, 'declined')}
+                                                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                                            >
+                                                Decline
+                                            </button>
+                                        </>
+                                    }
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Active Spaces Section */}
+                <div className="mb-12">
+                    <h2 className="text-2xl font-semibold text-amber-800 mb-4">Active Spaces ({approvedVenues.length})</h2>
+                    {approvedVenues.length === 0 ? (
+                        <p className="text-gray-500">No active spaces found.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {approvedVenues.map(venue => (
+                                <VenueCard
+                                    key={venue.id}
+                                    venue={venue}
+                                    actionButtons={
                                         <button
                                             onClick={() => handleStatusChange(venue.id, 'declined')}
                                             className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
                                         >
-                                            Decline
+                                            Deactivate
                                         </button>
-                                    </>
-                                }
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
+                                    }
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-            {/* Active Spaces Section */}
-            <div className="mb-12">
-                <h2 className="text-2xl font-semibold text-amber-800 mb-4">Active Spaces ({approvedVenues.length})</h2>
-                {approvedVenues.length === 0 ? (
-                    <p className="text-gray-500">No active spaces found.</p>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {approvedVenues.map(venue => (
-                            <VenueCard
-                                key={venue.id}
-                                venue={venue}
-                                actionButtons={
-                                    <button
-                                        onClick={() => handleStatusChange(venue.id, 'declined')}
-                                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                                    >
-                                        Deactivate
-                                    </button>
-                                }
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Declined Spaces Section */}
-            <div>
-                <h2 className="text-2xl font-semibold text-amber-800 mb-4">Declined Spaces ({declinedVenues.length})</h2>
-                {declinedVenues.length === 0 ? (
-                    <p className="text-gray-500">No declined spaces found.</p>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {declinedVenues.map(venue => (
-                            <VenueCard
-                                key={venue.id}
-                                venue={venue}
-                                actionButtons={
-                                    <button
-                                        onClick={() => handleStatusChange(venue.id, 'approved')}
-                                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
-                                    >
-                                        Activate
-                                    </button>
-                                }
-                            />
-                        ))}
-                    </div>
-                )}
+                {/* Declined Spaces Section */}
+                <div>
+                    <h2 className="text-2xl font-semibold text-amber-800 mb-4">Declined Spaces ({declinedVenues.length})</h2>
+                    {declinedVenues.length === 0 ? (
+                        <p className="text-gray-500">No declined spaces found.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {declinedVenues.map(venue => (
+                                <VenueCard
+                                    key={venue.id}
+                                    venue={venue}
+                                    actionButtons={
+                                        <button
+                                            onClick={() => handleStatusChange(venue.id, 'approved')}
+                                            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+                                        >
+                                            Activate
+                                        </button>
+                                    }
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

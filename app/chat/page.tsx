@@ -1,45 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/app/lib/supabase';
 import { format } from 'date-fns';
 import NavBar from '@/app/components/NavBar';
-import { User } from '@/app/types/user';
-import { ChatRoom, ChatRequest, ChatMessage } from '@/app/types/chat';
-import { Venue } from '@/app/types/venue';
+import { ChatRoom } from '@/app/types/chat';
 import { useChatRooms } from '@/app/lib/hooks/useChatRooms';
+import {
+    useCurrentUser,
+    useUserVenues,
+    useBookingRequests,
+    useChatMessages,
+    useVenueDetails
+} from '@/app/lib/queries/chat';
 import Image from 'next/image';
 
-// Type for raw response from Supabase
-interface SupabaseRequestResponse {
-    id: string;
-    created_at: string;
-    message: string;
-    status: string;
-    venue_id: number;
-    venue_name?: string;
-    event_date?: string;
-    sender_id: string;
-    recipient_id: string;
-    sender: unknown;
-    recipient: unknown;
-}
+
 
 function ChatContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [user, setUser] = useState<User | null>(null);
-    const [allVenueRequests, setAllVenueRequests] = useState<ChatRequest[]>([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
-    const [loadingRoom, setLoadingRoom] = useState(false);
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-    const [selectedSpace, setSelectedSpace] = useState<Venue | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const currentRoomIdRef = useRef<string | null>(null);
+
+    // React Query hooks
+    const { data: user, isLoading: userLoading, error: userError } = useCurrentUser();
+    const { data: userVenues = [], isLoading: venuesLoading } = useUserVenues(user?.id);
+
+    // Extract venue IDs for booking requests
+    const venueIds = useMemo(() => userVenues.map((venue: { id: number }) => venue.id), [userVenues]);
+    const { isLoading: requestsLoading } = useBookingRequests(venueIds);
 
     const { rooms: chatRooms, isLoading: chatRoomsLoading, error: chatRoomsError } = useChatRooms(user?.id);
+
+    // Get selected room ID from URL
+    const selectedRoomId = searchParams.get('chatRoomId');
+
+    // Fetch messages and venue details for selected room
+    const { data: chatMessages = [], isLoading: messagesLoading } = useChatMessages(selectedRoomId || undefined);
+    const { data: selectedSpace, isLoading: venueDetailsLoading } = useVenueDetails(selectedRoom?.venue_id);
+
+    console.log('chatRooms', chatRooms);
 
     const scrollToBottom = () => {
         if (messagesContainerRef.current) {
@@ -48,251 +51,85 @@ function ChatContent() {
         }
     };
 
+    // Handle errors from React Query
     useEffect(() => {
-        async function fetchUserAndVenueRequests() {
-            try {
-                // Get current authenticated user
-                const { data: { user } } = await supabase.auth.getUser();
-                setUser(user as User);
-
-                if (!user) {
-                    setLoading(false);
-                    return;
-                }
-
-                // Fetch venues owned by the user
-                const { data: userVenues, error: venueError } = await supabase
-                    .from('venues')
-                    .select('id')
-                    .eq('owner_id', user.id);
-
-                if (venueError) throw venueError;
-
-                // Store venue IDs owned by this user
-                const venueIds = userVenues?.map(venue => venue.id) || [];
-
-                // Fetch chat requests for venues owned by this user
-                if (venueIds.length > 0) {
-                    const { data: venueRequests, error: requestsError } = await supabase
-                        .from('chat_requests')
-                        .select(`
-                            id,
-                            created_at,
-                            message,
-                            status,
-                            venue_id,
-                            venue_name,
-                            event_date,
-                            sender_id,
-                            recipient_id,
-                            sender:users!sender_id(name),
-                            recipient:users!recipient_id(name)
-                        `)
-                        .in('venue_id', venueIds);
-
-                    if (requestsError) throw requestsError;
-
-                    // Process all venue chat requests
-                    const formattedVenueRequests = ((venueRequests || []) as unknown as SupabaseRequestResponse[]).map((req) => {
-                        // Extract sender and recipient names safely
-                        let senderName = 'Unknown';
-                        let recipientName = 'Unknown';
-
-                        if (req.sender) {
-                            const sender = req.sender as { name?: string };
-                            senderName = typeof sender.name === 'string' ? sender.name : 'Unknown';
-                        }
-
-                        if (req.recipient) {
-                            const recipient = req.recipient as { name?: string };
-                            recipientName = typeof recipient.name === 'string' ? recipient.name : 'Unknown';
-                        }
-
-                        return {
-                            id: req.id,
-                            created_at: req.created_at,
-                            message: req.message,
-                            status: req.status,
-                            venue_id: req.venue_id,
-                            venue_name: req.venue_name || 'Unknown Venue',
-                            event_date: req.event_date || '',
-                            sender_id: req.sender_id,
-                            recipient_id: req.recipient_id,
-                            sender_name: senderName,
-                            recipient_name: recipientName
-                        };
-                    });
-
-                    setAllVenueRequests(formattedVenueRequests);
-                }
-            } catch (err: Error | unknown) {
-                const errorMessage = err instanceof Error ? err.message : 'Failed to load chat rooms';
-                setError(errorMessage);
-                console.error('Error fetching chat rooms:', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchUserAndVenueRequests();
-    }, []);
-
-    // Separate useEffect for mapping chat requests to rooms to avoid dependency cycles
-    const prevRoomsLength = useRef(0);
-    const prevRequestsLength = useRef(0);
-
-    useEffect(() => {
-        // Only run this effect if we have both chat rooms and venue requests
-        // AND if either the rooms or requests have changed in length (to avoid infinite loops)
-        if (chatRooms.length > 0 && allVenueRequests.length > 0 &&
-            (prevRoomsLength.current !== chatRooms.length ||
-                prevRequestsLength.current !== allVenueRequests.length)) {
-
-            // Update ref values
-            prevRoomsLength.current = chatRooms.length;
-            prevRequestsLength.current = allVenueRequests.length;
-
-            // Create a mapping of request_id to room_id
-            const requestToRoomMap: Record<string, string> = {};
-            chatRooms.forEach(room => {
-                // The request_id might not exist in the ChatRoom type returned from useChatRooms
-                // So we'll check if it exists as a property before using it
-                const requestId = (room as unknown as { request_id?: string }).request_id;
-                if (requestId) {
-                    requestToRoomMap[requestId] = room.id;
-                }
-            });
-
-            // Update venue requests with room IDs
-            setAllVenueRequests(prev => {
-                // Avoid unnecessary updates by only mapping if not already mapped
-                const needsUpdate = prev.some(request =>
-                    request.status === 'approved' &&
-                    requestToRoomMap[request.id] &&
-                    !request.room_id
-                );
-
-                if (!needsUpdate) return prev;
-
-                return prev.map(request => {
-                    if (request.status === 'approved' &&
-                        requestToRoomMap[request.id] &&
-                        !request.room_id) {
-                        return { ...request, room_id: requestToRoomMap[request.id] };
-                    }
-                    return request;
-                });
-            });
-        }
-    }, [chatRooms, allVenueRequests]);
-
-    // Set error state if chatRoomsError exists
-    useEffect(() => {
-        if (chatRoomsError) {
+        if (userError) {
+            setError('Failed to load user data');
+            console.error('Error from useCurrentUser:', userError);
+        } else if (chatRoomsError) {
             setError('Failed to load chat rooms');
             console.error('Error from useChatRooms:', chatRoomsError);
         }
-    }, [chatRoomsError]);
+    }, [userError, chatRoomsError]);
 
+
+
+    // Update selected room when URL changes
     useEffect(() => {
-        // Get the chatRoomId from URL query params
         const chatRoomId = searchParams.get('chatRoomId');
 
         if (chatRoomId && chatRooms.length > 0) {
-            // Only load the chat room if it's not already selected or we're not already loading
-            if ((!selectedRoom || selectedRoom.id !== chatRoomId) && !loadingRoom) {
-                loadChatRoom(chatRoomId);
-            }
-        } else if (!chatRoomId && chatRooms.length > 0) {
-            // Optionally set the first room as default if no ID is specified
-            // router.push(`/chat/chat?chatRoomId=${chatRooms[0].id}`);
-        }
-    }, [searchParams, chatRooms, selectedRoom, loadingRoom]);
+            // Only update the selected room if it's different from the currently loaded one
+            if (currentRoomIdRef.current !== chatRoomId) {
+                const room = chatRooms.find(r => r.id === chatRoomId);
 
-    const loadChatRoom = async (roomId: string) => {
-        setLoadingRoom(true);
-        try {
-            // Find the room in our local state first
-            const room = chatRooms.find(r => r.id === roomId);
-
-            if (room) {
-                // Convert to proper ChatRoom type with all required properties
-                const typedRoom: ChatRoom = {
-                    id: room.id,
-                    created_at: room.created_at,
-                    venue_id: room.venue_id,
-                    venue_name: room.venue_name,
-                    event_date: (room as unknown as { event_date?: string }).event_date,
-                    request_id: (room as unknown as { request_id?: string }).request_id,
-                    venue: room.venue,
-                    latest_message: room.latest_message ? {
-                        content: room.latest_message.content,
-                        created_at: room.latest_message.created_at,
-                        sender: {
-                            name: room.latest_message.sender.name
-                        }
-                    } : undefined
-                };
-
-                setSelectedRoom(typedRoom);
-
-                // Fetch messages for this room
-                const { data: messages, error: messagesError } = await supabase
-                    .from('chat_messages')
-                    .select(`
-                        id,
-                        content,
-                        created_at,
-                        sender_id,
-                        sender:users!sender_id(name)
-                    `)
-                    .eq('room_id', roomId)
-                    .order('created_at', { ascending: true });
-
-                if (messagesError) throw messagesError;
-
-                // Process messages as needed
-                const processedMessages = messages?.map(msg => ({
-                    id: msg.id,
-                    content: msg.content,
-                    created_at: msg.created_at,
-                    sender_id: msg.sender_id,
-                    sender_name: msg.sender && typeof msg.sender === 'object'
-                        ? (Array.isArray(msg.sender)
-                            ? (msg.sender[0] as { name?: string })?.name || 'Unknown'
-                            : (msg.sender as { name?: string })?.name || 'Unknown')
-                        : 'Unknown'
-                })) || [];
-
-                setChatMessages(processedMessages);
-
-                // Fetch venue details
-                const { data: venueData, error } = await supabase
-                    .from('venues')
-                    .select(`
-                        *,
-                        venue_images(image_url, sort_order)
-                    `)
-                    .eq('id', room.venue_id)
-                    .single();
-                if (!error && venueData) {
-                    // Process venue data to include venue_images properly
-                    const processedVenueData = {
-                        ...venueData,
-                        venue_images: venueData.venue_images || []
+                if (room) {
+                    // Convert to proper ChatRoom type with all required properties
+                    const roomData = room as ChatRoom & {
+                        event_date?: string;
+                        sender_id?: string;
+                        recipient_id?: string;
+                        popup_name?: string;
+                        requirements?: string;
+                        special_requests?: string;
+                        instagram_handle?: string;
+                        website?: string;
+                        guest_count?: string;
+                        collaboration_types?: string[];
+                        request_id?: string;
                     };
-                    setSelectedSpace(processedVenueData);
+
+                    const typedRoom: ChatRoom = {
+                        id: room.id,
+                        created_at: room.created_at,
+                        venue_id: room.venue_id,
+                        venue_name: room.venue_name,
+                        event_date: roomData.event_date,
+                        sender_id: roomData.sender_id || '',
+                        recipient_id: roomData.recipient_id || '',
+                        popup_name: roomData.popup_name,
+                        requirements: roomData.requirements,
+                        special_requests: roomData.special_requests,
+                        instagram_handle: roomData.instagram_handle,
+                        website: roomData.website,
+                        guest_count: roomData.guest_count,
+                        collaboration_types: roomData.collaboration_types,
+                        request_id: roomData.request_id,
+                        venue: room.venue,
+                        latest_message: room.latest_message ? {
+                            content: room.latest_message.content,
+                            created_at: room.latest_message.created_at,
+                            sender: {
+                                name: room.latest_message.sender.name
+                            }
+                        } : undefined
+                    };
+
+                    setSelectedRoom(typedRoom);
+                    currentRoomIdRef.current = chatRoomId;
+                } else {
+                    console.warn(`Chat room with ID ${chatRoomId} not found`);
+                    setError('Chat room not found');
+                    setSelectedRoom(null);
+                    currentRoomIdRef.current = null;
                 }
             }
-        } catch (err) {
-            console.error('Error loading chat room:', err);
-            setError('Failed to load chat room');
-        } finally {
-            setLoadingRoom(false);
-            // Scroll to bottom after loading finishes
-            setTimeout(scrollToBottom, 100);
+        } else if (!chatRoomId) {
+            // Clear selected room if no chatRoomId in URL
+            setSelectedRoom(null);
+            currentRoomIdRef.current = null;
         }
-    };
+    }, [searchParams, chatRooms]);
 
     const handleChatRoomClick = (roomId: string) => {
         // Update URL without navigation
@@ -311,9 +148,9 @@ function ChatContent() {
     }, [chatMessages]); // Remove selectedRoom from the dependency array
 
     // Set overall loading state based on user loading and chat rooms loading
-    const isLoading = loading || chatRoomsLoading;
+    const isLoading = userLoading || venuesLoading || requestsLoading || chatRoomsLoading;
 
-    if (!user && !isLoading) {
+    if (!user && !userLoading) {
         return (
             <div className="min-h-screen">
                 <NavBar />
@@ -405,7 +242,7 @@ function ChatContent() {
 
                     {/* Middle - Chat Area */}
                     <div className="col-span-2 bg-white rounded-lg shadow-sm flex flex-col h-full overflow-scroll">
-                        {loadingRoom ? (
+                        {messagesLoading || venueDetailsLoading ? (
                             <div className="flex items-center justify-center h-full">
                                 <p>Loading conversation...</p>
                             </div>
