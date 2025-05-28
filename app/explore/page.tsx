@@ -189,7 +189,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
             if (capacityFilter === '75+') {
                 if (capacity < 75) return false;
             } else {
-                const [min, max] = capacityFilter.split('-').map(Number);
+                const [, max] = capacityFilter.split('-').map(Number);
                 // Check if venue can accommodate the maximum requested capacity
                 if (capacity < max) return false;
             }
@@ -649,7 +649,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 160 ? `${containerHeight - 200}px` : 'none' }}>
                             {events.map((event: Event) => {
                                 // Determine the image URL for the event
-                                console.log('event', event)
                                 let eventImageUrl: string | undefined = undefined;
                                 if (event.event_images && event.event_images.length > 0) {
                                     eventImageUrl = getImageUrl(event.event_images[0]);
