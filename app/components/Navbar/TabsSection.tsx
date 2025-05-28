@@ -6,14 +6,15 @@ export const TabsSection = () => {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const isExplorePage = pathname === '/explore';
+    const isManagePage = pathname === '/manage/dashboard';
     const view = searchParams.get('view');
 
-    if (!isExplorePage) return null;
+    if (!isExplorePage && !isManagePage) return null;
 
     return (
         <div className="flex overflow-hidden rounded-full">
             <Link
-                href="/explore?view=spaces"
+                href={isExplorePage ? "/explore?view=spaces" : "/manage/dashboard?view=spaces"}
                 className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${!view || view === 'spaces'
                     ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
@@ -22,7 +23,7 @@ export const TabsSection = () => {
                 Spaces
             </Link>
             <Link
-                href="/explore?view=popups"
+                href={isExplorePage ? "/explore?view=popups" : "/manage/dashboard?view=popups"}
                 className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
                     ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'

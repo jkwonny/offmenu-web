@@ -16,6 +16,14 @@ interface SupabaseRequestResponse {
     sender: unknown;
     recipient: unknown;
     room_id?: string;
+    selected_date?: Date;
+    selected_time?: Date;
+    guest_count?: string;
+    requirements?: string;
+    special_requests?: string;
+    instagram_handle?: string;
+    website?: string;
+    collaboration_types?: string[];
 }
 
 export interface BookingRequest {
@@ -28,9 +36,17 @@ export interface BookingRequest {
     event_date: string;
     sender_id: string;
     recipient_id: string;
+    selected_date?: Date;
+    selected_time?: Date;
     sender_name: string;
     recipient_name: string;
     room_id?: string;
+    guest_count?: string;
+    requirements?: string;
+    special_requests?: string;
+    instagram_handle?: string;
+    website?: string;
+    collaboration_types?: string[];
 }
 
 // Fetch current authenticated user
@@ -70,6 +86,14 @@ export const fetchBookingRequests = async (venueIds: number[]) => {
             sender_id,
             recipient_id,
             room_id,
+            selected_date,
+            selected_time,
+            guest_count,
+            requirements,
+            special_requests,
+            instagram_handle,
+            website,
+            collaboration_types,
             sender:users!sender_id(name),
             recipient:users!recipient_id(name)
         `)
@@ -103,8 +127,16 @@ export const fetchBookingRequests = async (venueIds: number[]) => {
             sender_id: req.sender_id,
             recipient_id: req.recipient_id,
             sender_name: senderName,
+            selected_date: req.selected_date,
+            selected_time: req.selected_time,
             recipient_name: recipientName,
-            room_id: req.room_id
+            room_id: req.room_id,
+            guest_count: req.guest_count,
+            requirements: req.requirements,
+            special_requests: req.special_requests,
+            instagram_handle: req.instagram_handle,
+            website: req.website,
+            collaboration_types: req.collaboration_types
         };
     });
     

@@ -76,6 +76,8 @@ export default function EditSpacePage() {
                 tags: Array.isArray(data.tags) ? data.tags.join(', ') : data.tags || '',
                 // Convert numeric/boolean values to string if your form expects strings
                 max_guests: data.max_guests?.toString() || '',
+                max_standing_guests: data.max_standing_guests || 0,
+                max_sitting_guests: data.max_sitting_guests || 0,
                 latitude: data.latitude?.toString() || '',
                 longitude: data.longitude?.toString() || '',
             });
@@ -192,10 +194,11 @@ export default function EditSpacePage() {
                 collaboration_type: formData.collaboration_type,
                 website: formData.website,
                 instagram_handle: formData.instagram_handle,
-                rules: formData.rules,
                 services: formData.services,
                 // Ensure numeric fields are numbers if your DB expects them
                 max_guests: formData.max_guests ? parseInt(formData.max_guests as string, 10).toString() : '',
+                max_standing_guests: formData.max_standing_guests,
+                max_sitting_guests: formData.max_sitting_guests,
                 latitude: formData.latitude ? parseFloat(formData.latitude as string).toString() : '',
                 longitude: formData.longitude ? parseFloat(formData.longitude as string).toString() : '',
                 // Tags should be a string for the form, but your API/DB might expect an array

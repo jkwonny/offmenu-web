@@ -3,44 +3,23 @@
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../../context/UserContext';
 import { useVenues, useEvents } from '../../lib/queries';
+import { useBookingRequests } from '../../lib/queries/chat';
 import NavBar from '../../components/NavBar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LuMapPin } from 'react-icons/lu';
-import { Suspense } from 'react';
+import { LuMapPin, LuCalendar, LuUser, LuMessageCircle, LuCheck, LuX } from 'react-icons/lu';
+import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Event } from '@/app/types/event';
-
-function DashboardTabs({ view }: { view: string }) {
-    return (
-        <div className="flex overflow-hidden rounded-full">
-            <Link
-                href="/manage/dashboard?view=spaces"
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'spaces'
-                    ? 'bg-[#06048D] text-white'
-                    : 'bg-white text-black'
-                    }`}
-            >
-                Spaces
-            </Link>
-            <Link
-                href="/manage/dashboard?view=popups"
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
-                    ? 'bg-[#06048D] text-white'
-                    : 'bg-white text-black'
-                    }`}
-            >
-                Pop-ups
-            </Link>
-        </div>
-    );
-}
 
 function DashboardContent() {
     const searchParams = useSearchParams();
     const { user, isLoading: userLoading } = useUser();
     const view = searchParams.get('view') || 'spaces';
     const router = useRouter();
+    const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
+    const [requestFilter, setRequestFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+
     // Fetch venues and events data
     const { data: venues = [], isLoading: venuesLoading } = useVenues();
     const { data: events = [], isLoading: eventsLoading } = useEvents<Event[]>();
@@ -49,7 +28,53 @@ function DashboardContent() {
     const userVenues = venues.filter(venue => venue.owner_id === user?.id);
     const userEvents = events.filter(event => event.owner_id === user?.id || event.user_id === user?.id);
 
+    // Get venue IDs for booking requests
+    const userVenueIds = userVenues.map(venue => parseInt(venue.id));
+    const { data: bookingRequests = [], isLoading: requestsLoading } = useBookingRequests(userVenueIds);
+
+    // Filter requests based on selected tab
+    const filteredRequests = bookingRequests.filter(request => {
+        if (requestFilter === 'all') return true;
+        if (requestFilter === 'pending') return request.status === 'pending';
+        if (requestFilter === 'approved') return request.status === 'approved';
+        if (requestFilter === 'rejected') return request.status === 'rejected';
+        return true;
+    });
+
     const isLoading = userLoading || (view === 'spaces' ? venuesLoading : eventsLoading);
+
+    const handleRequestAction = async (requestId: string, action: 'approved' | 'rejected') => {
+        setProcessingRequests(prev => new Set(prev).add(requestId));
+
+        try {
+            const response = await fetch('/api/booking/approve', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    booking_request_id: requestId,
+                    status: action
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update request');
+            }
+
+            // Refresh the booking requests data
+            window.location.reload(); // Simple refresh for now
+        } catch (error) {
+            console.error('Error updating request:', error);
+            alert('Failed to update request. Please try again.');
+        } finally {
+            setProcessingRequests(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(requestId);
+                return newSet;
+            });
+        }
+    };
 
     if (userLoading) {
         return (
@@ -80,97 +105,315 @@ function DashboardContent() {
                     <p className="text-gray-600">Manage your spaces and pop-ups</p>
                 </div>
 
-                <div className="mb-6 flex justify-center">
-                    <DashboardTabs view={view} />
-                </div>
-
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ca0013]"></div>
                     </div>
                 ) : view === 'spaces' ? (
                     <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold">My Spaces ({userVenues.length})</h2>
-                            <Link
-                                href="/submit-space"
-                                className="bg-black text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800"
-                            >
-                                + Add New Space
-                            </Link>
-                        </div>
+                        {/* Booking Requests Section */}
+                        {userVenueIds.length > 0 && (
+                            <div className="mb-8">
+                                {requestsLoading ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#ca0013]"></div>
+                                        <span className="ml-2 text-gray-600">Loading requests...</span>
+                                    </div>
+                                ) : bookingRequests.length > 0 ? (
+                                    <>
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h2 className="text-xl font-semibold text-[#ca0013]">
+                                                📋 Booking Requests ({bookingRequests.length})
+                                            </h2>
+                                        </div>
 
-                        {userVenues.length === 0 ? (
-                            <div className="bg-gray-50 rounded-lg p-8 text-center">
-                                <h3 className="text-lg font-medium mb-2">You don&apos;t have any spaces yet</h3>
-                                <p className="text-gray-600 mb-4">Start hosting by adding your first space.</p>
+                                        {/* Filter Tabs */}
+                                        <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+                                            <button
+                                                onClick={() => setRequestFilter('all')}
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'all'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                All ({bookingRequests.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setRequestFilter('pending')}
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'pending'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                Pending ({bookingRequests.filter(r => r.status === 'pending').length})
+                                            </button>
+                                            <button
+                                                onClick={() => setRequestFilter('approved')}
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'approved'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                Upcoming ({bookingRequests.filter(r => r.status === 'approved').length})
+                                            </button>
+                                            <button
+                                                onClick={() => setRequestFilter('rejected')}
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'rejected'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                Declined ({bookingRequests.filter(r => r.status === 'rejected').length})
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                                            {filteredRequests.map((request) => (
+                                                <div
+                                                    key={request.id}
+                                                    className="bg-white rounded-lg border-2 border-gray-200 border-opacity-20 p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                                                    onClick={() => request.room_id && router.push(`/chat?chatRoomId=${request.room_id}`)}
+                                                >
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex items-center">
+                                                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                                                <LuUser className="w-4 h-4 text-gray-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-medium text-sm">{request.sender_name}</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    Date Requested: {new Date(request.created_at).toLocaleDateString('en-US', {
+                                                                        timeZone: 'America/New_York',
+                                                                        year: 'numeric',
+                                                                        month: 'short',
+                                                                        day: 'numeric'
+                                                                    })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-xs px-2 py-1 rounded-full ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                                    'bg-gray-100 text-gray-800'
+                                                            }`}>
+                                                            {request.status === 'pending' ? 'Pending' :
+                                                                request.status === 'approved' ? 'Approved' :
+                                                                    request.status === 'rejected' ? 'Declined' :
+                                                                        request.status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <p className="text-sm font-medium mb-1">Wants to book: {request.venue_name}</p>
+                                                        <div className="flex items-center text-xs text-gray-600 mb-1">
+                                                            <LuCalendar className="w-3 h-3 mr-1" />
+                                                            <span>
+                                                                {(() => {
+                                                                    if (request.selected_date) {
+                                                                        const dateStr = request.selected_date;
+                                                                        const timeStr = request.selected_time || '00:00:00';
+
+                                                                        const dateTime = new Date(`${dateStr}T${timeStr}`);
+
+                                                                        return dateTime.toLocaleDateString('en-US', {
+                                                                            timeZone: 'America/New_York',
+                                                                            weekday: 'short',
+                                                                            year: 'numeric',
+                                                                            month: 'short',
+                                                                            day: 'numeric'
+                                                                        }) + (request.selected_time ? ` • ${dateTime.toLocaleTimeString('en-US', {
+                                                                            timeZone: 'America/New_York',
+                                                                            hour: 'numeric',
+                                                                            minute: '2-digit',
+                                                                            hour12: true
+                                                                        })}` : '');
+                                                                    }
+
+                                                                    if (request.event_date) {
+                                                                        const eventDate = new Date(request.event_date);
+                                                                        return eventDate.toLocaleDateString('en-US', {
+                                                                            timeZone: 'America/New_York',
+                                                                            weekday: 'short',
+                                                                            year: 'numeric',
+                                                                            month: 'short',
+                                                                            day: 'numeric'
+                                                                        });
+                                                                    }
+
+                                                                    return 'Date TBD';
+                                                                })()}
+                                                            </span>
+                                                            {request.guest_count && (
+                                                                <>
+                                                                    <span className="mx-2">•</span>
+                                                                    <LuUser className="w-3 h-3 mr-1" />
+                                                                    <span>{request.guest_count} guests</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        {request.message && (
+                                                            <p className="text-xs text-gray-600 overflow-hidden" style={{
+                                                                display: '-webkit-box',
+                                                                WebkitLineClamp: 2,
+                                                                WebkitBoxOrient: 'vertical'
+                                                            }}>
+                                                                &quot;{request.message.substring(0, 80)}...&quot;
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                                        {request.status === 'pending' ? (
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRequestAction(request.id, 'approved');
+                                                                    }}
+                                                                    disabled={processingRequests.has(request.id)}
+                                                                    className="flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs rounded-md hover:bg-green-200 disabled:opacity-50"
+                                                                >
+                                                                    <LuCheck className="w-3 h-3 mr-1" />
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRequestAction(request.id, 'rejected');
+                                                                    }}
+                                                                    disabled={processingRequests.has(request.id)}
+                                                                    className="flex items-center px-3 py-1 bg-red-100 text-red-800 text-xs rounded-md hover:bg-red-200 disabled:opacity-50"
+                                                                >
+                                                                    <LuX className="w-3 h-3 mr-1" />
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-xs text-gray-500">
+                                                                {request.status === 'approved' ? '✅ Approved' :
+                                                                    request.status === 'rejected' ? '❌ Declined' : ''}
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center text-xs text-gray-500">
+                                                            <LuMessageCircle className="w-3 h-3 mr-1" />
+                                                            Chat →
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Empty state for filtered results */}
+                                        {filteredRequests.length === 0 && (
+                                            <div className="bg-gray-50 rounded-lg p-8 text-center">
+                                                <h3 className="text-lg font-medium mb-2">
+                                                    {requestFilter === 'pending' ? 'No pending requests' :
+                                                        requestFilter === 'approved' ? 'No upcoming bookings' :
+                                                            requestFilter === 'rejected' ? 'No declined requests' :
+                                                                'No requests found'}
+                                                </h3>
+                                                <p className="text-gray-600">
+                                                    {requestFilter === 'pending' ? 'New booking requests will appear here.' :
+                                                        requestFilter === 'approved' ? 'Approved bookings will appear here.' :
+                                                            requestFilter === 'rejected' ? 'Declined requests will appear here.' :
+                                                                'Booking requests will appear here when users contact you.'}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="bg-gray-50 rounded-lg p-8 text-center">
+                                        <h3 className="text-lg font-medium mb-2">No booking requests yet</h3>
+                                        <p className="text-gray-600 mb-4">Booking requests will appear here when users contact you about your spaces.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* My Spaces Section */}
+                        <div>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-semibold">My Spaces ({userVenues.length})</h2>
                                 <Link
                                     href="/submit-space"
-                                    className="inline-block bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
+                                    className="bg-black text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800"
                                 >
-                                    Add a Space
+                                    + Add New Space
                                 </Link>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {userVenues.map((venue) => {
-                                    const venueImages = venue.venue_images && venue.venue_images.length > 0
-                                        ? venue.venue_images
-                                        : [{ image_url: venue.image_url }];
 
-                                    const imageUrl = typeof venueImages[0] === 'string'
-                                        ? venueImages[0]
-                                        : venueImages[0].image_url;
+                            {userVenues.length === 0 ? (
+                                <div className="bg-gray-50 rounded-lg p-8 text-center">
+                                    <h3 className="text-lg font-medium mb-2">You don&apos;t have any spaces yet</h3>
+                                    <p className="text-gray-600 mb-4">Start hosting by adding your first space.</p>
+                                    <Link
+                                        href="/submit-space"
+                                        className="inline-block bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
+                                    >
+                                        Add a Space
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {userVenues.map((venue) => {
+                                        const venueImages = venue.venue_images && venue.venue_images.length > 0
+                                            ? venue.venue_images
+                                            : [{ image_url: venue.image_url }];
 
-                                    return (
-                                        <div
-                                            key={venue.id}
-                                            className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                                            onClick={() => router.push(`/spaces/${venue.id}`)}
-                                        >
-                                            <div className="aspect-[4/3] relative">
-                                                <Image
-                                                    src={imageUrl}
-                                                    alt={venue.name}
-                                                    fill
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                                    className="object-cover"
-                                                />
-                                            </div>
-                                            <div className="p-4">
-                                                <h3 className="font-medium text-lg mb-1">{venue.name}</h3>
-                                                <div className="flex items-center text-gray-600 text-sm mb-2">
-                                                    <LuMapPin className="mr-1" />
-                                                    <span>{venue.address}</span>
+                                        const imageUrl = typeof venueImages[0] === 'string'
+                                            ? venueImages[0]
+                                            : venueImages[0].image_url;
+
+                                        return (
+                                            <div
+                                                key={venue.id}
+                                                className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                                                onClick={() => router.push(`/spaces/${venue.id}`)}
+                                            >
+                                                <div className="aspect-[4/3] relative">
+                                                    <Image
+                                                        src={imageUrl}
+                                                        alt={venue.name}
+                                                        fill
+                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                        className="object-cover"
+                                                    />
                                                 </div>
-                                                <div className="flex justify-between items-center mt-4">
-                                                    <span className={`px-2 py-1 text-xs rounded-full ${venue.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                        venue.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                        {venue.status?.charAt(0).toUpperCase() + venue.status?.slice(1)}
-                                                    </span>
-                                                    <div className="flex space-x-2">
-                                                        <Link
-                                                            href={`/spaces/${venue.id}`}
-                                                            className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
-                                                        >
-                                                            Manage
-                                                        </Link>
-                                                        <Link
-                                                            href="/manage/dashboard/availability"
-                                                            className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
-                                                        >
-                                                            Availability
-                                                        </Link>
+                                                <div className="p-4">
+                                                    <h3 className="font-medium text-lg mb-1">{venue.name}</h3>
+                                                    <div className="flex items-center text-gray-600 text-sm mb-2">
+                                                        <LuMapPin className="mr-1" />
+                                                        <span>{venue.address}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center mt-4">
+                                                        <span className={`px-2 py-1 text-xs rounded-full ${venue.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                            venue.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                'bg-gray-100 text-gray-800'
+                                                            }`}>
+                                                            {venue.status?.charAt(0).toUpperCase() + venue.status?.slice(1)}
+                                                        </span>
+                                                        <div className="flex space-x-2">
+                                                            <Link
+                                                                href={`/spaces/${venue.id}`}
+                                                                className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
+                                                            >
+                                                                Manage
+                                                            </Link>
+                                                            <Link
+                                                                href="/manage/dashboard/availability"
+                                                                className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
+                                                            >
+                                                                Availability
+                                                            </Link>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <div>
@@ -200,15 +443,17 @@ function DashboardContent() {
                                 {userEvents.map((event) => {
                                     const eventImage = event.event_images && event.event_images.length > 0
                                         ? event.event_images[0].image_url
-                                        : event.image_url || '/event-placeholder.jpg';
+                                        : ""
 
+                                    const privateEvent = event.event_status === 'private_pending' || event.event_type === 'private_approved'
+                                    const pendingEvent = event.event_status === 'private_pending' || event.event_status === 'public_approved'
                                     return (
                                         <div
                                             key={event.id}
                                             className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                                             onClick={() => router.push(`/event/${event.id}`)}
                                         >
-                                            <div className="aspect-[4/3] relative">
+                                            {eventImage.length > 0 && <div className="aspect-[4/3] relative">
                                                 <Image
                                                     src={eventImage as string}
                                                     alt={event.title}
@@ -216,25 +461,38 @@ function DashboardContent() {
                                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                                     className="object-cover"
                                                 />
-                                            </div>
+                                            </div>}
                                             <div className="p-4">
                                                 <h3 className="font-medium text-lg mb-1">{event.title}</h3>
                                                 <div className="flex items-center text-gray-600 text-sm mb-2">
                                                     <LuMapPin className="mr-1" />
-                                                    <span>{event.address}</span>
+                                                    <span>{event.address ??
+                                                        "TBD"}</span>
                                                 </div>
-                                                <div className="text-sm text-gray-600 mb-2">
-                                                    <p>{event.selected_date} {event.selected_time ? `• ${event.selected_time}` : ''}</p>
+                                                <div className="flex items-center text-gray-600 text-sm mb-2">
+                                                    <LuCalendar className="mr-1" />
+                                                    <span>
+                                                        {event.selected_date && new Date(event.selected_date).toLocaleDateString('en-US', {
+                                                            weekday: 'short',
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                        {event.selected_time && ` • ${new Date(`2000-01-01T${event.selected_time}`).toLocaleTimeString('en-US', {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        })}`}
+                                                    </span>
                                                 </div>
                                                 <div className="flex justify-between items-center mt-4">
-                                                    <span className={`px-2 py-1 text-xs rounded-full ${event.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                        event.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            event.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                                                                event.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                                                                    'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                        {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Draft'}
-                                                    </span>
+                                                    {!privateEvent && <span className={`p-2 text-xs rounded-full ${pendingEvent ? 'bg-yellow-200 text-black' : 'bg-green-100 text-green-800'}`}>
+                                                        {pendingEvent ? 'Pending' : 'Approved'}
+                                                    </span>}
+
+                                                    {privateEvent && <span className={`p-2 text-xs rounded-full ${privateEvent ? 'bg-[#AFDAFF] text-black' : 'bg-green-100 text-green-800'}`}>
+                                                        {privateEvent ? 'Private Event' : 'Public Event'}
+                                                    </span>}
                                                     <Link
                                                         href={`/events/${event.id}`}
                                                         className="text-black hover:underline text-sm"

@@ -12,11 +12,12 @@ export interface SpaceFormData {
   longitude: string;
   category: string;
   rental_type: string[];
-  collaboration_type: string;
+  collaboration_type: string[];
   website: string;
   instagram_handle: string;
   max_guests: string;
-  rules: string;
+  max_standing_guests: number;
+  max_sitting_guests: number;
   tags: string;
   services: string[];
 } 

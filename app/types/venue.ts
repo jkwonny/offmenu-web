@@ -30,7 +30,6 @@ export interface VenueFormData {
   max_guests: string;
   max_seated_guests: string;
   max_standing_guests: string;
-  rules: string;
   tags: string;
 } 
 

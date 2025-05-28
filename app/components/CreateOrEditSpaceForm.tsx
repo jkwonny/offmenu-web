@@ -154,11 +154,12 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
         longitude: '',
         category: '',
         rental_type: [],
-        collaboration_type: '',
+        collaboration_type: [],
         website: '',
         instagram_handle: '',
         max_guests: '',
-        rules: '',
+        max_standing_guests: 0,
+        max_sitting_guests: 0,
         tags: '',
         services: [],
     };
@@ -168,6 +169,7 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
         ...(initialData || {}),
         services: initialData?.services || [],
         rental_type: initialData?.rental_type || [],
+        collaboration_type: initialData?.collaboration_type || [],
         tags: initialData?.tags || '',
         image_urls: initialData?.image_urls || [],
     }));
@@ -197,6 +199,7 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                 ...initialData,
                 services: initialData.services || [],
                 rental_type: initialData.rental_type || [],
+                collaboration_type: initialData.collaboration_type || [],
                 tags: initialData.tags || '',
             });
             if (initialData.image_urls) {
@@ -210,11 +213,12 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         if (type === 'checkbox') {
-            // This specific handling for rental_type checkboxes needs to be adapted or generalized
-            // For now, assuming rental_type is handled separately or this component doesn't have such checkboxes directly named.
-            // The provided code has specific onChange for rental_type checkboxes.
             const { checked } = e.target as HTMLInputElement;
             setFormData(prev => ({ ...prev, [name]: checked }));
+        } else if (name === 'max_standing_guests' || name === 'max_sitting_guests') {
+            // Handle number inputs for standing and sitting guests
+            const numValue = value === '' ? 0 : parseInt(value, 10);
+            setFormData(prev => ({ ...prev, [name]: isNaN(numValue) ? 0 : numValue }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -243,9 +247,33 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
             if (!formData.city.trim()) errors.city = 'City is required';
             if (!formData.neighborhood.trim()) errors.neighborhood = 'Neighborhood is required';
         } else if (currentStep === 3) {
-            if (!formData.collaboration_type) errors.collaboration_type = 'Collaboration type is required';
+            if (!formData.collaboration_type || formData.collaboration_type.length === 0) errors.collaboration_type = 'At least one collaboration type is required';
             if (!formData.max_guests) errors.max_guests = 'Maximum guests is required';
             if (formData.max_guests && parseInt(formData.max_guests) <= 0) errors.max_guests = 'Maximum guests must be a positive number';
+
+            // Validate standing and sitting guests
+            if (!formData.max_standing_guests || formData.max_standing_guests <= 0) errors.max_standing_guests = 'Maximum standing guests is required and must be positive';
+            if (!formData.max_sitting_guests || formData.max_sitting_guests <= 0) errors.max_sitting_guests = 'Maximum sitting guests is required and must be positive';
+
+            // Check if standing + sitting approximately equals total guests
+            if (formData.max_guests && formData.max_standing_guests && formData.max_sitting_guests) {
+                const totalGuests = parseInt(formData.max_guests);
+                const standingGuests = formData.max_standing_guests;
+                const sittingGuests = formData.max_sitting_guests;
+                const combinedGuests = standingGuests + sittingGuests;
+
+                // Allow some flexibility (within 10% or 5 guests, whichever is larger)
+                const tolerance = Math.max(Math.floor(totalGuests * 0.1), 5);
+                if (Math.abs(combinedGuests - totalGuests) > tolerance) {
+                    errors.max_standing_guests = `Standing + sitting guests (${combinedGuests}) should approximately equal total guests (${totalGuests})`;
+                }
+            }
+        } else if (currentStep === 4) {
+            if (formData.services.length === 0) errors.services = 'At least one service is required';
+        } else if (currentStep === 5) {
+            if (!formData.tags.trim()) errors.tags = 'Tags are required';
+            if (!formData.website.trim()) errors.website = 'Website is required';
+            if (!formData.instagram_handle.trim()) errors.instagram_handle = 'Instagram handle is required';
         }
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
@@ -294,6 +322,7 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                 ...dataToSendRest,
                 services: formData.services || [],
                 rental_type: formData.rental_type || [],
+                collaboration_type: formData.collaboration_type || [],
                 tags: formData.tags || '',
             };
 
@@ -399,6 +428,8 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                     <option value="">Select Category</option>
                                     <option value="restaurant">Restaurant</option>
                                     <option value="bar">Bar</option>
+                                    <option value="brewery">Brewery</option>
+                                    <option value="winery">Wine Bar</option>
                                     <option value="rooftop">Rooftop</option>
                                     <option value="cafe">Cafe</option>
                                     <option value="event_space">Event Space</option>
@@ -413,8 +444,6 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                     <option value="workshop">Workshop</option>
                                     <option value="performance_space">Performance Space</option>
                                     <option value="music_venue">Music Venue</option>
-                                    <option value="brewery">Brewery</option>
-                                    <option value="winery">Winery</option>
                                     <option value="distillery">Distillery</option>
                                     <option value="museum">Museum</option>
                                     <option value="pop_up_shop">Pop-up Shop</option>
@@ -489,32 +518,77 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
             case 3:
                 return (
                     <div className="mt-6">
-                        <h2 className="text-2xl font-bold mb-4 text-center">Capacity & Collaboration</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_guests">
-                                    Maximum Guests <span className="text-red-500">*</span>
-                                </label>
-                                <input id="max_guests" type="number" min="0" name="max_guests" value={formData.max_guests} onChange={handleChange}
-                                    className={`w-full p-3 border ${validationErrors.max_guests ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                                    placeholder="e.g. 100" />
-                                {validationErrors.max_guests ? <p className="mt-1 text-sm text-red-500">{validationErrors.max_guests}</p>
-                                    : <p className="mt-1 text-sm text-gray-500">The maximum number of guests your space can accommodate.</p>}
+                        <div className="grid grid-cols-1 gap-4">
+                            {/* Top row: Standing and Sitting guests split width */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_standing_guests">
+                                        Maximum Standing Guests <span className="text-red-500">*</span>
+                                    </label>
+                                    <input id="max_standing_guests" type="number" min="0" name="max_standing_guests" value={formData.max_standing_guests || ''} onChange={handleChange}
+                                        className={`w-full p-3 border ${validationErrors.max_standing_guests ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="e.g. 60" />
+                                    {validationErrors.max_standing_guests ? <p className="mt-1 text-sm text-red-500">{validationErrors.max_standing_guests}</p>
+                                        : <p className="mt-1 text-sm text-gray-500">Maximum guests who can stand comfortably.</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_sitting_guests">
+                                        Maximum Sitting Guests <span className="text-red-500">*</span>
+                                    </label>
+                                    <input id="max_sitting_guests" type="number" min="0" name="max_sitting_guests" value={formData.max_sitting_guests || ''} onChange={handleChange}
+                                        className={`w-full p-3 border ${validationErrors.max_sitting_guests ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="e.g. 40" />
+                                    {validationErrors.max_sitting_guests ? <p className="mt-1 text-sm text-red-500">{validationErrors.max_sitting_guests}</p>
+                                        : <p className="mt-1 text-sm text-gray-500">Maximum guests who can be seated.</p>}
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="collaboration_type">
-                                    Collaboration Type <span className="text-red-500">*</span>
-                                </label>
-                                <select id="collaboration_type" name="collaboration_type" value={formData.collaboration_type} onChange={handleChange}
-                                    className={`w-full p-3 border ${validationErrors.collaboration_type ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}>
-                                    <option value="">Select Collaboration Type</option>
-                                    <option value="open_venue">Open Venue</option>
-                                    <option value="flat">Flat Fee</option>
-                                    <option value="minimum_spend">Minimum Spend</option>
-                                    <option value="revenue_share">Revenue Share</option>
-                                </select>
-                                {validationErrors.collaboration_type ? <p className="mt-1 text-sm text-red-500">{validationErrors.collaboration_type}</p>
-                                    : <p className="mt-1 text-sm text-gray-500">How do you want to collaborate with Pop-ups?</p>}
+
+                            {/* Second row: Maximum guests and collaboration type */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="max_guests">
+                                        Maximum Guests <span className="text-red-500">*</span>
+                                    </label>
+                                    <input id="max_guests" type="number" min="0" name="max_guests" value={formData.max_guests} onChange={handleChange}
+                                        className={`w-full p-3 border ${validationErrors.max_guests ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                                        placeholder="e.g. 100" />
+                                    {validationErrors.max_guests ? <p className="mt-1 text-sm text-red-500">{validationErrors.max_guests}</p>
+                                        : <p className="mt-1 text-sm text-gray-500">The maximum number of guests your space can accommodate.</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 text-sm font-medium mb-2">
+                                        Collaboration Type (select all that apply) <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                        {[
+                                            { value: 'open_venue', label: 'Open Venue' },
+                                            { value: 'flat', label: 'Flat Fee' },
+                                            { value: 'minimum_spend', label: 'Minimum Spend' },
+                                            { value: 'revenue_share', label: 'Revenue Share' }
+                                        ].map(type => (
+                                            <div className="flex items-center" key={type.value}>
+                                                <input
+                                                    id={`collaboration_type_${type.value}`}
+                                                    type="checkbox"
+                                                    name={`collaboration_type_${type.value}`}
+                                                    checked={formData.collaboration_type.includes(type.value)}
+                                                    onChange={(e) => {
+                                                        const newTypes = e.target.checked
+                                                            ? [...formData.collaboration_type, type.value]
+                                                            : formData.collaboration_type.filter(t => t !== type.value);
+                                                        setFormData({ ...formData, collaboration_type: newTypes });
+                                                    }}
+                                                    className="h-5 w-5 focus:ring-blue-500 border-gray-300 rounded"
+                                                />
+                                                <label htmlFor={`collaboration_type_${type.value}`} className="ml-2 block text-sm text-gray-700">
+                                                    {type.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {validationErrors.collaboration_type ? <p className="mt-1 text-sm text-red-500">{validationErrors.collaboration_type}</p>
+                                        : <p className="mt-1 text-sm text-gray-500">How do you want to collaborate with Pop-ups? Select all that apply.</p>}
+                                </div>
                             </div>
                         </div>
                     </div>

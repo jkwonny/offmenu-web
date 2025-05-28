@@ -96,21 +96,21 @@ export default function VenuePage() {
                     <div className="relative w-full overflow-hidden">
                         <div className="flex items-center gap-4">
                             {venue.venue_images.length > 1 && (
-                                <div className="relative w-1/4 h-[40vh] opacity-50">
+                                <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
                                     <Image
                                         src={venue.venue_images[(currentImageIndex - 1 + venue.venue_images.length) % venue.venue_images.length].image_url}
                                         alt={venue.name}
                                         fill
-                                        className="object-cover rounded-lg"
+                                        className="object-contain rounded-lg"
                                     />
                                 </div>
                             )}
-                            <div className="relative w-full h-[40vh] flex-grow">
+                            <div className="relative w-full h-[40vh] flex-grow bg-gray-100 rounded-lg">
                                 <Image
                                     src={venue.venue_images[currentImageIndex].image_url}
                                     alt={venue.name}
                                     fill
-                                    className="object-cover rounded-lg"
+                                    className="object-contain rounded-lg"
                                     priority
                                 />
                                 {/* Tags on active image */}
@@ -123,12 +123,12 @@ export default function VenuePage() {
                                 </div>
                             </div>
                             {venue.venue_images.length > 1 && (
-                                <div className="relative w-1/4 h-[40vh] opacity-50">
+                                <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
                                     <Image
                                         src={venue.venue_images[(currentImageIndex + 1) % venue.venue_images.length].image_url}
                                         alt={venue.name}
                                         fill
-                                        className="object-cover rounded-lg"
+                                        className="object-contain rounded-lg"
                                     />
                                 </div>
                             )}
