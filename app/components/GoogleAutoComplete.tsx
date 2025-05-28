@@ -116,8 +116,8 @@ export default function GoogleAutoComplete({ formData, setFormData }: GoogleAuto
             <input
                 ref={inputRef}
                 type="text"
-                placeholder="Enter venue address"
-                className="input w-full p-2 border rounded-md"
+                placeholder="Enter space address"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />

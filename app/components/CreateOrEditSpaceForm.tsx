@@ -419,12 +419,13 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                     placeholder="Describe your space's atmosphere, features, and what makes it special." />
                                 {validationErrors.description && <p className="mt-1 text-sm text-red-500">{validationErrors.description}</p>}
                             </div>
-                            <div>
+                            <div className="col-span-2 md:col-span-1">
                                 <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="category">
                                     Category <span className="text-red-500">*</span>
                                 </label>
                                 <select id="category" name="category" value={formData.category} onChange={handleChange}
-                                    className={`w-full p-3 border ${validationErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white`}>
+                                    className={`w-full p-3 border ${validationErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-base leading-6`}
+                                    style={{ fontSize: '16px', lineHeight: '1.5' }}>
                                     <option value="">Select Category</option>
                                     <option value="restaurant">Restaurant</option>
                                     <option value="bar">Bar</option>
@@ -452,7 +453,7 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                 </select>
                                 {validationErrors.category && <p className="mt-1 text-sm text-red-500">{validationErrors.category}</p>}
                             </div>
-                            <div>
+                            <div className="col-span-2 md:col-span-1">
                                 <label className="block text-gray-700 text-sm font-medium mb-2">
                                     Rental Type (select all that apply) <span className="text-red-500">*</span>
                                 </label>
@@ -706,28 +707,26 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-[#e0d8c3] mb-8">
                     <form onSubmit={internalHandleSubmit}>
                         {renderStepContent()}
-                        <div className="flex justify-between items-center mt-8">
-                            <div>
+                        <div className="flex items-center justify-between mt-8">
+                            <button type="button" onClick={onCancel}
+                                className="px-4 sm:px-6 py-2 text-gray-700 font-medium rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                                {mode === 'edit' ? 'Cancel' : 'Cancel'}
+                            </button>
+                            <div className="flex items-center gap-2 sm:gap-4">
                                 {step > 1 && (
                                     <button type="button" onClick={handlePrevious}
-                                        className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                        className="px-4 sm:px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                                         Back
                                     </button>
                                 )}
-                            </div>
-                            <div className="flex items-center gap-x-4">
-                                <button type="button" onClick={onCancel}
-                                    className="px-6 py-2 text-gray-700 font-medium rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
-                                    {mode === 'edit' ? 'Cancel' : 'Cancel'}
-                                </button>
                                 {step < 6 ? (
                                     <button type="button" onClick={handleNext}
-                                        className="px-6 py-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                        className="px-4 sm:px-6 py-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                                         Next
                                     </button>
                                 ) : (
                                     <button type="button" onClick={handleFinalSubmit}
-                                        className="px-6 py-2 bg-[#06048D] text-white font-medium rounded-md hover:bg-[#050370] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                                        className="px-4 sm:px-6 py-2 bg-[#06048D] text-white font-medium rounded-md hover:bg-[#050370] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 min-w-0 flex-shrink-0"
                                         disabled={isLoading}>
                                         {isLoading ? (
                                             <span className="flex items-center">

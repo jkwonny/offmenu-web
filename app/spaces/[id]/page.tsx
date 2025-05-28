@@ -91,21 +91,12 @@ export default function VenuePage() {
             <NavBar />
 
             {/* Image Gallery */}
-            <div className="relative w-full p-4">
+            <div className="relative w-full p-4 md:p-4">
                 {venue?.venue_images && Array.isArray(venue.venue_images) && venue.venue_images.length > 0 ? (
                     <div className="relative w-full overflow-hidden">
-                        <div className="flex items-center gap-4">
-                            {venue.venue_images.length > 1 && (
-                                <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
-                                    <Image
-                                        src={venue.venue_images[(currentImageIndex - 1 + venue.venue_images.length) % venue.venue_images.length].image_url}
-                                        alt={venue.name}
-                                        fill
-                                        className="object-contain rounded-lg"
-                                    />
-                                </div>
-                            )}
-                            <div className="relative w-full h-[40vh] flex-grow bg-gray-100 rounded-lg">
+                        {/* Mobile Carousel - Simple without side images */}
+                        <div className="block md:hidden">
+                            <div className="relative w-full h-[40vh] bg-gray-100 rounded-lg">
                                 <Image
                                     src={venue.venue_images[currentImageIndex].image_url}
                                     alt={venue.name}
@@ -122,61 +113,138 @@ export default function VenuePage() {
                                     ))}
                                 </div>
                             </div>
+
                             {venue.venue_images.length > 1 && (
-                                <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
-                                    <Image
-                                        src={venue.venue_images[(currentImageIndex + 1) % venue.venue_images.length].image_url}
-                                        alt={venue.name}
-                                        fill
-                                        className="object-contain rounded-lg"
-                                    />
-                                </div>
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setCurrentImageIndex((prevIndex) =>
+                                                (prevIndex - 1 + venue.venue_images!.length) % venue.venue_images!.length
+                                            );
+                                        }}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
+                                        aria-label="Previous image"
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M15 18L9 12L15 6" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setCurrentImageIndex((prevIndex) =>
+                                                (prevIndex + 1) % venue.venue_images!.length
+                                            );
+                                        }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
+                                        aria-label="Next image"
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9 6L15 12L9 18" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                        {venue.venue_images.map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentImageIndex(i)}
+                                                className={`w-3 h-3 rounded-full transition-all ${i === currentImageIndex
+                                                    ? 'bg-white scale-100'
+                                                    : 'bg-white/50 scale-75 hover:bg-white/70'
+                                                    }`}
+                                                aria-label={`Go to image ${i + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </div>
 
-                        {venue.venue_images.length > 1 && (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        setCurrentImageIndex((prevIndex) =>
-                                            (prevIndex - 1 + venue.venue_images!.length) % venue.venue_images!.length
-                                        );
-                                    }}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
-                                    aria-label="Previous image"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M15 18L9 12L15 6" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setCurrentImageIndex((prevIndex) =>
-                                            (prevIndex + 1) % venue.venue_images!.length
-                                        );
-                                    }}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
-                                    aria-label="Next image"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9 6L15 12L9 18" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </button>
-                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                                    {venue.venue_images.map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setCurrentImageIndex(i)}
-                                            className={`w-3 h-3 rounded-full transition-all ${i === currentImageIndex
-                                                ? 'bg-white scale-100'
-                                                : 'bg-white/50 scale-75 hover:bg-white/70'
-                                                }`}
-                                            aria-label={`Go to image ${i + 1}`}
+                        {/* Desktop Carousel - With side images */}
+                        <div className="hidden md:block">
+                            <div className="flex items-center gap-4">
+                                {venue.venue_images.length > 1 && (
+                                    <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
+                                        <Image
+                                            src={venue.venue_images[(currentImageIndex - 1 + venue.venue_images.length) % venue.venue_images.length].image_url}
+                                            alt={venue.name}
+                                            fill
+                                            className="object-contain rounded-lg"
                                         />
-                                    ))}
+                                    </div>
+                                )}
+                                <div className="relative w-full h-[40vh] flex-grow bg-gray-100 rounded-lg">
+                                    <Image
+                                        src={venue.venue_images[currentImageIndex].image_url}
+                                        alt={venue.name}
+                                        fill
+                                        className="object-contain rounded-lg"
+                                        priority
+                                    />
+                                    {/* Tags on active image */}
+                                    <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                        {venue?.tags && venue.tags.map((tag, index) => (
+                                            <span key={`carousel-tag-${index}`} className="text-sm font-medium bg-white/90 text-black px-3 py-1 rounded-full capitalize">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                            </>
-                        )}
+                                {venue.venue_images.length > 1 && (
+                                    <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
+                                        <Image
+                                            src={venue.venue_images[(currentImageIndex + 1) % venue.venue_images.length].image_url}
+                                            alt={venue.name}
+                                            fill
+                                            className="object-contain rounded-lg"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {venue.venue_images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setCurrentImageIndex((prevIndex) =>
+                                                (prevIndex - 1 + venue.venue_images!.length) % venue.venue_images!.length
+                                            );
+                                        }}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
+                                        aria-label="Previous image"
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M15 18L9 12L15 6" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setCurrentImageIndex((prevIndex) =>
+                                                (prevIndex + 1) % venue.venue_images!.length
+                                            );
+                                        }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
+                                        aria-label="Next image"
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9 6L15 12L9 18" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                        {venue.venue_images.map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentImageIndex(i)}
+                                                className={`w-3 h-3 rounded-full transition-all ${i === currentImageIndex
+                                                    ? 'bg-white scale-100'
+                                                    : 'bg-white/50 scale-75 hover:bg-white/70'
+                                                    }`}
+                                                aria-label={`Go to image ${i + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <div className="w-full h-[60vh] bg-gray-200 flex items-center justify-center">
@@ -186,7 +254,7 @@ export default function VenuePage() {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-[70%]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-8 py-4 md:py-8 md:w-[70%] pb-24 md:pb-8">
                 <div className='flex justify-between items-start mb-6'>
                     <div className="flex flex-col gap-2">
                         <h1 className="text-4xl font-bold mb-2">{venue.name}</h1>
@@ -281,8 +349,8 @@ export default function VenuePage() {
 
                     </div>
 
-                    {/* Right Column - Booking Info */}
-                    <div className="lg:col-span-1 text-black">
+                    {/* Right Column - Booking Info (Desktop Only) */}
+                    <div className="hidden lg:block lg:col-span-1 text-black">
                         <div className="sticky top-8 border border-gray-200 rounded-lg p-6 bg-white border-gray-200">
                             <div className="text-2xl font-semibold mb-4 text-black">
                                 {venue.collaboration_type && (
@@ -326,6 +394,35 @@ export default function VenuePage() {
                 )}
             </div>
 
+            {/* Mobile Sticky Contact Container */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                        <div className="text-lg font-semibold text-black">
+                            {venue.collaboration_type && (
+                                <span className='capitalize'>{CollaborationTypes[venue.collaboration_type as keyof typeof CollaborationTypes]}</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                        {user ? (
+                            <button
+                                className="cursor-pointer py-3 px-6 rounded-full font-medium transition-colors bg-[#88ADEB] text-black"
+                                onClick={toggleModal}
+                            >
+                                Contact Space
+                            </button>
+                        ) : (
+                            <a
+                                href={`/auth/sign-in?redirect=${encodeURIComponent(`/spaces/${params.id}`)}`}
+                                className="cursor-pointer py-3 px-6 rounded-full font-medium transition-colors bg-[#88ADEB] text-center block text-black"
+                            >
+                                Sign in to Contact
+                            </a>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             {/* Contact Modal */}
             {isModalOpen && (

@@ -143,9 +143,30 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const [selectedTime, setSelectedTime] = useState<string>('');
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
+
+    // Mobile swipe states
+    const [containerHeight, setContainerHeight] = useState<number>(80); // Start minimized on mobile
+    const [isDragging, setIsDragging] = useState(false);
+    const [startY, setStartY] = useState(0);
+    const [startHeight, setStartHeight] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
     const searchParams = useSearchParams();
     const { user } = useUser();
     const capacityMenuRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Check if we're on mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
@@ -190,6 +211,120 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
 
+    // Mobile touch handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!isMobile) return; // Only on mobile
+
+        setIsDragging(true);
+        setStartY(e.touches[0].clientY);
+        setStartHeight(containerHeight);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging || !isMobile) return;
+
+        const currentY = e.touches[0].clientY;
+        const deltaY = startY - currentY; // Positive when swiping up
+        const newHeight = Math.max(80, Math.min(window.innerHeight - 120, startHeight + deltaY));
+
+        setContainerHeight(newHeight);
+    };
+
+    const handleTouchEnd = () => {
+        if (!isDragging || !isMobile) return;
+
+        setIsDragging(false);
+
+        // Snap to positions based on final height
+        const windowHeight = window.innerHeight;
+        const threshold = windowHeight * 0.3;
+
+        if (containerHeight < threshold) {
+            // Snap to minimized
+            setContainerHeight(80);
+        } else if (containerHeight < windowHeight * 0.7) {
+            // Snap to half
+            setContainerHeight(windowHeight * 0.5);
+        } else {
+            // Snap to full
+            setContainerHeight(windowHeight - 120);
+        }
+    };
+
+    // Mouse handlers for desktop testing
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!isMobile) return;
+
+        setIsDragging(true);
+        setStartY(e.clientY);
+        setStartHeight(containerHeight);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !isMobile) return;
+
+        const deltaY = startY - e.clientY;
+        const newHeight = Math.max(80, Math.min(window.innerHeight - 120, startHeight + deltaY));
+
+        setContainerHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+        if (!isDragging || !isMobile) return;
+
+        setIsDragging(false);
+
+        const windowHeight = window.innerHeight;
+        const threshold = windowHeight * 0.3;
+
+        if (containerHeight < threshold) {
+            setContainerHeight(80);
+        } else if (containerHeight < windowHeight * 0.7) {
+            setContainerHeight(windowHeight * 0.5);
+        } else {
+            setContainerHeight(windowHeight - 120);
+        }
+    };
+
+    // Set up mouse move and up listeners on document
+    useEffect(() => {
+        if (isDragging) {
+            const handleDocumentMouseMove = (e: MouseEvent) => {
+                if (!isDragging || !isMobile) return;
+
+                const deltaY = startY - e.clientY;
+                const newHeight = Math.max(80, Math.min(window.innerHeight - 120, startHeight + deltaY));
+
+                setContainerHeight(newHeight);
+            };
+
+            const handleDocumentMouseUp = () => {
+                if (!isDragging || !isMobile) return;
+
+                setIsDragging(false);
+
+                const windowHeight = window.innerHeight;
+                const threshold = windowHeight * 0.3;
+
+                if (containerHeight < threshold) {
+                    setContainerHeight(80);
+                } else if (containerHeight < windowHeight * 0.7) {
+                    setContainerHeight(windowHeight * 0.5);
+                } else {
+                    setContainerHeight(windowHeight - 120);
+                }
+            };
+
+            document.addEventListener('mousemove', handleDocumentMouseMove);
+            document.addEventListener('mouseup', handleDocumentMouseUp);
+
+            return () => {
+                document.removeEventListener('mousemove', handleDocumentMouseMove);
+                document.removeEventListener('mouseup', handleDocumentMouseUp);
+            };
+        }
+    }, [isDragging, startY, startHeight, containerHeight, isMobile]);
+
     const handleVenueClick = (venueId: string) => {
         // Set the selected venue ID
         setSelectedVenueId(venueId);
@@ -231,9 +366,102 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     }, []);
 
     return (
-        <div className="flex flex-col w-full z-5">
-            {/* Content container - floating on top of the map */}
-            <div className="w-full p-6 bg-white rounded-lg shadow-lg max-h-[calc(100vh-120px)] overflow-y-auto">
+        <div
+            ref={containerRef}
+            className="flex flex-col w-full z-5 lg:relative lg:h-auto"
+            style={{
+                height: isMobile ? `${containerHeight}px` : 'auto',
+                transition: isDragging ? 'none' : 'height 0.3s ease-out'
+            }}
+        >
+            {/* Mobile drag handle - only visible on mobile */}
+            <div
+                className="lg:hidden flex justify-center py-2 cursor-grab active:cursor-grabbing bg-white rounded-t-lg"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+            >
+                <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+
+            {/* Content container */}
+            <div className="w-full p-6 bg-white lg:rounded-lg shadow-lg flex-1 overflow-hidden lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+                {/* Mobile header - only show space count when minimized */}
+                <div className="lg:hidden mb-4">
+                    <h2 className="text-xl font-semibold">
+                        {selectedView === 'spaces' ? `${filteredVenues.length} Spaces` : `${events.length} Events`}
+                    </h2>
+                    {containerHeight > 120 && (
+                        <div className="mt-4">
+                            <div className="flex h-14 bg-[#F6F6F6] border border-gray-200 rounded-md items-center">
+                                {/* Capacity filter */}
+                                <div className="w-1/2 h-full relative" ref={capacityMenuRef}>
+                                    <button
+                                        onClick={() => setShowCapacityMenu(!showCapacityMenu)}
+                                        className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
+                                    >
+                                        <span className="text-gray-800">
+                                            {capacityFilter ?
+                                                (capacityFilter === '75+' ? '75+ guests' : `${capacityFilter} guests`) :
+                                                'Capacity'}
+                                        </span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showCapacityMenu ? "rotate-180" : ""}>
+                                            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+
+                                    {showCapacityMenu && (
+                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden">
+                                            <div>
+                                                {[
+                                                    { value: '', label: 'Any capacity' },
+                                                    { value: '1-15', label: '1-15 guests' },
+                                                    { value: '16-30', label: '16-30 guests' },
+                                                    { value: '31-50', label: '31-50 guests' },
+                                                    { value: '51-75', label: '51-75 guests' },
+                                                    { value: '75+', label: '75+ guests' }
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        onClick={() => {
+                                                            setCapacityFilter(option.value);
+                                                            setShowCapacityMenu(false);
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2 rounded text-sm 
+                                                            ${capacityFilter === option.value ? 'bg-black text-white' : 'hover:bg-black/10'}`}
+                                                    >
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Divider */}
+                                <div className="h-8 w-px bg-gray-200"></div>
+
+                                {/* Date/Time Selector */}
+                                <div className="w-1/2 h-full">
+                                    <DateTimePicker
+                                        selectedDate={selectedDate}
+                                        selectedTime={selectedTime}
+                                        onDateSelect={setSelectedDate}
+                                        onTimeSelect={setSelectedTime}
+                                        onConfirm={() => setShowDateTimePicker(false)}
+                                        showPicker={showDateTimePicker}
+                                        togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
+                                        pickerPosition="right"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
@@ -243,9 +471,9 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                         {error instanceof Error ? error.message : 'An error occurred while fetching data'}
                     </div>
                 ) : selectedView === 'spaces' ? (
-                    <div className="min-h-screen">
-                        {/* Venue count and filters */}
-                        <div className="mb-8">
+                    <div className="min-h-screen lg:min-h-0">
+                        {/* Desktop header - hidden on mobile */}
+                        <div className="hidden lg:block mb-8">
                             <h2 className="text-xl font-semibold mb-4">{filteredVenues.length} Spaces</h2>
 
                             <div className="flex h-14 bg-[#F6F6F6] border border-gray-200 rounded-md items-center">
@@ -312,175 +540,180 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {filteredVenues.length > 0 ? (
-                                filteredVenues.map((venue) => {
-                                    const venueImages = venue.venue_images && venue.venue_images.length > 0
-                                        ? venue.venue_images.map((img: VenueImage) => getImageUrl(img))
-                                        : [venue.image_url || '/images/default-venue-image.jpg'];
+                        {/* Content that shows when expanded on mobile or always on desktop */}
+                        <div className={`${(containerHeight > 120 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 120 ? `${containerHeight - 200}px` : 'none' }}>
+                                {filteredVenues.length > 0 ? (
+                                    filteredVenues.map((venue) => {
+                                        const venueImages = venue.venue_images && venue.venue_images.length > 0
+                                            ? venue.venue_images.map((img: VenueImage) => getImageUrl(img))
+                                            : [venue.image_url || '/images/default-venue-image.jpg'];
 
-                                    const currentIndex = currentImageIndices[venue.id] || 0;
-                                    const isFirstImage = currentIndex === 0;
-                                    const isLastImage = currentIndex === venueImages.length - 1;
+                                        const currentIndex = currentImageIndices[venue.id] || 0;
+                                        const isFirstImage = currentIndex === 0;
+                                        const isLastImage = currentIndex === venueImages.length - 1;
 
-                                    return (
-                                        <div
-                                            key={venue.id}
-                                            className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#273287]' : ''}`}
-                                            onClick={() => handleVenueClick(venue.id)}
-                                            onMouseEnter={() => {
-                                                // Only trigger hover event if this isn't the currently selected venue
-                                                // This prevents re-centering the map when hovering over the already selected venue
-                                                if (venue.id !== selectedVenueId) {
-                                                    onVenueHover(venue.id);
-                                                }
-                                            }}
-                                            onMouseLeave={() => {
-                                                // Only clear hover if this isn't the selected venue
-                                                if (venue.id !== selectedVenueId) {
-                                                    onVenueHover(null);
-                                                }
-                                            }}
-                                        >
-                                            <div className="aspect-square w-full overflow-hidden rounded-xl relative group">
-                                                <Image
-                                                    src={venueImages[currentIndex]}
-                                                    alt={venue.name}
-                                                    className="h-full w-full object-cover transition-all duration-500"
-                                                    width={300}
-                                                    height={300}
-                                                />
+                                        return (
+                                            <div
+                                                key={venue.id}
+                                                className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#273287]' : ''}`}
+                                                onClick={() => handleVenueClick(venue.id)}
+                                                onMouseEnter={() => {
+                                                    // Only trigger hover event if this isn't the currently selected venue
+                                                    // This prevents re-centering the map when hovering over the already selected venue
+                                                    if (venue.id !== selectedVenueId) {
+                                                        onVenueHover(venue.id);
+                                                    }
+                                                }}
+                                                onMouseLeave={() => {
+                                                    // Only clear hover if this isn't the selected venue
+                                                    if (venue.id !== selectedVenueId) {
+                                                        onVenueHover(null);
+                                                    }
+                                                }}
+                                            >
+                                                <div className="aspect-[4/3] lg:aspect-square w-full overflow-hidden rounded-xl relative group">
+                                                    <Image
+                                                        src={venueImages[currentIndex]}
+                                                        alt={venue.name}
+                                                        className="h-full w-full object-cover transition-all duration-500"
+                                                        width={300}
+                                                        height={300}
+                                                    />
 
-                                                {/* Navigation buttons - only visible on hover */}
-                                                {!isFirstImage && (
-                                                    <button
-                                                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-1.5 rounded-full opacity-0 group-hover:opacity-80 transition-opacity shadow-md"
-                                                        onClick={(e) => handleImageNav(e, venue.id, 'prev', venueImages.length - 1)}
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                                        </svg>
-                                                    </button>
-                                                )}
+                                                    {/* Navigation buttons - only visible on hover */}
+                                                    {!isFirstImage && (
+                                                        <button
+                                                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-1.5 rounded-full opacity-0 group-hover:opacity-80 transition-opacity shadow-md"
+                                                            onClick={(e) => handleImageNav(e, venue.id, 'prev', venueImages.length - 1)}
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
 
-                                                {!isLastImage && (
-                                                    <button
-                                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-1.5 rounded-full opacity-0 group-hover:opacity-80 transition-opacity shadow-md"
-                                                        onClick={(e) => handleImageNav(e, venue.id, 'next', venueImages.length - 1)}
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                                        </svg>
-                                                    </button>
-                                                )}
+                                                    {!isLastImage && (
+                                                        <button
+                                                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-1.5 rounded-full opacity-0 group-hover:opacity-80 transition-opacity shadow-md"
+                                                            onClick={(e) => handleImageNav(e, venue.id, 'next', venueImages.length - 1)}
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
 
-                                                {/* Image indicators */}
-                                                {venueImages.length > 1 && (
-                                                    <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-                                                        {venueImages.map((_: string, index: number) => (
-                                                            <div
-                                                                key={index}
-                                                                className={`h-1.5 w-1.5 rounded-full ${currentIndex === index ? 'bg-white' : 'bg-white/50'}`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                    {/* Image indicators */}
+                                                    {venueImages.length > 1 && (
+                                                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+                                                            {venueImages.map((_: string, index: number) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className={`h-1.5 w-1.5 rounded-full ${currentIndex === index ? 'bg-white' : 'bg-white/50'}`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="py-3 px-3">
+                                                    <h3 className="font-medium text-xl text-base">{venue.name}</h3>
+                                                    <p className="text-gray-500 text-sm mt-0.5 flex items-center">
+                                                        <LuMapPin className="w-4 h-4 mr-1" />
+                                                        {venue.address}
+                                                    </p>
+                                                    <p className="text-sm mt-1 font-medium flex items-center">
+                                                        <FaRegHandshake className="w-4 h-4 mr-1" />
+                                                        {collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp]}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="py-3 px-3">
-                                                <h3 className="font-medium text-xl text-base">{venue.name}</h3>
-                                                <p className="text-gray-500 text-sm mt-0.5 flex items-center">
-                                                    <LuMapPin className="w-4 h-4 mr-1" />
-                                                    {venue.address}
-                                                </p>
-                                                <p className="text-sm mt-1 font-medium flex items-center">
-                                                    <FaRegHandshake className="w-4 h-4 mr-1" />
-                                                    {collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp]}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="col-span-2 flex flex-col items-center justify-center py-10 text-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No spaces found</h3>
-                                    <p className="text-gray-500">Try adjusting your filters to see more results</p>
-                                </div>
-                            )}
+                                        );
+                                    })
+                                ) : (
+                                    <div className="col-span-2 flex flex-col items-center justify-center py-10 text-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-1">No spaces found</h3>
+                                        <p className="text-gray-500">Try adjusting your filters to see more results</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                        {events.map((event: Event) => {
-                            // Determine the image URL for the event
-                            console.log('event', event)
-                            let eventImageUrl: string | undefined = undefined;
-                            if (event.event_images && event.event_images.length > 0) {
-                                eventImageUrl = getImageUrl(event.event_images[0]);
-                            } else if (event.image_url) {
-                                eventImageUrl = event.image_url;
-                            }
+                    <div className={`${(containerHeight > 120 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 120 ? `${containerHeight - 200}px` : 'none' }}>
+                            {events.map((event: Event) => {
+                                // Determine the image URL for the event
+                                console.log('event', event)
+                                let eventImageUrl: string | undefined = undefined;
+                                if (event.event_images && event.event_images.length > 0) {
+                                    eventImageUrl = getImageUrl(event.event_images[0]);
+                                } else if (event.image_url) {
+                                    eventImageUrl = event.image_url;
+                                }
 
-                            return (
-                                <Link key={event.id} href={`/event/${event.id}`} passHref>
-                                    <div
-                                        className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-                                    >
-                                        {eventImageUrl && (
-                                            <div className="w-full h-48 relative">
-                                                <Image
-                                                    src={eventImageUrl}
-                                                    alt={event.title}
-                                                    layout="fill"
-                                                    objectFit="cover"
-                                                    className="transition-transform duration-300 group-hover:scale-105"
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="p-6">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                                <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
-                                                    {formatText(event.event_type)}
-                                                </span>
-                                            </div>
-                                            <div className="text-gray-600 mb-4">
-                                                {format(event.selected_date, 'MMM d, yyyy')}
-                                                {event.selected_time && ` at ${event.selected_time}`}
-                                            </div>
-                                            <p className="text-gray-700 mb-4 line-clamp-3">
-                                                {event.description || 'No description available'}
-                                            </p>
-                                            <div className="flex flex-wrap gap-2 mb-4">
-                                                {event.assets_needed?.map((tag: string, index: number) => (
-                                                    <span
-                                                        key={index}
-                                                        className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
-                                                    >
-                                                        {formatText(tag)}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <div className="text-sm text-gray-600">
-                                                    {event.expected_capacity_min && event.expected_capacity_max
-                                                        ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                        : 'Guest count not specified'}
+                                return (
+                                    <Link key={event.id} href={`/event/${event.id}`} passHref>
+                                        <div
+                                            className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                                        >
+                                            {eventImageUrl && (
+                                                <div className="w-full h-32 lg:h-48 relative">
+                                                    <Image
+                                                        src={eventImageUrl}
+                                                        alt={event.title}
+                                                        layout="fill"
+                                                        objectFit="cover"
+                                                        className="transition-transform duration-300 group-hover:scale-105"
+                                                    />
                                                 </div>
-                                                <button
-                                                    className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
-                                                    onClick={() => {/* TODO: Implement messaging */ }}
-                                                >
-                                                    Message
-                                                </button>
+                                            )}
+                                            <div className="p-6">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h2 className="text-2xl font-semibold">{event.title}</h2>
+                                                    <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
+                                                        {formatText(event.event_type)}
+                                                    </span>
+                                                </div>
+                                                <div className="text-gray-600 mb-4">
+                                                    {format(event.selected_date, 'MMM d, yyyy')}
+                                                    {event.selected_time && ` at ${event.selected_time}`}
+                                                </div>
+                                                <p className="text-gray-700 mb-4 line-clamp-3">
+                                                    {event.description || 'No description available'}
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 mb-4">
+                                                    {event.assets_needed?.map((tag: string, index: number) => (
+                                                        <span
+                                                            key={index}
+                                                            className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
+                                                        >
+                                                            {formatText(tag)}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <div className="text-sm text-gray-600">
+                                                        {event.expected_capacity_min && event.expected_capacity_max
+                                                            ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                            : 'Guest count not specified'}
+                                                    </div>
+                                                    <button
+                                                        className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
+                                                        onClick={() => {/* TODO: Implement messaging */ }}
+                                                    >
+                                                        Message
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </Link>
-                            );
-                        })}
+                                    </Link>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>
@@ -509,8 +742,8 @@ export default function ExplorePage() {
                 </div>
             </div>
 
-            {/* Floating content container below navbar */}
-            <div className="absolute top-22 left-3 w-full lg:w-1/2 max-w-[1/2] z-50">
+            {/* Floating content container below navbar - responsive positioning */}
+            <div className="absolute bottom-0 left-0 right-0 lg:top-22 lg:left-3 lg:bottom-auto lg:right-auto lg:w-1/2 lg:max-w-[1/2] z-50">
                 <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                 </div>}>

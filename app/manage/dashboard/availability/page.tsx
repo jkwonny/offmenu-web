@@ -72,12 +72,12 @@ export default function VenueAvailabilityPage() {
             <NavBar />
 
             <div className="container mx-auto px-4 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Venue Availability</h1>
-                    <p className="text-gray-600">Manage your venue&apos;s availability calendar</p>
+                <div className="mb-6 md:mb-8">
+                    <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Venue Availability</h1>
+                    <p className="text-gray-600 text-sm md:text-base hidden md:block">Manage your venue&apos;s availability calendar</p>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4 md:mb-6">
                     <label htmlFor="venue-select" className="block text-sm font-medium text-gray-700 mb-1">
                         Select Venue
                     </label>
