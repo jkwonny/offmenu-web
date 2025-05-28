@@ -131,7 +131,7 @@ function DashboardContent() {
                                         <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
                                             <button
                                                 onClick={() => setRequestFilter('all')}
-                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'all'
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${requestFilter === 'all'
                                                     ? 'bg-white text-gray-900 shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900'
                                                     }`}
@@ -140,7 +140,7 @@ function DashboardContent() {
                                             </button>
                                             <button
                                                 onClick={() => setRequestFilter('pending')}
-                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'pending'
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${requestFilter === 'pending'
                                                     ? 'bg-white text-gray-900 shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900'
                                                     }`}
@@ -149,7 +149,7 @@ function DashboardContent() {
                                             </button>
                                             <button
                                                 onClick={() => setRequestFilter('approved')}
-                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'approved'
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${requestFilter === 'approved'
                                                     ? 'bg-white text-gray-900 shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900'
                                                     }`}
@@ -158,7 +158,7 @@ function DashboardContent() {
                                             </button>
                                             <button
                                                 onClick={() => setRequestFilter('rejected')}
-                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${requestFilter === 'rejected'
+                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${requestFilter === 'rejected'
                                                     ? 'bg-white text-gray-900 shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900'
                                                     }`}

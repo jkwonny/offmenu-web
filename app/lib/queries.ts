@@ -20,7 +20,7 @@ export interface Venue {
   venue_images: string[];
   owner_id?: string;
   neighborhood?: string;
-  collaboration_type?: string;
+  collaboration_type?: string[];
 }
 
 // Function to fetch venues from Supabase
@@ -52,7 +52,7 @@ async function fetchVenues() {
         latitude: parseFloat(venue.latitude) || 0,
         longitude: parseFloat(venue.longitude) || 0,
         category: venue.category || 'Venue',
-        image_url: primaryImage ? primaryImage.image_url : '/venue-placeholder.jpg',
+        image_url: primaryImage && primaryImage.image_url,
         city: venue.city,
         address: venue.address,
         state: venue.state,
@@ -124,7 +124,7 @@ async function fetchFeaturedVenues() {
         latitude: parseFloat(venue.latitude) || 0,
         longitude: parseFloat(venue.longitude) || 0,
         category: venue.category || 'Venue',
-        image_url: primaryImage ? primaryImage.image_url : '/venue-placeholder.jpg',
+        image_url: primaryImage && primaryImage.image_url,
         city: venue.city,
         address: venue.address,
         state: venue.state,

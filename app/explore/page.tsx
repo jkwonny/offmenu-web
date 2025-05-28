@@ -17,6 +17,7 @@ import { IoClose } from "react-icons/io5";
 import DateTimePicker from '../components/DateTimePicker';
 import { collaborationTypeLookUp } from '@/utils/collaborationTypeLookUp';
 import Link from 'next/link';
+import { CollaborationType } from '../types/collaboration_types';
 
 // Define local VenueImage interface to avoid import case issues
 interface VenueImage {
@@ -189,7 +190,8 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                 if (capacity < 75) return false;
             } else {
                 const [min, max] = capacityFilter.split('-').map(Number);
-                if (capacity < min || capacity > max) return false;
+                // Check if venue can accommodate the maximum requested capacity
+                if (capacity < max) return false;
             }
         }
 
@@ -624,7 +626,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                     </p>
                                                     <p className="text-sm mt-1 font-medium flex items-center">
                                                         <FaRegHandshake className="w-4 h-4 mr-1" />
-                                                        {collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp]}
+                                                        {venue.collaboration_type?.map((type: CollaborationType) => collaborationTypeLookUp[type as keyof typeof collaborationTypeLookUp]).join(', ')}
                                                     </p>
                                                 </div>
                                             </div>
