@@ -11,7 +11,6 @@ import { LuMapPin, LuCalendar, LuUser, LuMessageCircle, LuCheck, LuX } from 'rea
 import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Event } from '@/app/types/event';
-import { BookingRequest } from '@/app/types/booking';
 
 function DashboardContent() {
     const searchParams = useSearchParams();
@@ -258,7 +257,7 @@ function DashboardContent() {
                                                                 WebkitLineClamp: 2,
                                                                 WebkitBoxOrient: 'vertical'
                                                             }}>
-                                                                "{request.message.substring(0, 80)}..."
+                                                                &quot;{request.message.substring(0, 80)}...&quot;
                                                             </p>
                                                         )}
                                                     </div>
