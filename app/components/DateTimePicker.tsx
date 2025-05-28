@@ -119,8 +119,8 @@ export default function DateTimePicker({
         };
     }, [showPicker, togglePicker]);
 
-    // Calculate picker position styles
-    const getPickerPositionStyle = () => {
+    // Calculate picker position styles for desktop only
+    const getDesktopPickerPositionStyle = () => {
         switch (pickerPosition) {
             case 'left':
                 return { left: '0' };
@@ -159,18 +159,24 @@ export default function DateTimePicker({
 
             {showPicker && (
                 <div
-                    className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
-                    style={{ width: pickerWidth, ...getPickerPositionStyle() }}
+                    className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden
+                               w-[calc(100vw-2rem)] max-w-sm left-1/2 -translate-x-1/2
+                               md:w-auto md:max-w-none md:left-auto md:transform-none"
+                    style={{
+                        ...(typeof window !== 'undefined' && window.innerWidth >= 768 ? { width: pickerWidth, ...getDesktopPickerPositionStyle() } : {})
+                    }}
                 >
-                    <div className="flex border-b">
-                        <div className="w-3/5 border-r">
+                    {/* Mobile: Stack vertically, Desktop: Side by side */}
+                    <div className="flex flex-col md:flex-row border-b">
+                        {/* Calendar Section */}
+                        <div className="w-full md:w-3/5 md:border-r">
                             <div className="flex justify-between items-center p-3 border-b">
                                 <button onClick={prevMonth} className="p-1">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
                                 </button>
-                                <div className="font-medium">
+                                <div className="font-medium text-sm md:text-base">
                                     {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                                 </div>
                                 <button onClick={nextMonth} className="p-1">
@@ -182,7 +188,7 @@ export default function DateTimePicker({
 
                             <div className="grid grid-cols-7 mb-1 border-b">
                                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                                    <div key={day} className="text-center py-2 text-sm font-medium">
+                                    <div key={day} className="text-center py-2 text-xs md:text-sm font-medium">
                                         {day}
                                     </div>
                                 ))}
@@ -203,7 +209,7 @@ export default function DateTimePicker({
                                                         }
                                                     }
                                                 }}
-                                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
+                                                className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm
                                                   ${day.isToday ? 'border border-[#273287]' : ''}
                                                   ${day.isPast ? 'text-gray-300 cursor-not-allowed' : ''}
                                                   ${day.isAvailable && !day.isToday ? 'cursor-pointer' : ''}
@@ -216,16 +222,17 @@ export default function DateTimePicker({
                                                 {day.date.getDate()}
                                             </button>
                                         ) : (
-                                            <div className="w-8 h-8"></div>
+                                            <div className="w-6 h-6 md:w-8 md:h-8"></div>
                                         )}
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="w-2/5 max-h-72 overflow-y-auto">
+                        {/* Time Section */}
+                        <div className="w-full md:w-2/5 max-h-48 md:max-h-72 overflow-y-auto border-t md:border-t-0">
                             <div className="p-3 border-b">
-                                <h3 className="font-medium text-center">Time</h3>
+                                <h3 className="font-medium text-center text-sm md:text-base">Time</h3>
                             </div>
                             <div className="p-2">
                                 {generateTimeSlots().map((time) => (
@@ -239,7 +246,7 @@ export default function DateTimePicker({
                                                 onConfirm();
                                             }
                                         }}
-                                        className={`w-full text-left px-3 py-2 rounded text-sm 
+                                        className={`w-full text-left px-3 py-2 rounded text-xs md:text-sm 
                                           ${selectedTime === time ? 'bg-[#273287] text-white' : 'hover:bg-[#273287]/10'}`}
                                         type="button"
                                     >
@@ -256,7 +263,7 @@ export default function DateTimePicker({
                                 e.preventDefault();
                                 onConfirm();
                             }}
-                            className={`px-4 py-2 rounded font-medium text-sm
+                            className={`px-4 py-2 rounded font-medium text-xs md:text-sm
                               ${selectedDate && selectedTime ? 'bg-[#273287] text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                             disabled={!selectedDate || !selectedTime}
                             type="button"
