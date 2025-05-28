@@ -19,7 +19,6 @@ export default function NavBar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [chatDropdownOpen, setChatDropdownOpen] = useState(false);
     const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
-    const isHost = userProfile?.offmenu_host || false;
     const isAdmin = userProfile?.role === 'admin';
     const dropdownRef = useRef<HTMLDivElement>(null);
     const chatDropdownRef = useRef<HTMLDivElement>(null);
@@ -92,7 +91,7 @@ export default function NavBar() {
             <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
-                    <Link href="/" className="text-xl font-bold font-heading">
+                    <Link href="/" className="text-md md:text-xl font-bold font-heading">
                         OFFMENU
                     </Link>
                 </div>
@@ -260,11 +259,9 @@ export default function NavBar() {
                                             </Link>
                                         )}
 
-                                        {isHost && (
-                                            <Link href="/manage/dashboard?view=spaces" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
-                                                Manager Dashboard
-                                            </Link>
-                                        )}
+                                        <Link href="/manage/dashboard?view=spaces" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                            Manager Dashboard
+                                        </Link>
 
                                         <Link
                                             href="/manage/dashboard/availability"
@@ -344,11 +341,11 @@ export default function NavBar() {
                     )}
 
                     {/* Add TabsSection for mobile */}
-                    <div className="mb-2 flex justify-center">
+                    {/* <div className="mb-2 flex justify-center">
                         <Suspense fallback={<TabsSkeletonLoader />}>
                             <TabsSection />
                         </Suspense>
-                    </div>
+                    </div> */}
 
                     {isLoading ? (
                         <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
@@ -356,6 +353,13 @@ export default function NavBar() {
                         <div className="space-y-3">
                             <Link href="/explore" className="block py-2 text-gray-700 hover:text-black">
                                 Explore
+                            </Link>
+                            <Link
+                                href="/chat"
+                                className="block py-2 text-gray-700 hover:text-black"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Messages
                             </Link>
                             <Link
                                 href="/profile"

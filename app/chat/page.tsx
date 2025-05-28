@@ -14,14 +14,14 @@ import {
     useVenueDetails
 } from '@/app/lib/queries/chat';
 import Image from 'next/image';
-
-
+import Link from 'next/link';
 
 function ChatContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState('');
     const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
+    const [showChatView, setShowChatView] = useState(false); // For mobile view state
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const currentRoomIdRef = useRef<string | null>(null);
 
@@ -61,8 +61,6 @@ function ChatContent() {
             console.error('Error from useChatRooms:', chatRoomsError);
         }
     }, [userError, chatRoomsError]);
-
-
 
     // Update selected room when URL changes
     useEffect(() => {
@@ -116,17 +114,20 @@ function ChatContent() {
                     };
 
                     setSelectedRoom(typedRoom);
+                    setShowChatView(true); // Show chat view on mobile when room is selected
                     currentRoomIdRef.current = chatRoomId;
                 } else {
                     console.warn(`Chat room with ID ${chatRoomId} not found`);
                     setError('Chat room not found');
                     setSelectedRoom(null);
+                    setShowChatView(false);
                     currentRoomIdRef.current = null;
                 }
             }
         } else if (!chatRoomId) {
             // Clear selected room if no chatRoomId in URL
             setSelectedRoom(null);
+            setShowChatView(false);
             currentRoomIdRef.current = null;
         }
     }, [searchParams, chatRooms]);
@@ -134,6 +135,12 @@ function ChatContent() {
     const handleChatRoomClick = (roomId: string) => {
         // Update URL without navigation
         router.push(`/chat?chatRoomId=${roomId}`, { scroll: false });
+    };
+
+    const handleBackToList = () => {
+        setShowChatView(false);
+        setSelectedRoom(null);
+        router.push('/chat', { scroll: false });
     };
 
     // Fix the useEffect for scrolling to avoid unnecessary updates
@@ -163,7 +170,7 @@ function ChatContent() {
     }
 
     return (
-        <div className="min-h-screen min-w-screen flex flex-col ">
+        <div className="min-h-screen min-w-screen flex flex-col">
             <div className="fixed bg-white/30 backdrop-blur-md z-10"></div>
             <div className="relative z-12">
                 <NavBar />
@@ -186,7 +193,8 @@ function ChatContent() {
             )}
 
             <div className="flex-grow w-full flex px-4 py-6 h-[calc(100vh-64px)] z-10">
-                <div className="grid grid-cols-4 gap-4 w-full h-full">
+                {/* Desktop Layout - Hidden on mobile */}
+                <div className="hidden lg:grid grid-cols-4 gap-4 w-full h-full">
                     {/* Left Sidebar - Messages */}
                     <div className="col-span-1 bg-white rounded-lg shadow-sm p-4 h-full">
                         <div className="flex items-center gap-2">
@@ -195,15 +203,8 @@ function ChatContent() {
                                 <div className="bg-[#E7E7E7] rounded-full h-6 w-6 text-xs flex items-center justify-center">
                                     {chatRooms.length > 0 ? chatRooms.length : 0}
                                 </div>
-
                             </div>
                         </div>
-                        {/* <div className='flex gap-2'>
-                            <button className='bg-[#3D3D3D] px-4 py-2 rounded-full'>
-                                Users
-                            </button>
-                            <button className='bg-[#F6F6F6] px-4 py-2 rounded-full'>Group of guests</button>
-                        </div> */}
 
                         <div className="col-span-3 overflow-y-scroll h-full mt-4">
                             {isLoading ? (
@@ -375,7 +376,6 @@ function ChatContent() {
                                 </div>
                             </div>
 
-
                             <div className="mt-8">
                                 <h3 className="font-medium text-gray-900 mb-3">Revenue share on ticket sales</h3>
                                 <button className="w-full bg-gray-800 text-white py-3 rounded-md hover:bg-gray-700 transition">
@@ -384,6 +384,198 @@ function ChatContent() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Mobile Layout - Visible only on mobile */}
+                <div className="lg:hidden w-full h-full">
+                    {!showChatView ? (
+                        /* Mobile Chat List View */
+                        <div className="bg-white rounded-lg shadow-sm p-4 h-full">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className='flex gap-2 items-center'>
+                                    <h1 className="text-lg font-semibold">Messages</h1>
+                                    <div className="bg-[#E7E7E7] rounded-full h-6 w-6 text-xs flex items-center justify-center">
+                                        {chatRooms.length > 0 ? chatRooms.length : 0}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="overflow-y-scroll h-full">
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center h-32">
+                                        <p>Loading chats...</p>
+                                    </div>
+                                ) : chatRooms.length > 0 ? (
+                                    chatRooms.map((room, index) => (
+                                        <div
+                                            key={room.id}
+                                            onClick={() => handleChatRoomClick(room.id)}
+                                            className={`block p-4 hover:bg-gray-50 cursor-pointer border-b border-[#E7E7E7] ${index === 0 ? 'border-t' : ''}`}
+                                        >
+                                            <div className="flex items-center gap-3 rounded-lg">
+                                                <div className="w-12 h-12 bg-amber-100 rounded-full flex-shrink-0 flex items-center justify-center text-amber-600 uppercase">
+                                                    {room.venue_name ? room.venue_name.charAt(0) : '?'}
+                                                </div>
+                                                <div className="flex-grow min-w-0">
+                                                    <h3 className="font-medium text-gray-900 truncate">{room.venue_name || 'Unknown Venue'}</h3>
+                                                    <p className="text-sm text-gray-500 truncate">
+                                                        {room.latest_message
+                                                            ? `${room.latest_message.content}`
+                                                            : 'No messages yet'}
+                                                    </p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-6 text-gray-500">
+                                        No conversations found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        /* Mobile Chat Room View */
+                        <div className="bg-white rounded-lg shadow-sm flex flex-col h-full">
+                            {messagesLoading || venueDetailsLoading ? (
+                                <div className="flex items-center justify-center h-full">
+                                    <p>Loading conversation...</p>
+                                </div>
+                            ) : selectedRoom ? (
+                                <>
+                                    {/* Mobile Chat Header with Back Button and Venue Info */}
+                                    <div className="p-4 border-b border-[#E7E7E7]">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <button
+                                                onClick={handleBackToList}
+                                                className="p-2 hover:bg-gray-100 rounded-full"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 uppercase">
+                                                {selectedRoom.venue_name ? selectedRoom.venue_name.charAt(0) : '?'}
+                                            </div>
+                                            <div className="flex-grow">
+                                                <h2 className="font-medium">{selectedRoom.venue_name || 'Unknown Venue'}</h2>
+                                                <p className="text-sm text-gray-500">
+                                                    {selectedSpace?.neighborhood}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Venue Info Card - Clickable */}
+                                        {selectedSpace && (
+                                            <Link href={`/spaces/${selectedSpace.id}`} className="block">
+                                                <div className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        {selectedSpace?.venue_images && selectedSpace.venue_images.length > 0 ? (
+                                                            <div className="relative w-12 h-12 flex-shrink-0">
+                                                                <Image
+                                                                    src={selectedSpace.venue_images[0].image_url}
+                                                                    alt={selectedSpace?.name || "Venue"}
+                                                                    layout="fill"
+                                                                    objectFit="cover"
+                                                                    className="rounded-lg"
+                                                                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                                                        const target = e.target as HTMLImageElement;
+                                                                        target.src = 'https://via.placeholder.com/48x48?text=V';
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-gray-500 text-xs">No img</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-grow min-w-0">
+                                                            <h3 className="font-medium text-sm truncate">{selectedSpace?.name}</h3>
+                                                            <p className="text-xs text-gray-500 truncate">{selectedSpace?.address}</p>
+                                                            {selectedRoom?.event_date && (
+                                                                <p className="text-xs text-gray-500">{selectedRoom.event_date}</p>
+                                                            )}
+                                                        </div>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        )}
+                                    </div>
+
+                                    {/* Messages */}
+                                    <div className="overflow-y-scroll p-4 space-y-4 flex-grow" ref={messagesContainerRef}>
+                                        {chatMessages.length > 0 ? (
+                                            chatMessages.map((message) => {
+                                                const isCurrentUser = message.sender_id === user?.id;
+                                                return (
+                                                    <div
+                                                        key={message.id}
+                                                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
+                                                    >
+                                                        {!isCurrentUser && (
+                                                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs mr-2">
+                                                                {message.sender_name.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                        <div className={`max-w-[80%] ${isCurrentUser ? 'bg-[#E2E6F7]' : 'bg-[#EBF1F3] border border-gray-200'} text-gray-800 rounded-lg p-3`}>
+                                                            {!isCurrentUser && (
+                                                                <p className="font-medium text-xs mb-1">{message.sender_name}</p>
+                                                            )}
+                                                            <p>{message.content}</p>
+                                                            <div className="flex justify-end items-center mt-1 gap-1">
+                                                                <span className="text-xs text-gray-500">
+                                                                    {format(new Date(message.created_at), 'h:mm a')}
+                                                                </span>
+                                                                {isCurrentUser && (
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-center text-gray-500 py-10">
+                                                No messages yet
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Message Input */}
+                                    <div className="p-4 border-t flex items-center">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter your message here"
+                                            className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                        />
+                                        <button className="ml-2 bg-gray-100 p-3 rounded-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-800 mb-2">Select a conversation</h3>
+                                    <p className="text-gray-500">Choose a chat from the list to start messaging</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

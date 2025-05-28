@@ -78,9 +78,22 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
         { daysOfWeek: [5], startTime: '09:00', endTime: '17:00' }  // Friday 9am-5pm
     ]);
     const [isAvailabilityInfoOpen, setIsAvailabilityInfoOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const calendarRef = useRef<FullCalendar>(null);
     const { showToast } = useToast();
+
+    // Check for mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Fetch availability data
     useEffect(() => {
@@ -437,8 +450,8 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-4">
-            <div className="mb-4 p-4 bg-gray-50 rounded-md">
+        <div className="bg-white rounded-lg shadow-md p-3 md:p-4">
+            <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gray-50 rounded-md">
                 <h3
                     className="text-md font-medium mb-2 cursor-pointer flex justify-between items-center"
                     onClick={() => setIsAvailabilityInfoOpen(!isAvailabilityInfoOpen)}
@@ -461,24 +474,24 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
                 </div>
             </div>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Venue Availability</h2>
-                <div className="flex space-x-2">
+                <h2 className="text-xl font-semibold hidden md:block">Venue Availability</h2>
+                <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
                     <button
                         onClick={() => setIsBusinessHoursModalOpen(true)}
-                        className="bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm hover:bg-gray-200"
+                        className="bg-gray-100 text-gray-800 px-3 md:px-4 py-2 rounded-md text-sm hover:bg-gray-200 w-full md:w-auto"
                     >
                         Set Business Hours
                     </button>
                     <button
                         onClick={() => setIsAddModalOpen(true)}
-                        className="bg-[#06048D] text-white px-4 py-2 rounded-md text-sm hover:bg-opacity-90"
+                        className="bg-[#06048D] text-white px-3 md:px-4 py-2 rounded-md text-sm hover:bg-opacity-90 w-full md:w-auto"
                     >
                         + Add Unavailable Time
                     </button>
                     <button
                         onClick={handleSyncGoogleCalendar}
                         disabled={isSyncing}
-                        className={`px-4 py-2 rounded-md text-sm ${hasConnectedGoogle
+                        className={`px-3 md:px-4 py-2 rounded-md text-sm w-full md:w-auto ${hasConnectedGoogle
                             ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                             : 'bg-blue-500 text-white hover:bg-blue-600'
                             }`}
@@ -494,7 +507,7 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
             </div>
 
             <div className="mb-4">
-                <div className="flex items-center space-x-4 text-sm">
+                <div className="flex flex-wrap items-center space-x-2 md:space-x-4 text-xs md:text-sm gap-y-2">
                     <div className="flex items-center">
                         <div className="w-3 h-3 rounded-full bg-[#22c55e] mr-1"></div>
                         <span>Available</span>
@@ -515,15 +528,15 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#06048D]"></div>
                 </div>
             ) : (
-                <div className="h-[700px]">
+                <div className="h-[500px] md:h-[700px]">
                     <FullCalendar
                         ref={calendarRef}
                         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                        initialView="timeGridWeek"
+                        initialView={isMobile ? "dayGridMonth" : "timeGridWeek"}
                         headerToolbar={{
-                            left: 'prev,next today',
+                            left: 'prev,next',
                             center: 'title',
-                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                            right: isMobile ? 'dayGridMonth,timeGridDay' : 'dayGridMonth,timeGridWeek,timeGridDay'
                         }}
                         events={events}
                         eventClick={handleEventClick}
@@ -537,6 +550,7 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
                         slotMinTime="00:00:00"
                         slotMaxTime="24:00:00"
                         timeZone="America/New_York"
+                        aspectRatio={isMobile ? 0.8 : 1.35}
                     />
                 </div>
             )}

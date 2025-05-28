@@ -396,12 +396,14 @@ function DashboardContent() {
                                                             <Link
                                                                 href={`/spaces/${venue.id}`}
                                                                 className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
+                                                                onClick={(e) => e.stopPropagation()}
                                                             >
                                                                 Manage
                                                             </Link>
                                                             <Link
                                                                 href="/manage/dashboard/availability"
                                                                 className="text-black hover:underline text-sm p-2 rounded-md bg-gray-100"
+                                                                onClick={(e) => e.stopPropagation()}
                                                             >
                                                                 Availability
                                                             </Link>
