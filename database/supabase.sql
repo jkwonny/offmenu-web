@@ -36,6 +36,7 @@ CREATE TABLE venues (
   max_seated_guests INTEGER,
   max_standing_guests INTEGER,
   collaboration_type TEXT,
+  collaboration_schedule JSONB, -- New: flexible collaboration scheduling with pricing
   tags TEXT[], -- e.g. ['rooftop', 'cozy', 'photo-friendly']
   services TEXT[], -- e.g. ['food', 'drink', 'event_planning']
   avg_rating NUMERIC(2,1),

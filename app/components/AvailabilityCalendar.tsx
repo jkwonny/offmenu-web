@@ -11,6 +11,8 @@ import { useToast } from '@/app/context/ToastContext';
 import Modal from '@/app/components/Modal';
 import { FaAngleUp } from 'react-icons/fa';
 import { FaAngleDown } from 'react-icons/fa';
+import CollaborationScheduleManager from './CollaborationScheduleManager';
+import CollaborationCalendarView from './CollaborationCalendarView';
 
 interface AvailabilityEvent {
     id: string;
@@ -79,6 +81,7 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
     ]);
     const [isAvailabilityInfoOpen, setIsAvailabilityInfoOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [activeTab, setActiveTab] = useState<'availability' | 'collaboration'>('availability');
 
     const calendarRef = useRef<FullCalendar>(null);
     const { showToast } = useToast();
@@ -451,107 +454,140 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
 
     return (
         <div className="bg-white rounded-lg shadow-md p-3 md:p-4">
-            <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gray-50 rounded-md">
-                <h3
-                    className="text-md font-medium mb-2 cursor-pointer flex justify-between items-center"
-                    onClick={() => setIsAvailabilityInfoOpen(!isAvailabilityInfoOpen)}
-                >
-                    How Availability Works
-                    <span>{isAvailabilityInfoOpen ? <FaAngleUp /> : <FaAngleDown />}</span>
-                </h3>
-                <div
-                    className={`overflow-hidden transition-all duration-500 ease-in-out ${isAvailabilityInfoOpen ? 'max-h-96 opacity-100 mt-2' : 'max-h-0 opacity-0'
-                        }`}
-                >
-                    <ul className="text-sm text-gray-600 space-y-1 list-disc pl-5">
-                        <li>Set your regular business hours to indicate when your venue is generally available</li>
-                        <li>Any time outside your business hours is considered unavailable</li>
-                        <li>Within business hours, everything is available by default</li>
-                        <li>Add specific unavailable times for meetings, events, or any time your venue can&apos;t be booked</li>
-                        <li>Assume all times are in EST (Eastern Standard Time)</li>
-                        <li>Optionally connect your Google Calendar to automatically mark those events as unavailable (coming soon)</li>
-                    </ul>
-                </div>
-            </div>
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold hidden md:block">Venue Availability</h2>
-                <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
+            {/* Tab Navigation */}
+            <div className="mb-6">
+                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                     <button
-                        onClick={() => setIsBusinessHoursModalOpen(true)}
-                        className="bg-gray-100 text-gray-800 px-3 md:px-4 py-2 rounded-md text-sm hover:bg-gray-200 w-full md:w-auto"
-                    >
-                        Set Business Hours
-                    </button>
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="bg-[#06048D] text-white px-3 md:px-4 py-2 rounded-md text-sm hover:bg-opacity-90 w-full md:w-auto"
-                    >
-                        + Add Unavailable Time
-                    </button>
-                    <button
-                        onClick={handleSyncGoogleCalendar}
-                        disabled={isSyncing}
-                        className={`px-3 md:px-4 py-2 rounded-md text-sm w-full md:w-auto ${hasConnectedGoogle
-                            ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        onClick={() => setActiveTab('availability')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'availability'
+                                ? 'bg-white text-[#06048D] shadow-sm'
+                                : 'text-gray-600 hover:text-gray-800'
                             }`}
                     >
-                        {isSyncing
-                            ? 'Syncing...'
-                            : hasConnectedGoogle
-                                ? 'Sync Google Calendar'
-                                : 'Connect Google Calendar (coming soon)'
-                        }
+                        Availability & Blocked Times
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('collaboration')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'collaboration'
+                                ? 'bg-white text-[#06048D] shadow-sm'
+                                : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                    >
+                        Collaboration Schedule
                     </button>
                 </div>
             </div>
 
-            <div className="mb-4">
-                <div className="flex flex-wrap items-center space-x-2 md:space-x-4 text-xs md:text-sm gap-y-2">
-                    <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-[#22c55e] mr-1"></div>
-                        <span>Available</span>
+            {activeTab === 'availability' ? (
+                <>
+                    <div className="mb-3 md:mb-4 p-3 md:p-4 bg-gray-50 rounded-md">
+                        <h3
+                            className="text-md font-medium mb-2 cursor-pointer flex justify-between items-center"
+                            onClick={() => setIsAvailabilityInfoOpen(!isAvailabilityInfoOpen)}
+                        >
+                            How Availability Works
+                            <span>{isAvailabilityInfoOpen ? <FaAngleUp /> : <FaAngleDown />}</span>
+                        </h3>
+                        <div
+                            className={`overflow-hidden transition-all duration-500 ease-in-out ${isAvailabilityInfoOpen ? 'max-h-96 opacity-100 mt-2' : 'max-h-0 opacity-0'
+                                }`}
+                        >
+                            <ul className="text-sm text-gray-600 space-y-1 list-disc pl-5">
+                                <li>Set your regular business hours to indicate when your venue is generally available</li>
+                                <li>Any time outside your business hours is considered unavailable</li>
+                                <li>Within business hours, everything is available by default</li>
+                                <li>Add specific unavailable times for meetings, events, or any time your venue can&apos;t be booked</li>
+                                <li>Assume all times are in EST (Eastern Standard Time)</li>
+                                <li>Optionally connect your Google Calendar to automatically mark those events as unavailable</li>
+                            </ul>
+                        </div>
                     </div>
-                    <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-[#ef4444] mr-1"></div>
-                        <span>Unavailable</span>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold hidden md:block">Venue Availability</h2>
+                        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
+                            <button
+                                onClick={() => setIsBusinessHoursModalOpen(true)}
+                                className="bg-gray-100 text-gray-800 px-3 md:px-4 py-2 rounded-md text-sm hover:bg-gray-200 w-full md:w-auto"
+                            >
+                                Set Business Hours
+                            </button>
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="bg-[#06048D] text-white px-3 md:px-4 py-2 rounded-md text-sm hover:bg-opacity-90 w-full md:w-auto"
+                            >
+                                + Add Unavailable Time
+                            </button>
+                            <button
+                                onClick={handleSyncGoogleCalendar}
+                                disabled={isSyncing}
+                                className={`px-3 md:px-4 py-2 rounded-md text-sm w-full md:w-auto ${hasConnectedGoogle
+                                    ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                                    }`}
+                            >
+                                {isSyncing
+                                    ? 'Syncing...'
+                                    : hasConnectedGoogle
+                                        ? 'Sync Google Calendar'
+                                        : 'Connect Google Calendar (coming soon)'
+                                }
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-[#64748b] mr-1"></div>
-                        <span>Google Calendar</span>
-                    </div>
-                </div>
-            </div>
 
-            {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#06048D]"></div>
-                </div>
+                    <div className="mb-4">
+                        <div className="flex flex-wrap items-center space-x-2 md:space-x-4 text-xs md:text-sm gap-y-2">
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-[#22c55e] mr-1"></div>
+                                <span>Available</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-[#ef4444] mr-1"></div>
+                                <span>Unavailable</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-[#64748b] mr-1"></div>
+                                <span>Google Calendar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#06048D]"></div>
+                        </div>
+                    ) : (
+                        <div className="h-[500px] md:h-[700px]">
+                            <FullCalendar
+                                ref={calendarRef}
+                                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                initialView={isMobile ? "dayGridMonth" : "timeGridWeek"}
+                                headerToolbar={{
+                                    left: 'prev,next',
+                                    center: 'title',
+                                    right: isMobile ? 'dayGridMonth,timeGridDay' : 'dayGridMonth,timeGridWeek,timeGridDay'
+                                }}
+                                events={events}
+                                eventClick={handleEventClick}
+                                eventTimeFormat={{
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    meridiem: 'short'
+                                }}
+                                height="100%"
+                                businessHours={businessHours}
+                                slotMinTime="00:00:00"
+                                slotMaxTime="24:00:00"
+                                timeZone="America/New_York"
+                                aspectRatio={isMobile ? 0.8 : 1.35}
+                            />
+                        </div>
+                    )}
+                </>
             ) : (
-                <div className="h-[500px] md:h-[700px]">
-                    <FullCalendar
-                        ref={calendarRef}
-                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                        initialView={isMobile ? "dayGridMonth" : "timeGridWeek"}
-                        headerToolbar={{
-                            left: 'prev,next',
-                            center: 'title',
-                            right: isMobile ? 'dayGridMonth,timeGridDay' : 'dayGridMonth,timeGridWeek,timeGridDay'
-                        }}
-                        events={events}
-                        eventClick={handleEventClick}
-                        eventTimeFormat={{
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            meridiem: 'short'
-                        }}
-                        height="100%"
-                        businessHours={businessHours}
-                        slotMinTime="00:00:00"
-                        slotMaxTime="24:00:00"
-                        timeZone="America/New_York"
-                        aspectRatio={isMobile ? 0.8 : 1.35}
-                    />
+                <div className="space-y-6">
+                    <CollaborationScheduleManager venueId={venueId} />
+                    <CollaborationCalendarView venueId={venueId} showPricing={true} />
                 </div>
             )}
 

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import NavBar from '@/app/components/NavBar';
 import { Venue } from '@/types/Venue';
 import RequestSpaceModal from '@/app/components/RequestSpaceModal';
+import VenueCollaborationCalendar from '@/app/components/VenueCollaborationCalendar';
 import { useUser } from '@/app/context/UserContext';
 import { Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -346,6 +347,18 @@ export default function VenuePage() {
                             </div>
                         </div>
 
+                        {/* Collaboration Calendar */}
+                        {!isOwner && (
+                            <div className="border-t border-gray-200 pt-6 mb-6">
+                                <h2 className="text-xl font-semibold mb-4">Collaboration Availability</h2>
+                                <VenueCollaborationCalendar
+                                    venueId={params.id as string}
+                                    onDateSelect={(date, collaborationTypes) => {
+                                        console.log('Selected date:', date, 'Available types:', collaborationTypes);
+                                    }}
+                                />
+                            </div>
+                        )}
 
                     </div>
 
