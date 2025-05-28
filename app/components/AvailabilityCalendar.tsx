@@ -9,6 +9,8 @@ import { EventInput, EventClickArg } from '@fullcalendar/core';
 import { supabase } from '../lib/supabase';
 import { useToast } from '@/app/context/ToastContext';
 import Modal from '@/app/components/Modal';
+import { FaAngleUp } from 'react-icons/fa';
+import { FaAngleDown } from 'react-icons/fa';
 
 interface AvailabilityEvent {
     id: string;
@@ -442,7 +444,7 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
                     onClick={() => setIsAvailabilityInfoOpen(!isAvailabilityInfoOpen)}
                 >
                     How Availability Works
-                    <span>{isAvailabilityInfoOpen ? '▲' : '▼'}</span>
+                    <span>{isAvailabilityInfoOpen ? <FaAngleUp /> : <FaAngleDown />}</span>
                 </h3>
                 <div
                     className={`overflow-hidden transition-all duration-500 ease-in-out ${isAvailabilityInfoOpen ? 'max-h-96 opacity-100 mt-2' : 'max-h-0 opacity-0'
@@ -453,7 +455,8 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
                         <li>Any time outside your business hours is considered unavailable</li>
                         <li>Within business hours, everything is available by default</li>
                         <li>Add specific unavailable times for meetings, events, or any time your venue can&apos;t be booked</li>
-                        <li>Optionally connect your Google Calendar to automatically mark those events as unavailable</li>
+                        <li>Assume all times are in EST (Eastern Standard Time)</li>
+                        <li>Optionally connect your Google Calendar to automatically mark those events as unavailable (coming soon)</li>
                     </ul>
                 </div>
             </div>
@@ -679,7 +682,7 @@ export default function AvailabilityCalendar({ venueId }: AvailabilityCalendarPr
             <Modal
                 isOpen={isBusinessHoursModalOpen}
                 onClose={() => setIsBusinessHoursModalOpen(false)}
-                title="Set Business Hours"
+                title="Set Your Space's Business Hours"
             >
                 <BusinessHoursEditor
                     initialBusinessHours={businessHours}
@@ -792,61 +795,73 @@ function BusinessHoursEditor({ initialBusinessHours, onSave, onCancel }: Busines
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     return (
-        <div className="space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
-                Set your regular business hours. Times outside these hours will be considered unavailable.
+        <div className="space-y-6">
+            <p className="text-sm text-gray-600">
+                Tell us when your space is available for pop-ups. This will help creators choose suitable dates for their events.
             </p>
 
-            <div className="space-y-3">
+            {/* Header Row */}
+            <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 pb-2 border-b border-gray-200">
+                <div>DAY</div>
+                <div className="text-center">OPEN</div>
+                <div className="text-center">OPENING TIME</div>
+                <div className="text-center">CLOSING TIME</div>
+            </div>
+
+            {/* Days Grid */}
+            <div className="space-y-4">
                 {dayNames.map((dayName, index) => (
-                    <div key={index} className="flex items-center space-x-4">
-                        <div className="w-28">
-                            <label className="inline-flex items-center">
-                                <input
-                                    type="checkbox"
-                                    checked={editableHours[index].enabled}
-                                    onChange={() => handleToggleDay(index)}
-                                    className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <span className="ml-2 text-sm font-medium text-gray-700">{dayName}</span>
-                            </label>
+                    <div key={index} className="grid grid-cols-4 gap-4 items-center">
+                        <div className="text-sm font-medium text-gray-700">
+                            {dayName}
                         </div>
 
-                        <div className="flex items-center space-x-2 flex-1">
+                        <div className="flex justify-center">
+                            <input
+                                type="checkbox"
+                                checked={editableHours[index].enabled}
+                                onChange={() => handleToggleDay(index)}
+                                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <div className="flex justify-center">
                             <input
                                 type="time"
                                 value={editableHours[index].startTime}
                                 onChange={(e) => handleTimeChange(index, 'startTime', e.target.value)}
                                 disabled={!editableHours[index].enabled}
-                                className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 w-full max-w-[120px]"
                             />
-                            <span>to</span>
+                        </div>
+
+                        <div className="flex justify-center">
                             <input
                                 type="time"
                                 value={editableHours[index].endTime}
                                 onChange={(e) => handleTimeChange(index, 'endTime', e.target.value)}
                                 disabled={!editableHours[index].enabled}
-                                className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 w-full max-w-[120px]"
                             />
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-3 pt-6">
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-6 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 font-medium"
                 >
                     Cancel
                 </button>
                 <button
                     type="button"
                     onClick={handleSaveBusinessHours}
-                    className="px-4 py-2 text-sm text-white bg-[#06048D] rounded-md hover:bg-opacity-90"
+                    className="px-6 py-2 text-sm text-white bg-[#06048D] rounded-md hover:bg-opacity-90 font-medium"
                 >
-                    Save Business Hours
+                    Save
                 </button>
             </div>
         </div>
