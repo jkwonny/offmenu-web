@@ -145,7 +145,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
 
     // Mobile swipe states
-    const [containerHeight, setContainerHeight] = useState<number>(80); // Start minimized on mobile
+    const [containerHeight, setContainerHeight] = useState<number>(120); // Start higher on mobile for better visibility
     const [isDragging, setIsDragging] = useState(false);
     const [startY, setStartY] = useState(0);
     const [startHeight, setStartHeight] = useState(0);
@@ -225,7 +225,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
 
         const currentY = e.touches[0].clientY;
         const deltaY = startY - currentY; // Positive when swiping up
-        const newHeight = Math.max(80, Math.min(window.innerHeight - 120, startHeight + deltaY));
+        const newHeight = Math.max(120, Math.min(window.innerHeight - 120, startHeight + deltaY));
 
         setContainerHeight(newHeight);
     };
@@ -240,8 +240,8 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         const threshold = windowHeight * 0.3;
 
         if (containerHeight < threshold) {
-            // Snap to minimized
-            setContainerHeight(80);
+            // Snap to minimized - higher minimum for mobile
+            setContainerHeight(120);
         } else if (containerHeight < windowHeight * 0.7) {
             // Snap to half
             setContainerHeight(windowHeight * 0.5);
@@ -264,7 +264,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         if (!isDragging || !isMobile) return;
 
         const deltaY = startY - e.clientY;
-        const newHeight = Math.max(80, Math.min(window.innerHeight - 120, startHeight + deltaY));
+        const newHeight = Math.max(120, Math.min(window.innerHeight - 120, startHeight + deltaY));
 
         setContainerHeight(newHeight);
     };
@@ -278,7 +278,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         const threshold = windowHeight * 0.3;
 
         if (containerHeight < threshold) {
-            setContainerHeight(80);
+            setContainerHeight(120);
         } else if (containerHeight < windowHeight * 0.7) {
             setContainerHeight(windowHeight * 0.5);
         } else {
@@ -293,7 +293,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                 if (!isDragging || !isMobile) return;
 
                 const deltaY = startY - e.clientY;
-                const newHeight = Math.max(80, Math.min(window.innerHeight - 120, startHeight + deltaY));
+                const newHeight = Math.max(120, Math.min(window.innerHeight - 120, startHeight + deltaY));
 
                 setContainerHeight(newHeight);
             };
@@ -307,7 +307,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                 const threshold = windowHeight * 0.3;
 
                 if (containerHeight < threshold) {
-                    setContainerHeight(80);
+                    setContainerHeight(120);
                 } else if (containerHeight < windowHeight * 0.7) {
                     setContainerHeight(windowHeight * 0.5);
                 } else {
@@ -394,7 +394,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                     <h2 className="text-xl font-semibold">
                         {selectedView === 'spaces' ? `${filteredVenues.length} Spaces` : `${events.length} Events`}
                     </h2>
-                    {containerHeight > 120 && (
+                    {containerHeight > 160 && (
                         <div className="mt-4">
                             <div className="flex h-14 bg-[#F6F6F6] border border-gray-200 rounded-md items-center">
                                 {/* Capacity filter */}
@@ -541,8 +541,8 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                         </div>
 
                         {/* Content that shows when expanded on mobile or always on desktop */}
-                        <div className={`${(containerHeight > 120 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 120 ? `${containerHeight - 200}px` : 'none' }}>
+                        <div className={`${(containerHeight > 160 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 160 ? `${containerHeight - 200}px` : 'none' }}>
                                 {filteredVenues.length > 0 ? (
                                     filteredVenues.map((venue) => {
                                         const venueImages = venue.venue_images && venue.venue_images.length > 0
@@ -643,8 +643,8 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                         </div>
                     </div>
                 ) : (
-                    <div className={`${(containerHeight > 120 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 120 ? `${containerHeight - 200}px` : 'none' }}>
+                    <div className={`${(containerHeight > 160 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 160 ? `${containerHeight - 200}px` : 'none' }}>
                             {events.map((event: Event) => {
                                 // Determine the image URL for the event
                                 console.log('event', event)
@@ -1172,25 +1172,48 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
         // Update the previous selected venue ID ref
         previousSelectedVenueIdRef.current = selectedVenueId;
 
-        // Get map container dimensions
-        const containerWidth = mapRef.current.getContainer().clientWidth;
-        const containerHeight = mapRef.current.getContainer().clientHeight;
+        // Check if we're on mobile
+        const isMobile = window.innerWidth < 1024;
 
-        // Calculate the offset to position marker in bottom-right quadrant
-        // Project the marker coordinates to pixel space
-        const markerCoords: [number, number] = [selectedVenue.longitude, selectedVenue.latitude];
-        const point = mapRef.current.project(markerCoords);
+        let targetCenter: [number, number];
 
-        // Apply offset to move marker to bottom-right quadrant
-        const offsetX = -containerWidth * 0.25; // Move left by 25% of container width
-        const offsetY = -containerHeight * 0.25; // Move up by 25% of container height
+        if (isMobile) {
+            // On mobile, center the marker but lower it by 10% vertically for better popup visibility
+            const containerHeight = mapRef.current.getContainer().clientHeight;
 
-        // Unproject back to geographic coordinates
-        const offsetPoint = mapRef.current.unproject([point.x + offsetX, point.y + offsetY]);
+            // Project the marker coordinates to pixel space
+            const markerCoords: [number, number] = [selectedVenue.longitude, selectedVenue.latitude];
+            const point = mapRef.current.project(markerCoords);
+
+            // Move the marker down by 10% of container height
+            const offsetY = containerHeight * -.2;
+
+            // Unproject back to geographic coordinates
+            const offsetPoint = mapRef.current.unproject([point.x, point.y + offsetY]);
+            targetCenter = [offsetPoint.lng, offsetPoint.lat];
+        } else {
+            // On desktop, use the existing offset logic
+            // Get map container dimensions
+            const containerWidth = mapRef.current.getContainer().clientWidth;
+            const containerHeight = mapRef.current.getContainer().clientHeight;
+
+            // Calculate the offset to position marker in bottom-right quadrant
+            // Project the marker coordinates to pixel space
+            const markerCoords: [number, number] = [selectedVenue.longitude, selectedVenue.latitude];
+            const point = mapRef.current.project(markerCoords);
+
+            // Apply offset to move marker to bottom-right quadrant
+            const offsetX = -containerWidth * 0.25; // Move left by 25% of container width
+            const offsetY = -containerHeight * 0.25; // Move up by 25% of container height
+
+            // Unproject back to geographic coordinates
+            const offsetPoint = mapRef.current.unproject([point.x + offsetX, point.y + offsetY]);
+            targetCenter = [offsetPoint.lng, offsetPoint.lat];
+        }
 
         // Animate the map to the new center position
         mapRef.current.easeTo({
-            center: offsetPoint,
+            center: targetCenter,
             zoom: 12,
             duration: 1000
         });
