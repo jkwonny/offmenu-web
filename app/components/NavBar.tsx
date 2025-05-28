@@ -19,7 +19,6 @@ export default function NavBar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [chatDropdownOpen, setChatDropdownOpen] = useState(false);
     const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
-    const isHost = userProfile?.offmenu_host || false;
     const isAdmin = userProfile?.role === 'admin';
     const dropdownRef = useRef<HTMLDivElement>(null);
     const chatDropdownRef = useRef<HTMLDivElement>(null);
@@ -260,11 +259,9 @@ export default function NavBar() {
                                             </Link>
                                         )}
 
-                                        {isHost && (
-                                            <Link href="/manage/dashboard?view=spaces" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
-                                                Manager Dashboard
-                                            </Link>
-                                        )}
+                                        <Link href="/manage/dashboard?view=spaces" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setDropdownOpen(false)}>
+                                            Manager Dashboard
+                                        </Link>
 
                                         <Link
                                             href="/manage/dashboard/availability"

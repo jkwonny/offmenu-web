@@ -12,10 +12,10 @@ export const TabsSection = () => {
     if (!isExplorePage && !isManagePage) return null;
 
     return (
-        <div className="flex overflow-hidden rounded-full">
+        <div className="flex rounded-full border border-[#06048D] overflow-hidden">
             <Link
                 href={isExplorePage ? "/explore?view=spaces" : "/manage/dashboard?view=spaces"}
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${!view || view === 'spaces'
+                className={`px-6 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${!view || view === 'spaces'
                     ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
                     }`}
@@ -24,7 +24,7 @@ export const TabsSection = () => {
             </Link>
             <Link
                 href={isExplorePage ? "/explore?view=popups" : "/manage/dashboard?view=popups"}
-                className={`px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
+                className={`px-6 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${view === 'popups'
                     ? 'bg-[#06048D] text-white'
                     : 'bg-white text-black'
                     }`}

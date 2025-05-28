@@ -1094,13 +1094,20 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
                 popupRef.current.remove();
                 popupRef.current = null;
             }
-            // Clean up all React roots
-            Object.values(popupRootsRef.current).forEach(root => {
-                if (root && typeof root.unmount === 'function') {
-                    root.unmount();
-                }
-            });
-            popupRootsRef.current = {};
+            // Clean up all React roots - defer to avoid race condition
+            setTimeout(() => {
+                Object.values(popupRootsRef.current).forEach(root => {
+                    if (root && typeof root.unmount === 'function') {
+                        try {
+                            root.unmount();
+                        } catch (error) {
+                            // Silently handle unmount errors that might occur during cleanup
+                            console.warn('Error unmounting popup root:', error);
+                        }
+                    }
+                });
+                popupRootsRef.current = {};
+            }, 0);
         };
     }, []);
 
