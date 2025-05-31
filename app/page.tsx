@@ -95,7 +95,6 @@ export default function Page() {
                   onConfirm={() => setShowDateTimePicker(false)}
                   showPicker={showDateTimePicker}
                   togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
-                  pickerPosition="center"
                   customButton={
                     <button
                       className="px-2 py-1 border-b border-gray-300 text-center flex items-center gap-1 justify-center"

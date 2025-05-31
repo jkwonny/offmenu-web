@@ -59,7 +59,18 @@ export async function POST(request: Request) {
         expected_capacity_max: body.expected_capacity_max,
         assets_needed: body.assets_needed || [],
         event_type: eventType,
-        is_active: true
+        is_active: true,
+        event_status: body.event_status || 'private_pending',
+        duration: body.duration,
+        address: body.address,
+        street_number: body.street_number,
+        street_name: body.street_name,
+        neighborhood: body.neighborhood,
+        city: body.city,
+        state: body.state,
+        postal_code: body.postal_code,
+        latitude: body.latitude ? parseFloat(body.latitude) : null,
+        longitude: body.longitude ? parseFloat(body.longitude) : null,
       })
       .select()
       .single();

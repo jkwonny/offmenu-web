@@ -19,6 +19,14 @@ export interface Event {
     image_url: EventImage[];
     event_images?: EventImage[];
     address: string;
+    street_number?: string;
+    street_name?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    latitude?: number;
+    longitude?: number;
     pricing_type: string;
     price?: number;
     user_id?: string;

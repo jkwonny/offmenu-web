@@ -6,6 +6,7 @@ import { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import NavBar from '@/app/components/NavBar';
+import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { Event } from '@/app/types/event';
 
 interface EventPageProps {
@@ -18,39 +19,54 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
     const [eventData, setEventData] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const { user } = useUser();
     const privateEvent = eventData?.event_status === 'private_pending' || eventData?.event_type === 'private_approved'
     const pendingEvent = eventData?.event_status === 'private_pending' || eventData?.event_status === 'public_approved'
-    const isOwner = eventData && user && eventData.owner_id == user.id;
+    const isOwner = eventData && user && eventData.user_id == user.id;
 
-    const handleDelete = async () => {
+    console.log('eventData', eventData);
+    console.log('user', user);
+
+    const handleDeleteClick = () => {
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
         if (!eventData) return;
 
-        if (window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
-            try {
-                const response = await fetch(`/api/events/${params.id}`, {
-                    method: 'DELETE',
-                });
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`/api/events/${params.id}`, {
+                method: 'DELETE',
+            });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `Error: ${response.status}`);
-                }
-
-                // On successful deletion, redirect to homepage or another appropriate page
-                router.push('/');
-                alert("Event deleted successfully."); // Optional: show a success message
-            } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message); // Display error message on the page
-                    alert(`Failed to delete event: ${err.message}`);
-                } else {
-                    setError('An unknown error occurred while deleting the event.');
-                    alert('An unknown error occurred while deleting the event.');
-                }
-                console.error("Failed to delete event:", err);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Error: ${response.status}`);
             }
+
+            // On successful deletion, redirect to homepage
+            router.push('/');
+            // Note: We don't show success message here since we're redirecting
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+                alert(`Failed to delete event: ${err.message}`);
+            } else {
+                setError('An unknown error occurred while deleting the event.');
+                alert('An unknown error occurred while deleting the event.');
+            }
+            console.error("Failed to delete event:", err);
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteModal(false);
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteModal(false);
     };
 
     useEffect(() => {
@@ -201,13 +217,13 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                 {isOwner && (
                     <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4 pb-8">
                         <div className="flex space-x-3">
-                            <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center" onClick={() => router.push(`/event/${params.id}/edit`)}>
+                            <button className="cursor-pointer bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center" onClick={() => router.push(`/event/${params.id}/edit`)}>
                                 <Edit size={18} className="mr-2" />
                                 Edit Pop-up
                             </button>
                             <button
-                                onClick={handleDelete}
-                                className="text-red-600 hover:text-red-800 font-medium py-2 px-4 rounded-lg flex items-center"
+                                onClick={handleDeleteClick}
+                                className="cursor-pointer text-red-600 hover:text-red-800 font-medium py-2 px-4 rounded-lg flex items-center"
                             >
                                 <Trash2 size={18} className="mr-2" />
                                 Delete
@@ -216,6 +232,19 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                     </div>
                 )}
             </main>
+
+            {showDeleteModal && (
+                <ConfirmationModal
+                    isOpen={showDeleteModal}
+                    onClose={handleDeleteCancel}
+                    onConfirm={handleDeleteConfirm}
+                    title="Delete Event"
+                    message="Are you sure you want to delete this event? This action cannot be undone."
+                    confirmText="Delete Event"
+                    cancelText="Cancel"
+                    isLoading={isDeleting}
+                />
+            )}
         </div>
     );
 }

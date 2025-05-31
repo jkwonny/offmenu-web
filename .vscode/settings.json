@@ -20,5 +20,24 @@
   ],
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  }
+  },
+  "terminal.integrated.automationProfile.osx": null,
+  "terminal.integrated.automationProfile.linux": null,
+  "terminal.integrated.automationProfile.windows": null,
+  "terminal.integrated.autoReplies": {},
+  "npm.autoDetect": "off",
+  "typescript.suggest.autoImports": "off",
+  "javascript.suggest.autoImports": "off",
+  "cursor.chat.autoRun": false,
+  "cursor.composer.autoRun": false,
+  "terminal.integrated.confirmOnExit": "hasChildProcesses",
+  "terminal.integrated.confirmOnKill": "editor",
+  "task.autoDetect": "off",
+  "extensions.autoUpdate": false,
+  "git.autofetch": false,
+  "files.autoSave": "off",
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {},
+  "typescript.updateImportsOnFileMove.enabled": "never",
+  "javascript.updateImportsOnFileMove.enabled": "never"
 }

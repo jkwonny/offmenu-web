@@ -144,18 +144,22 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const [selectedTime, setSelectedTime] = useState<string>('');
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
+    const [isCapacityAnimating, setIsCapacityAnimating] = useState(false);
 
     // Mobile swipe states
-    const [containerHeight, setContainerHeight] = useState<number>(120); // Start higher on mobile for better visibility
+    const [containerHeight, setContainerHeight] = useState<number>(160); // Increased from 120 to 200 for better initial visibility
     const [isDragging, setIsDragging] = useState(false);
     const [startY, setStartY] = useState(0);
     const [startHeight, setStartHeight] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [dragStartTime, setDragStartTime] = useState(0);
+    const [hasMoved, setHasMoved] = useState(false);
 
     const searchParams = useSearchParams();
     const { user } = useUser();
     const capacityMenuRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const dragHandleRef = useRef<HTMLDivElement>(null);
 
     // Check if we're on mobile
     useEffect(() => {
@@ -168,6 +172,78 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
 
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
+
+    // Set up native touch event listeners for better iOS Safari compatibility
+    useEffect(() => {
+        const dragHandle = dragHandleRef.current;
+        if (!dragHandle || !isMobile) return;
+
+        const handleNativeTouchStart = (e: TouchEvent) => {
+            setDragStartTime(Date.now());
+            setStartY(e.touches[0].clientY);
+            setStartHeight(containerHeight);
+            setHasMoved(false);
+            setIsDragging(false);
+        };
+
+        const handleNativeTouchMove = (e: TouchEvent) => {
+            const currentY = e.touches[0].clientY;
+            const deltaY = Math.abs(startY - currentY);
+            const timeSinceStart = Date.now() - dragStartTime;
+            const actualDeltaY = startY - currentY;
+
+            // Determine if this is a vertical swipe
+            const isVerticalSwipe = deltaY > 5;
+
+            // Always prevent default for vertical swipes to stop page scrolling
+            if (isVerticalSwipe) {
+                e.preventDefault();
+            }
+
+            // Only start dragging if user has moved more than 10px vertically or held for more than 150ms
+            if (!isDragging && (deltaY > 10 || timeSinceStart > 150)) {
+                setIsDragging(true);
+                setHasMoved(true);
+            }
+
+            // Update height if we're dragging
+            if (isDragging) {
+                const newHeight = Math.max(200, Math.min(window.innerHeight - 80, startHeight + actualDeltaY));
+                setContainerHeight(newHeight);
+            }
+        };
+
+        const handleNativeTouchEnd = (e: TouchEvent) => {
+            if (isDragging && hasMoved) {
+                e.preventDefault();
+                setIsDragging(false);
+
+                const windowHeight = window.innerHeight;
+                const threshold = windowHeight * 0.4;
+
+                if (containerHeight < threshold) {
+                    setContainerHeight(200);
+                } else {
+                    setContainerHeight(windowHeight - 80);
+                }
+            }
+
+            setIsDragging(false);
+            setHasMoved(false);
+            setDragStartTime(0);
+        };
+
+        // Add event listeners with passive: false to ensure preventDefault works
+        dragHandle.addEventListener('touchstart', handleNativeTouchStart, { passive: false });
+        dragHandle.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+        dragHandle.addEventListener('touchend', handleNativeTouchEnd, { passive: false });
+
+        return () => {
+            dragHandle.removeEventListener('touchstart', handleNativeTouchStart);
+            dragHandle.removeEventListener('touchmove', handleNativeTouchMove);
+            dragHandle.removeEventListener('touchend', handleNativeTouchEnd);
+        };
+    }, [isMobile, startY, dragStartTime, containerHeight, isDragging, hasMoved]);
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
@@ -213,120 +289,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
 
-    // Mobile touch handlers
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (!isMobile) return; // Only on mobile
-
-        setIsDragging(true);
-        setStartY(e.touches[0].clientY);
-        setStartHeight(containerHeight);
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging || !isMobile) return;
-
-        const currentY = e.touches[0].clientY;
-        const deltaY = startY - currentY; // Positive when swiping up
-        const newHeight = Math.max(120, Math.min(window.innerHeight - 120, startHeight + deltaY));
-
-        setContainerHeight(newHeight);
-    };
-
-    const handleTouchEnd = () => {
-        if (!isDragging || !isMobile) return;
-
-        setIsDragging(false);
-
-        // Snap to positions based on final height
-        const windowHeight = window.innerHeight;
-        const threshold = windowHeight * 0.3;
-
-        if (containerHeight < threshold) {
-            // Snap to minimized - higher minimum for mobile
-            setContainerHeight(120);
-        } else if (containerHeight < windowHeight * 0.7) {
-            // Snap to half
-            setContainerHeight(windowHeight * 0.5);
-        } else {
-            // Snap to full
-            setContainerHeight(windowHeight - 120);
-        }
-    };
-
-    // Mouse handlers for desktop testing
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (!isMobile) return;
-
-        setIsDragging(true);
-        setStartY(e.clientY);
-        setStartHeight(containerHeight);
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || !isMobile) return;
-
-        const deltaY = startY - e.clientY;
-        const newHeight = Math.max(120, Math.min(window.innerHeight - 120, startHeight + deltaY));
-
-        setContainerHeight(newHeight);
-    };
-
-    const handleMouseUp = () => {
-        if (!isDragging || !isMobile) return;
-
-        setIsDragging(false);
-
-        const windowHeight = window.innerHeight;
-        const threshold = windowHeight * 0.3;
-
-        if (containerHeight < threshold) {
-            setContainerHeight(120);
-        } else if (containerHeight < windowHeight * 0.7) {
-            setContainerHeight(windowHeight * 0.5);
-        } else {
-            setContainerHeight(windowHeight - 120);
-        }
-    };
-
-    // Set up mouse move and up listeners on document
-    useEffect(() => {
-        if (isDragging) {
-            const handleDocumentMouseMove = (e: MouseEvent) => {
-                if (!isDragging || !isMobile) return;
-
-                const deltaY = startY - e.clientY;
-                const newHeight = Math.max(120, Math.min(window.innerHeight - 120, startHeight + deltaY));
-
-                setContainerHeight(newHeight);
-            };
-
-            const handleDocumentMouseUp = () => {
-                if (!isDragging || !isMobile) return;
-
-                setIsDragging(false);
-
-                const windowHeight = window.innerHeight;
-                const threshold = windowHeight * 0.3;
-
-                if (containerHeight < threshold) {
-                    setContainerHeight(120);
-                } else if (containerHeight < windowHeight * 0.7) {
-                    setContainerHeight(windowHeight * 0.5);
-                } else {
-                    setContainerHeight(windowHeight - 120);
-                }
-            };
-
-            document.addEventListener('mousemove', handleDocumentMouseMove);
-            document.addEventListener('mouseup', handleDocumentMouseUp);
-
-            return () => {
-                document.removeEventListener('mousemove', handleDocumentMouseMove);
-                document.removeEventListener('mouseup', handleDocumentMouseUp);
-            };
-        }
-    }, [isDragging, startY, startHeight, containerHeight, isMobile]);
-
     const handleVenueClick = (venueId: string) => {
         // Set the selected venue ID
         setSelectedVenueId(venueId);
@@ -357,7 +319,14 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (capacityMenuRef.current && !capacityMenuRef.current.contains(event.target as Node)) {
-                setShowCapacityMenu(false);
+                if (showCapacityMenu) {
+                    // Start exit animation
+                    setIsCapacityAnimating(true);
+                    setTimeout(() => {
+                        setShowCapacityMenu(false);
+                        setIsCapacityAnimating(false);
+                    }, 150);
+                }
             }
         }
 
@@ -365,7 +334,35 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, []);
+    }, [showCapacityMenu]);
+
+    const handleCapacityMenuToggle = () => {
+        if (showCapacityMenu) {
+            // Start exit animation
+            setIsCapacityAnimating(true);
+            setTimeout(() => {
+                setShowCapacityMenu(false);
+                setIsCapacityAnimating(false);
+            }, 150);
+        } else {
+            // Start enter animation
+            setShowCapacityMenu(true);
+            setIsCapacityAnimating(true);
+            setTimeout(() => {
+                setIsCapacityAnimating(false);
+            }, 150);
+        }
+    };
+
+    const handleCapacitySelect = (value: string) => {
+        setCapacityFilter(value);
+        // Start exit animation
+        setIsCapacityAnimating(true);
+        setTimeout(() => {
+            setShowCapacityMenu(false);
+            setIsCapacityAnimating(false);
+        }, 150);
+    };
 
     return (
         <div
@@ -378,13 +375,9 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         >
             {/* Mobile drag handle - only visible on mobile */}
             <div
-                className="lg:hidden flex justify-center py-2 cursor-grab active:cursor-grabbing bg-white rounded-t-lg"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
+                className="lg:hidden flex justify-center py-2 cursor-grab active:cursor-grabbing bg-white rounded-t-lg select-none"
+                ref={dragHandleRef}
+                style={{ touchAction: 'none' }}
             >
                 <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
             </div>
@@ -396,13 +389,13 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                     <h2 className="text-xl font-semibold">
                         {selectedView === 'spaces' ? `${filteredVenues.length} Spaces` : `${events.length} Events`}
                     </h2>
-                    {containerHeight > 160 && (
+                    {containerHeight > 180 && (
                         <div className="mt-4">
                             <div className="flex h-14 bg-[#F6F6F6] border border-gray-200 rounded-md items-center">
                                 {/* Capacity filter */}
                                 <div className="w-1/2 h-full relative" ref={capacityMenuRef}>
                                     <button
-                                        onClick={() => setShowCapacityMenu(!showCapacityMenu)}
+                                        onClick={handleCapacityMenuToggle}
                                         className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
                                     >
                                         <span className="text-gray-800">
@@ -410,13 +403,15 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 (capacityFilter === '75+' ? '75+ guests' : `${capacityFilter} guests`) :
                                                 'Capacity'}
                                         </span>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showCapacityMenu ? "rotate-180" : ""}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={`transition-transform duration-150 ${showCapacityMenu ? "rotate-180" : ""}`}>
                                             <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </button>
 
                                     {showCapacityMenu && (
-                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden">
+                                        <div className={`absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden
+                                                        transition-all duration-150 ease-out
+                                                        ${isCapacityAnimating ? 'opacity-0 scale-95 translate-y-[-10px]' : 'opacity-100 scale-100 translate-y-0'}`}>
                                             <div>
                                                 {[
                                                     { value: '', label: 'Any capacity' },
@@ -428,10 +423,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 ].map((option) => (
                                                     <button
                                                         key={option.value}
-                                                        onClick={() => {
-                                                            setCapacityFilter(option.value);
-                                                            setShowCapacityMenu(false);
-                                                        }}
+                                                        onClick={() => handleCapacitySelect(option.value)}
                                                         className={`w-full text-left px-3 py-2 rounded text-sm 
                                                             ${capacityFilter === option.value ? 'bg-black text-white' : 'hover:bg-black/10'}`}
                                                     >
@@ -456,7 +448,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                         onConfirm={() => setShowDateTimePicker(false)}
                                         showPicker={showDateTimePicker}
                                         togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
-                                        pickerPosition="right"
                                     />
                                 </div>
                             </div>
@@ -482,7 +473,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                 {/* Capacity filter */}
                                 <div className="w-1/2 h-full relative" ref={capacityMenuRef}>
                                     <button
-                                        onClick={() => setShowCapacityMenu(!showCapacityMenu)}
+                                        onClick={handleCapacityMenuToggle}
                                         className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
                                     >
                                         <span className="text-gray-800">
@@ -490,13 +481,15 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 (capacityFilter === '75+' ? '75+ guests' : `${capacityFilter} guests`) :
                                                 'Capacity'}
                                         </span>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showCapacityMenu ? "rotate-180" : ""}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={`transition-transform duration-150 ${showCapacityMenu ? "rotate-180" : ""}`}>
                                             <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </button>
 
                                     {showCapacityMenu && (
-                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden">
+                                        <div className={`absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden
+                                                        transition-all duration-150 ease-out
+                                                        ${isCapacityAnimating ? 'opacity-0 scale-95 translate-y-[-10px]' : 'opacity-100 scale-100 translate-y-0'}`}>
                                             <div>
                                                 {[
                                                     { value: '', label: 'Any capacity' },
@@ -508,10 +501,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 ].map((option) => (
                                                     <button
                                                         key={option.value}
-                                                        onClick={() => {
-                                                            setCapacityFilter(option.value);
-                                                            setShowCapacityMenu(false);
-                                                        }}
+                                                        onClick={() => handleCapacitySelect(option.value)}
                                                         className={`w-full text-left px-3 py-2 rounded text-sm 
                                                             ${capacityFilter === option.value ? 'bg-black text-white' : 'hover:bg-black/10'}`}
                                                     >
@@ -536,15 +526,14 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                         onConfirm={() => setShowDateTimePicker(false)}
                                         showPicker={showDateTimePicker}
                                         togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
-                                        pickerPosition="right"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Content that shows when expanded on mobile or always on desktop */}
-                        <div className={`${(containerHeight > 160 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 160 ? `${containerHeight - 200}px` : 'none' }}>
+                        <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
                                 {filteredVenues.length > 0 ? (
                                     filteredVenues.map((venue) => {
                                         const venueImages = venue.venue_images && venue.venue_images.length > 0
@@ -645,8 +634,8 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                         </div>
                     </div>
                 ) : (
-                    <div className={`${(containerHeight > 160 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 160 ? `${containerHeight - 200}px` : 'none' }}>
+                    <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
                             {events.map((event: Event) => {
                                 // Determine the image URL for the event
                                 let eventImageUrl: string | undefined = undefined;
@@ -1403,6 +1392,9 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
             }
         });
 
+        // IMPORTANT: Do not manipulate popups in this effect!
+        // This effect is only for styling markers on hover
+        // Popup manipulation should only happen when markers are clicked
         // IMPORTANT: Do not manipulate popups in this effect!
         // This effect is only for styling markers on hover
         // Popup manipulation should only happen when markers are clicked

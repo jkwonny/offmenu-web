@@ -87,7 +87,7 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="w-full py-2 px-4 rounded-lg">
+        <nav className="w-full py-3 px-4 rounded-lg relative">
             <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
@@ -109,13 +109,13 @@ export default function NavBar() {
                 <div className="flex items-center justify-end gap-2 md:gap-4">
                     {/* Hamburger menu button - visible on mobile only */}
                     <button
-                        className="md:hidden flex flex-col space-y-1.5"
+                        className="md:hidden flex flex-col space-y-1"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         aria-label="Toggle menu"
                     >
-                        <span className={`block w-6 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-                        <span className={`block w-6 h-0.5 bg-gray-800 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
-                        <span className={`block w-6 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+                        <span className={`block w-5 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
+                        <span className={`block w-5 h-0.5 bg-gray-800 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
+                        <span className={`block w-5 h-0.5 bg-gray-800 transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
                     </button>
 
                     {/* Desktop navigation - hidden on mobile */}
@@ -311,7 +311,7 @@ export default function NavBar() {
 
             {/* Mobile menu - shown when hamburger is clicked */}
             {mobileMenuOpen && (
-                <div className="md:hidden bg-white border-t border-gray-200 px-4 py-3 space-y-4 shadow-lg">
+                <div className="absolute top-full left-0 right-0 md:hidden bg-white border-t border-gray-200 px-4 py-3 space-y-4 shadow-lg z-50 animate-slide-down">
                     {/* Add user info at the top of mobile menu */}
                     {user && !isLoading && (
                         <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
