@@ -112,7 +112,21 @@ export default function EditEventPage() {
         setIsSubmitting(true);
 
         try {
-            const updatedEventData = await updateEventMutation({ ...data, id: eventId });
+            // Ensure all required fields are provided with default values
+            const updateData = {
+                ...data,
+                id: eventId,
+                street_number: data.street_number || "",
+                street_name: data.street_name || "",
+                neighborhood: data.neighborhood || "",
+                city: data.city || "",
+                state: data.state || "",
+                postal_code: data.postal_code || "",
+                latitude: data.latitude || "",
+                longitude: data.longitude || "",
+            };
+            
+            const updatedEventData = await updateEventMutation(updateData);
 
             // Handle new image uploads
             if (uploadedImageFiles.length > 0) {

@@ -70,7 +70,20 @@ export default function SubmitEventPage() {
         }
 
         try {
-            const createdEvent = await createEventMutation(data);
+            // Ensure all required fields are provided with default values
+            const createData = {
+                ...data,
+                street_number: data.street_number || "",
+                street_name: data.street_name || "",
+                neighborhood: data.neighborhood || "",
+                city: data.city || "",
+                state: data.state || "",
+                postal_code: data.postal_code || "",
+                latitude: data.latitude || "",
+                longitude: data.longitude || "",
+            };
+            
+            const createdEvent = await createEventMutation(createData);
 
             if (createdEvent && createdEvent.id && uploadedImageFiles.length > 0) {
                 try {

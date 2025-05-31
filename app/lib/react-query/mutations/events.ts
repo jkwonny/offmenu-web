@@ -12,6 +12,15 @@ interface EventFormData {
   event_type: string;
   event_status?: "private_pending" | "public_pending" | "public_approved" | "private_approved";
   duration: number;
+  address: string;
+  street_number: string;
+  street_name: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  latitude: string;
+  longitude: string;
 }
 
 export async function createEvent(formData: EventFormData) {
@@ -38,6 +47,15 @@ export async function createEvent(formData: EventFormData) {
       is_active: true,
       event_status: formData.event_status || 'private_pending',
       duration: formData.duration,
+      address: formData.address,
+      street_number: formData.street_number,
+      street_name: formData.street_name,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state,
+      postal_code: formData.postal_code,
+      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
     })
     .select()
     .single();
@@ -82,6 +100,15 @@ export async function updateEvent(formData: UpdateEventFormData) {
       event_type: formData.event_type,
       event_status: formData.event_status || 'private_pending',
       duration: formData.duration,
+      address: formData.address,
+      street_number: formData.street_number,
+      street_name: formData.street_name,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state,
+      postal_code: formData.postal_code,
+      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
       // owner_id: session.user.id, // owner_id should not change on update
       // user_id: session.user.id, // user_id should not change on update
       // is_active: true, // is_active should likely be managed elsewhere or not updated here

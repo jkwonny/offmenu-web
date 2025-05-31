@@ -75,10 +75,25 @@ CREATE TABLE events (
   assets_needed text[],
   is_active boolean DEFAULT true,
 
+  ADD COLUMN street_number TEXT,
+  ADD COLUMN street_name TEXT,
+  ADD COLUMN neighborhood TEXT,
+  ADD COLUMN city TEXT,
+  ADD COLUMN state TEXT,
+  ADD COLUMN postal_code TEXT,
+  ADD COLUMN latitude DOUBLE PRECISION,
+  ADD COLUMN longitude DOUBLE PRECISION;
+
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
   owner_id UUID REFERENCES users(id)
 );
+
+-- Add an index for location-based queries
+CREATE INDEX idx_events_location ON events (latitude, longitude);
+
+-- Add an index for city/state queries
+CREATE INDEX idx_events_city_state ON events (city, state); 
 
 -- Create event_images table to store images for each event
 CREATE TABLE event_images (
