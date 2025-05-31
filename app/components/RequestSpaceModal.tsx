@@ -198,8 +198,6 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
                                 onConfirm={handleDateTimeConfirm}
                                 showPicker={showDateTimePicker}
                                 togglePicker={toggleDateTimePicker}
-                                pickerPosition="left"
-                                pickerWidth="100%"
                                 customButton={
                                     <div
                                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-gray-300"

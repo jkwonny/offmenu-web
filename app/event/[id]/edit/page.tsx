@@ -19,8 +19,9 @@ export default function EditEventPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { mutateAsync: updateEventMutation, isPending: isUpdatingEvent } = useUpdateEvent();
+    const { mutateAsync: updateEventMutation } = useUpdateEvent();
 
     useEffect(() => {
         if (eventId) {
@@ -34,8 +35,11 @@ export default function EditEventPage() {
                         throw new Error(errorData.error || `Error: ${response.status}`);
                     }
                     const data = await response.json();
+                    console.log('data', data);
+                    console.log('user', user);
                     setEventData(data);
-                    if (user && data.owner_id !== user.id) {
+                    if (user && data.user_id !== user.id) {
+                        console.log('not authorized');
                         setError("You are not authorized to edit this event.");
                         // Redirect or show a message
                         setTimeout(() => router.push(`/event/${eventId}`), 3000);
@@ -98,13 +102,14 @@ export default function EditEventPage() {
             setError("Event ID is missing.");
             return;
         }
-        if (!user || (eventData && eventData.owner_id !== user.id)) {
+        if (!user || (eventData && eventData.user_id !== user.id)) {
             setError("You are not authorized to update this event.");
             return;
         }
 
         setError(null);
         setSuccess(null);
+        setIsSubmitting(true);
 
         try {
             const updatedEventData = await updateEventMutation({ ...data, id: eventId });
@@ -118,6 +123,7 @@ export default function EditEventPage() {
                     // Update might have succeeded, but images failed.
                     setSuccess(`Event "${updatedEventData.title}" updated, but new image uploads failed: ${message}. You can try again.`);
                     setTimeout(() => router.push(`/event/${eventId}`), 4000);
+                    setIsSubmitting(false);
                     return;
                 }
             }
@@ -144,6 +150,7 @@ export default function EditEventPage() {
                     setSuccess(`Event "${updatedEventData.title}" updated and new images uploaded, but some old images could not be deleted: ${message}. Please check manually.`);
                     // Decide if this is a critical failure or a partial success
                     setTimeout(() => router.push(`/event/${eventId}`), 5000); // Longer timeout to read message
+                    setIsSubmitting(false);
                     return;
                 }
             }
@@ -157,6 +164,8 @@ export default function EditEventPage() {
             const message = error instanceof Error ? error.message : 'An unknown error occurred';
             setError(`Event update failed: ${message}`);
             console.error('Failed to update event:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -182,7 +191,7 @@ export default function EditEventPage() {
     }
 
     // If eventData is loaded but user is not owner (this might be redundant if useEffect redirects)
-    if (eventData && user && eventData.owner_id !== user.id) {
+    if (eventData && user && eventData.user_id !== user.id) {
         return (
             <>
                 <NavBar />
@@ -225,7 +234,7 @@ export default function EditEventPage() {
             <CreateOrEditEventForm
                 initialData={eventData}
                 onSubmit={handleSubmit}
-                isSubmitting={isUpdatingEvent}
+                isSubmitting={isSubmitting}
                 mode="edit"
             />
         </>

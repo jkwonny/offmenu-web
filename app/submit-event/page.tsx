@@ -11,10 +11,11 @@ import type { EventFormData } from "../components/CreateOrEditEventForm";
 export default function SubmitEventPage() {
     const router = useRouter();
     const { user } = useUser();
-    const { mutateAsync: createEventMutation, isPending: isCreatingEvent } = useCreateEvent();
+    const { mutateAsync: createEventMutation } = useCreateEvent();
 
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const uploadEventImages = async (eventId: string, imageFiles: File[]): Promise<string[]> => {
         if (imageFiles.length === 0) return [];
@@ -59,10 +60,12 @@ export default function SubmitEventPage() {
     const handleSubmit = async (data: EventFormData, uploadedImageFiles: File[]) => {
         setError(null);
         setSuccess(null);
+        setIsSubmitting(true);
 
         if (!user) {
             setError("You must be logged in to create an event.");
             router.push("/auth/sign-in?redirect=/submit-event");
+            setIsSubmitting(false);
             return;
         }
 
@@ -81,6 +84,7 @@ export default function SubmitEventPage() {
                         if (createdEvent?.id) router.push(`/event/${createdEvent.id}`);
                         else router.push("/explore");
                     }, 4000);
+                    setIsSubmitting(false);
                     return;
                 }
             } else if (createdEvent) {
@@ -96,6 +100,8 @@ export default function SubmitEventPage() {
             const message = error instanceof Error ? error.message : 'An unknown error occurred';
             setError(`Event creation failed: ${message}`);
             console.error('Failed to create event:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -118,7 +124,7 @@ export default function SubmitEventPage() {
             )}
             <CreateOrEditEventForm
                 onSubmit={handleSubmit}
-                isSubmitting={isCreatingEvent}
+                isSubmitting={isSubmitting}
                 mode="create"
             />
         </>

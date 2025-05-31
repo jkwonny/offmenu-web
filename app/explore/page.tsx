@@ -144,6 +144,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const [selectedTime, setSelectedTime] = useState<string>('');
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
+    const [isCapacityAnimating, setIsCapacityAnimating] = useState(false);
 
     // Mobile swipe states
     const [containerHeight, setContainerHeight] = useState<number>(160); // Increased from 120 to 200 for better initial visibility
@@ -318,7 +319,14 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (capacityMenuRef.current && !capacityMenuRef.current.contains(event.target as Node)) {
-                setShowCapacityMenu(false);
+                if (showCapacityMenu) {
+                    // Start exit animation
+                    setIsCapacityAnimating(true);
+                    setTimeout(() => {
+                        setShowCapacityMenu(false);
+                        setIsCapacityAnimating(false);
+                    }, 150);
+                }
             }
         }
 
@@ -326,7 +334,35 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, []);
+    }, [showCapacityMenu]);
+
+    const handleCapacityMenuToggle = () => {
+        if (showCapacityMenu) {
+            // Start exit animation
+            setIsCapacityAnimating(true);
+            setTimeout(() => {
+                setShowCapacityMenu(false);
+                setIsCapacityAnimating(false);
+            }, 150);
+        } else {
+            // Start enter animation
+            setShowCapacityMenu(true);
+            setIsCapacityAnimating(true);
+            setTimeout(() => {
+                setIsCapacityAnimating(false);
+            }, 150);
+        }
+    };
+
+    const handleCapacitySelect = (value: string) => {
+        setCapacityFilter(value);
+        // Start exit animation
+        setIsCapacityAnimating(true);
+        setTimeout(() => {
+            setShowCapacityMenu(false);
+            setIsCapacityAnimating(false);
+        }, 150);
+    };
 
     return (
         <div
@@ -359,7 +395,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                 {/* Capacity filter */}
                                 <div className="w-1/2 h-full relative" ref={capacityMenuRef}>
                                     <button
-                                        onClick={() => setShowCapacityMenu(!showCapacityMenu)}
+                                        onClick={handleCapacityMenuToggle}
                                         className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
                                     >
                                         <span className="text-gray-800">
@@ -367,13 +403,15 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 (capacityFilter === '75+' ? '75+ guests' : `${capacityFilter} guests`) :
                                                 'Capacity'}
                                         </span>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showCapacityMenu ? "rotate-180" : ""}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={`transition-transform duration-150 ${showCapacityMenu ? "rotate-180" : ""}`}>
                                             <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </button>
 
                                     {showCapacityMenu && (
-                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden">
+                                        <div className={`absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden
+                                                        transition-all duration-150 ease-out
+                                                        ${isCapacityAnimating ? 'opacity-0 scale-95 translate-y-[-10px]' : 'opacity-100 scale-100 translate-y-0'}`}>
                                             <div>
                                                 {[
                                                     { value: '', label: 'Any capacity' },
@@ -385,10 +423,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 ].map((option) => (
                                                     <button
                                                         key={option.value}
-                                                        onClick={() => {
-                                                            setCapacityFilter(option.value);
-                                                            setShowCapacityMenu(false);
-                                                        }}
+                                                        onClick={() => handleCapacitySelect(option.value)}
                                                         className={`w-full text-left px-3 py-2 rounded text-sm 
                                                             ${capacityFilter === option.value ? 'bg-black text-white' : 'hover:bg-black/10'}`}
                                                     >
@@ -413,7 +448,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                         onConfirm={() => setShowDateTimePicker(false)}
                                         showPicker={showDateTimePicker}
                                         togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
-                                        pickerPosition="right"
                                     />
                                 </div>
                             </div>
@@ -439,7 +473,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                 {/* Capacity filter */}
                                 <div className="w-1/2 h-full relative" ref={capacityMenuRef}>
                                     <button
-                                        onClick={() => setShowCapacityMenu(!showCapacityMenu)}
+                                        onClick={handleCapacityMenuToggle}
                                         className="w-full h-full flex items-center justify-between rounded-md px-3 focus:outline-none"
                                     >
                                         <span className="text-gray-800">
@@ -447,13 +481,15 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 (capacityFilter === '75+' ? '75+ guests' : `${capacityFilter} guests`) :
                                                 'Capacity'}
                                         </span>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={showCapacityMenu ? "rotate-180" : ""}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={`transition-transform duration-150 ${showCapacityMenu ? "rotate-180" : ""}`}>
                                             <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </button>
 
                                     {showCapacityMenu && (
-                                        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden">
+                                        <div className={`absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full overflow-hidden
+                                                        transition-all duration-150 ease-out
+                                                        ${isCapacityAnimating ? 'opacity-0 scale-95 translate-y-[-10px]' : 'opacity-100 scale-100 translate-y-0'}`}>
                                             <div>
                                                 {[
                                                     { value: '', label: 'Any capacity' },
@@ -465,10 +501,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                 ].map((option) => (
                                                     <button
                                                         key={option.value}
-                                                        onClick={() => {
-                                                            setCapacityFilter(option.value);
-                                                            setShowCapacityMenu(false);
-                                                        }}
+                                                        onClick={() => handleCapacitySelect(option.value)}
                                                         className={`w-full text-left px-3 py-2 rounded text-sm 
                                                             ${capacityFilter === option.value ? 'bg-black text-white' : 'hover:bg-black/10'}`}
                                                     >
@@ -493,7 +526,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                         onConfirm={() => setShowDateTimePicker(false)}
                                         showPicker={showDateTimePicker}
                                         togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
-                                        pickerPosition="right"
                                     />
                                 </div>
                             </div>
