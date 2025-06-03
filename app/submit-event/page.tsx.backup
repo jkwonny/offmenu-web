@@ -1,0 +1,198 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "../context/UserContext";
+import MultiStepLayout from "./components/MultiStepLayout";
+import EventDetailsStep, { EventFormData } from "./components/EventDetailsStep";
+import VenueSelectionStep from "./components/VenueSelectionStep";
+import MessageCompositionStep from "./components/MessageCompositionStep";
+import { useVenueCart } from "./hooks/useVenueCart";
+
+export default function SubmitEventPage() {
+    const router = useRouter();
+    const { user } = useUser();
+    const [currentStep, setCurrentStep] = useState<number>(1);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Venue cart state
+    const {
+        selectedVenues,
+        addVenue,
+        removeVenue,
+        clearCart,
+        isSelected,
+        venueCount,
+    } = useVenueCart();
+
+    // Form data state
+    const [eventFormData, setEventFormData] = useState<EventFormData>({
+        title: "",
+        event_type: "Pop Up",
+        description: "",
+        selected_date: new Date().toISOString().split('T')[0],
+        selected_time: "",
+        expected_capacity_min: 1,
+        expected_capacity_max: 15,
+        assets_needed: [],
+        event_status: "private_pending",
+        duration: 1,
+    });
+
+    // Image state
+    const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+    const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+
+    // Message state
+    const [message, setMessage] = useState("");
+
+    // Step navigation handlers
+    const handleNext = () => {
+        if (currentStep === 1) {
+            // Validate required fields for step 1
+            if (!eventFormData.title || !eventFormData.selected_date) {
+                setError("Please fill in the required fields (title and date).");
+                return;
+            }
+            setError(null);
+            setCurrentStep(2);
+        } else if (currentStep === 2) {
+            if (venueCount > 0) {
+                // User selected venues, go to message step
+                setCurrentStep(3);
+            } else {
+                // No venues selected, create event directly (Phase 1 placeholder)
+                handleCreateEventDirectly();
+            }
+        } else if (currentStep === 3) {
+            // Final step - create event with venue messages (Phase 3 implementation)
+            handleCreateEventWithVenues();
+        }
+    };
+
+    const handlePrevious = () => {
+        if (currentStep > 1) {
+            setCurrentStep(currentStep - 1);
+            setError(null);
+        }
+    };
+
+    // Placeholder for direct event creation (no venues selected)
+    const handleCreateEventDirectly = () => {
+        setIsSubmitting(true);
+        
+        // For Phase 1, we'll just show a placeholder
+        setTimeout(() => {
+            alert("Phase 1: Direct event creation will be implemented later. For now, please select some venues first.");
+            setIsSubmitting(false);
+        }, 1000);
+    };
+
+    // Placeholder for event creation with venue messaging
+    const handleCreateEventWithVenues = () => {
+        setIsSubmitting(true);
+        
+        // For Phase 1, we'll just show a placeholder
+        setTimeout(() => {
+            alert(`Phase 1: Event creation with ${venueCount} venues and message "${message}" will be implemented in Phase 3.`);
+            setIsSubmitting(false);
+        }, 1000);
+    };
+
+    // Navigation validation
+    const canGoNext = () => {
+        switch (currentStep) {
+            case 1:
+                return eventFormData.title.trim() !== "" && eventFormData.selected_date !== "";
+            case 2:
+                return true; // Always allow proceeding from venue selection
+            case 3:
+                return message.trim() !== ""; // Require message in final step
+            default:
+                return false;
+        }
+    };
+
+    const canGoPrevious = () => {
+        return currentStep > 1;
+    };
+
+    // Dynamic button text
+    const getNextButtonText = () => {
+        switch (currentStep) {
+            case 1:
+                return "Next";
+            case 2:
+                return venueCount > 0 ? `Message Spaces (${venueCount} selected)` : "Add Address";
+            case 3:
+                return "Create Event";
+            default:
+                return "Next";
+        }
+    };
+
+    // Show optional text for step 2
+    const shouldShowOptionalText = () => {
+        return currentStep === 2 && venueCount === 0;
+    };
+
+    // Redirect if user not logged in
+    if (!user) {
+        router.push("/auth/sign-in?redirect=/submit-event");
+        return null;
+    }
+
+    return (
+        <>
+            {/* Global error message */}
+            {error && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md p-4">
+                    <div className="p-4 rounded-md bg-red-50 text-red-700 border border-red-200 shadow-lg">
+                        {error}
+                    </div>
+                </div>
+            )}
+
+            <MultiStepLayout
+                currentStep={currentStep}
+                onStepChange={setCurrentStep}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+                canGoNext={canGoNext()}
+                canGoPrevious={canGoPrevious()}
+                nextButtonText={getNextButtonText()}
+                showOptionalText={shouldShowOptionalText()}
+                isSubmitting={isSubmitting}
+            >
+                {currentStep === 1 && (
+                    <EventDetailsStep
+                        formData={eventFormData}
+                        onFormDataChange={setEventFormData}
+                        uploadedImages={uploadedImages}
+                        onImagesChange={setUploadedImages}
+                        imagePreviewUrls={imagePreviewUrls}
+                        onImagePreviewUrlsChange={setImagePreviewUrls}
+                    />
+                )}
+
+                {currentStep === 2 && (
+                    <VenueSelectionStep
+                        selectedVenues={selectedVenues}
+                        onVenueSelect={addVenue}
+                        onVenueDeselect={removeVenue}
+                    />
+                )}
+
+                {currentStep === 3 && (
+                    <MessageCompositionStep
+                        eventData={eventFormData}
+                        selectedVenues={selectedVenues}
+                        message={message}
+                        onMessageChange={setMessage}
+                    />
+                )}
+            </MultiStepLayout>
+        </>
+    );
+} 

@@ -1,12 +1,13 @@
 'use client'
 
-import { ChevronLeft, Clock, MapPin, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, Clock, MapPin, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { useUser } from '@/app/context/UserContext';
 import { useEffect, useState, use } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import NavBar from '@/app/components/NavBar';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import VenueRequestsList from './components/VenueRequestsList';
 import { Event } from '@/app/types/event';
 
 interface EventPageProps {
@@ -16,18 +17,44 @@ interface EventPageProps {
 export default function EventPage({ params: paramsPromise }: EventPageProps) {
     const params = use(paramsPromise);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [eventData, setEventData] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const { user } = useUser();
+    
     const privateEvent = eventData?.event_status === 'private_pending' || eventData?.event_type === 'private_approved'
     const pendingEvent = eventData?.event_status === 'private_pending' || eventData?.event_status === 'public_approved'
     const isOwner = eventData && user && eventData.user_id == user.id;
 
+    // Check if event has venue requests (no confirmed address)
+    const hasVenueRequests = eventData && (!eventData.address || eventData.address === 'Address TBD.');
+
+    // Handle success parameters from URL
+    const successParam = searchParams.get('success');
+    const venuesParam = searchParams.get('venues');
+
     console.log('eventData', eventData);
     console.log('user', user);
+
+    useEffect(() => {
+        // Show success message if redirected from submit form
+        if (successParam === 'created' && venuesParam) {
+            setShowSuccessMessage(true);
+            // Auto-hide after 5 seconds
+            const timer = setTimeout(() => {
+                setShowSuccessMessage(false);
+                // Clean up URL parameters
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }, 5000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [successParam, venuesParam]);
 
     const handleDeleteClick = () => {
         setShowDeleteModal(true);
@@ -69,32 +96,38 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
         setShowDeleteModal(false);
     };
 
+    const fetchEvent = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`/api/events/${params.id}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Error: ${response.status}`);
+            }
+            const data = await response.json();
+            setEventData(data);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('An unknown error occurred');
+            }
+            console.error("Failed to fetch event:", err);
+        }
+        setLoading(false);
+    };
+
     useEffect(() => {
         if (params.id) {
-            const fetchEvent = async () => {
-                setLoading(true);
-                setError(null);
-                try {
-                    const response = await fetch(`/api/events/${params.id}`);
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || `Error: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    setEventData(data);
-                } catch (err) {
-                    if (err instanceof Error) {
-                        setError(err.message);
-                    } else {
-                        setError('An unknown error occurred');
-                    }
-                    console.error("Failed to fetch event:", err);
-                }
-                setLoading(false);
-            };
             fetchEvent();
         }
     }, [params.id]);
+
+    // Callback to refresh event data when venue is accepted
+    const handleEventUpdate = () => {
+        fetchEvent();
+    };
 
     if (loading) {
         return <div className="min-h-screen bg-gray-100 flex justify-center items-center"><p>Loading event details...</p></div>;
@@ -142,6 +175,30 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
         <div className="min-h-screen flex flex-col">
             {/* Header */}
             <NavBar />
+
+            {/* Success Message */}
+            {showSuccessMessage && venuesParam && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md p-4">
+                    <div className="p-4 rounded-lg bg-green-50 text-green-800 border border-green-200 shadow-lg">
+                        <div className="flex items-center">
+                            <CheckCircle size={20} className="mr-3 text-green-600" />
+                            <div>
+                                <h4 className="font-semibold">Event Created Successfully!</h4>
+                                <p className="text-sm">
+                                    Your event has been created and messages sent to {venuesParam} venues. 
+                                    Check the "List of Spaces" below to track responses.
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setShowSuccessMessage(false)}
+                            className="mt-2 text-sm underline hover:no-underline"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main className="container mx-auto px-4 py-8 flex-grow">
@@ -212,6 +269,17 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                         </div>
                     ))}
                 </div>
+
+                {/* Venue Requests Section */}
+                {hasVenueRequests && isOwner && (
+                    <div className="mb-8">
+                        <VenueRequestsList 
+                            eventId={params.id} 
+                            isOwner={isOwner}
+                            onEventUpdate={handleEventUpdate}
+                        />
+                    </div>
+                )}
 
                 {/* Action Buttons */}
                 {isOwner && (

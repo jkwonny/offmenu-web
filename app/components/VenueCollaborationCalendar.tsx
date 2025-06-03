@@ -322,7 +322,7 @@ export default function VenueCollaborationCalendar({
                                 ))}
                                 <div className="mt-3 pt-2 border-t">
                                     <p className="text-xs text-gray-500">
-                                        Click &quot;Contact Space&quot; to request booking for your preferred collaboration type.
+                                        Click "Contact Space" to request booking for your preferred collaboration type.
                                     </p>
                                 </div>
                             </div>

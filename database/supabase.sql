@@ -437,3 +437,190 @@ EXECUTE FUNCTION trigger_set_updated_at();
 
 -- Add indexes
 CREATE INDEX idx_venue_business_hours_venue_id ON venue_business_hours (venue_id); 
+
+
+
+-- Add new fields to events table for venue request tracking
+ALTER TABLE events 
+ADD COLUMN IF NOT EXISTS has_venue_requests BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS request_status TEXT CHECK (request_status IN ('pending', 'confirmed', 'cancelled')) DEFAULT 'pending',
+ADD COLUMN IF NOT EXISTS address TEXT,
+ADD COLUMN IF NOT EXISTS event_status TEXT DEFAULT 'private_pending',
+ADD COLUMN IF NOT EXISTS duration INTEGER DEFAULT 1;
+
+-- Update any existing events schema issues
+ALTER TABLE events ALTER COLUMN selected_time DROP NOT NULL;
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_events_has_venue_requests ON events (has_venue_requests);
+CREATE INDEX IF NOT EXISTS idx_events_request_status ON events (request_status);
+CREATE INDEX IF NOT EXISTS idx_events_event_status ON events (event_status);
+
+
+
+
+-- Create the venue_booking_requests table (the "event_venue_requests" from PRD)
+CREATE TABLE IF NOT EXISTS venue_booking_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    venue_id BIGINT NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+    venue_owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Add indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_venue_booking_requests_event_id ON venue_booking_requests (event_id);
+CREATE INDEX IF NOT EXISTS idx_venue_booking_requests_venue_id ON venue_booking_requests (venue_id);
+CREATE INDEX IF NOT EXISTS idx_venue_booking_requests_status ON venue_booking_requests (status);
+CREATE INDEX IF NOT EXISTS idx_venue_booking_requests_requester_id ON venue_booking_requests (requester_id);
+CREATE INDEX IF NOT EXISTS idx_venue_booking_requests_venue_owner_id ON venue_booking_requests (venue_owner_id);
+
+-- Add updated_at trigger (drop first if exists, then create)
+DROP TRIGGER IF EXISTS venue_booking_requests_updated_at ON venue_booking_requests;
+CREATE TRIGGER venue_booking_requests_updated_at
+    BEFORE UPDATE ON venue_booking_requests
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_updated_at();
+
+
+-- Enable RLS
+ALTER TABLE venue_booking_requests ENABLE ROW LEVEL SECURITY;
+
+-- Users can view requests they created or received
+CREATE POLICY "Users can view their venue booking requests" 
+ON venue_booking_requests
+FOR SELECT
+USING (
+    requester_id = auth.uid() OR 
+    venue_owner_id = auth.uid()
+);
+
+-- Users can create requests for events they own
+CREATE POLICY "Users can create venue booking requests" 
+ON venue_booking_requests
+FOR INSERT
+WITH CHECK (
+    requester_id = auth.uid() AND
+    EXISTS (
+        SELECT 1 FROM events 
+        WHERE events.id = venue_booking_requests.event_id 
+        AND events.user_id = auth.uid()
+    )
+);
+
+-- Venue owners can update status of requests for their venues
+CREATE POLICY "Venue owners can update request status" 
+ON venue_booking_requests
+FOR UPDATE
+USING (venue_owner_id = auth.uid())
+WITH CHECK (venue_owner_id = auth.uid());
+
+-- Event creators can update their own requests
+CREATE POLICY "Event creators can update their requests" 
+ON venue_booking_requests
+FOR UPDATE
+USING (requester_id = auth.uid())
+WITH CHECK (requester_id = auth.uid());
+
+
+-- Add new columns to chat_rooms to support venue booking requests
+ALTER TABLE chat_rooms 
+ADD COLUMN IF NOT EXISTS event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS event_creator_id UUID REFERENCES users(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS booking_request_id UUID REFERENCES venue_booking_requests(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_chat_rooms_event_id ON chat_rooms (event_id);
+CREATE INDEX IF NOT EXISTS idx_chat_rooms_booking_request_id ON chat_rooms (booking_request_id);
+CREATE INDEX IF NOT EXISTS idx_chat_rooms_event_creator_id ON chat_rooms (event_creator_id);
+
+
+-- Update chat_messages to use the correct foreign key reference
+-- First, add the new column
+ALTER TABLE chat_messages 
+ADD COLUMN IF NOT EXISTS chat_room_id UUID REFERENCES chat_rooms(id) ON DELETE CASCADE;
+
+-- Update existing records to use the new column name
+UPDATE chat_messages 
+SET chat_room_id = room_id 
+WHERE chat_room_id IS NULL AND room_id IS NOT NULL;
+
+-- Update the RLS policy to use the new column name
+DROP POLICY IF EXISTS "Users can view messages in their rooms" ON chat_messages;
+DROP POLICY IF EXISTS "Users can insert messages in their rooms" ON chat_messages;
+
+CREATE POLICY "Users can view messages in their rooms" ON chat_messages
+FOR SELECT
+USING (
+    EXISTS (
+        SELECT 1 FROM chat_rooms cr
+        LEFT JOIN booking_requests req ON cr.request_id = req.id
+        LEFT JOIN venue_booking_requests vbr ON cr.booking_request_id = vbr.id
+        WHERE 
+            (chat_messages.chat_room_id = cr.id OR chat_messages.room_id = cr.id) AND
+            (
+                -- New structure: direct sender/recipient on chat_rooms
+                (cr.sender_id = auth.uid() OR cr.recipient_id = auth.uid()) OR
+                -- New booking structure: via venue_booking_requests
+                (vbr.requester_id = auth.uid() OR vbr.venue_owner_id = auth.uid()) OR
+                -- Old structure: sender/recipient via booking_requests
+                (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+            )
+    )
+);
+
+CREATE POLICY "Users can insert messages in their rooms" ON chat_messages
+FOR INSERT
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM chat_rooms cr
+        LEFT JOIN booking_requests req ON cr.request_id = req.id
+        LEFT JOIN venue_booking_requests vbr ON cr.booking_request_id = vbr.id
+        WHERE 
+            (chat_messages.chat_room_id = cr.id OR chat_messages.room_id = cr.id) AND
+            (
+                -- New structure: direct sender/recipient on chat_rooms
+                (cr.sender_id = auth.uid() OR cr.recipient_id = auth.uid()) OR
+                -- New booking structure: via venue_booking_requests
+                (vbr.requester_id = auth.uid() OR vbr.venue_owner_id = auth.uid()) OR
+                -- Old structure: sender/recipient via booking_requests
+                (req.sender_id = auth.uid() OR req.recipient_id = auth.uid())
+            ) AND
+            chat_messages.sender_id = auth.uid()
+    )
+);
+
+
+
+-- Function to automatically update event has_venue_requests flag
+CREATE OR REPLACE FUNCTION update_event_venue_requests_flag()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update the event to indicate it has venue requests
+    UPDATE events 
+    SET has_venue_requests = TRUE,
+        updated_at = NOW()
+    WHERE id = NEW.event_id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to automatically set has_venue_requests flag
+DROP TRIGGER IF EXISTS trigger_update_event_venue_requests ON venue_booking_requests;
+CREATE TRIGGER trigger_update_event_venue_requests
+    AFTER INSERT ON venue_booking_requests
+    FOR EACH ROW
+    EXECUTE FUNCTION update_event_venue_requests_flag();
+
+
+
+-- Grant access to service role for new tables
+GRANT ALL ON venue_booking_requests TO service_role;
+GRANT ALL ON venue_booking_requests TO authenticated;
+GRANT USAGE ON SCHEMA public TO authenticated;
