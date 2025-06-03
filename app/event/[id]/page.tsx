@@ -47,8 +47,8 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                 throw new Error(errorData.error || `Error: ${response.status}`);
             }
 
-            // On successful deletion, redirect to homepage
-            router.push('/');
+            // On successful deletion, redirect to dashboard events view
+            router.push('/manage/dashboard?view=events');
             // Note: We don't show success message here since we're redirecting
         } catch (err) {
             if (err instanceof Error) {

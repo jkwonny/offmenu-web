@@ -691,12 +691,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                             ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
                                                             : 'Guest count not specified'}
                                                     </div>
-                                                    <button
-                                                        className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
-                                                        onClick={() => {/* TODO: Implement messaging */ }}
-                                                    >
-                                                        Message
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
