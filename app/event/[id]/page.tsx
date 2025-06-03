@@ -186,7 +186,7 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                                 <h4 className="font-semibold">Event Created Successfully!</h4>
                                 <p className="text-sm">
                                     Your event has been created and messages sent to {venuesParam} venues. 
-                                    Check the "List of Spaces" below to track responses.
+                                    Check the &quot;List of Spaces&quot; below to track responses.
                                 </p>
                             </div>
                         </div>
