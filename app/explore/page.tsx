@@ -10,7 +10,6 @@ import { Venue } from '@/types/Venue';
 import { useVenues, useEvents } from '../lib/queries';
 import NavBar from '../components/NavBar';
 import { useSearchParams } from 'next/navigation';
-import { useUser } from '../context/UserContext';
 import { FaRegHandshake } from "react-icons/fa";
 import { LuMapPin } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
@@ -136,8 +135,11 @@ const getImageUrl = (image: VenueImage | string): string => {
 };
 
 // Create a client component for the content that uses useSearchParams
-function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | null) => void }) {
-    const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: { 
+    onVenueHover: (venueId: string | null) => void;
+    selectedVenueId: string | null;
+    onVenueSelect: (venueId: string | null) => void;
+}) {
     const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
     const [capacityFilter, setCapacityFilter] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<string>('');
@@ -156,7 +158,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const [hasMoved, setHasMoved] = useState(false);
 
     const searchParams = useSearchParams();
-    const { user } = useUser();
     const capacityMenuRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const dragHandleRef = useRef<HTMLDivElement>(null);
@@ -253,8 +254,8 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
     const { data: allVenues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
     const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
 
-    // Filter out venues and events owned by the current user
-    const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
+    // Filter venues to only show approved ones (removed owner filter)
+    const venues = allVenues.filter(venue => venue.status === 'approved');
 
     // Apply capacity filter and date/time filter to venues
     const filteredVenues = venues.filter(venue => {
@@ -284,14 +285,15 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
         return true;
     });
 
-    const events = allEvents.filter(event => (event.owner_id !== user?.id && event.user_id !== user?.id));
+    // Show all events (removed owner filter)
+    const events = allEvents;
 
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
 
     const handleVenueClick = (venueId: string) => {
-        // Set the selected venue ID
-        setSelectedVenueId(venueId);
+        // Call the parent's venue select handler
+        onVenueSelect(venueId);
         // Open the venue detail page in a new tab
         window.open(`/spaces/${venueId}`, '_blank');
     };
@@ -383,7 +385,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
             </div>
 
             {/* Content container */}
-            <div className="w-full p-6 bg-white lg:rounded-lg shadow-lg flex-1 overflow-hidden lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+            <div className="mt-2 w-full p-6 bg-white lg:rounded-lg shadow-lg flex-1 overflow-hidden lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
                 {/* Mobile header - only show space count when minimized */}
                 <div className="lg:hidden mb-4">
                     <h2 className="text-xl font-semibold">
@@ -547,7 +549,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                         return (
                                             <div
                                                 key={venue.id}
-                                                className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'ring-2 ring-[#273287]' : ''}`}
+                                                className={`cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90 ${selectedVenueId === venue.id ? 'border-2 border-[#273287]' : ''}`}
                                                 onClick={() => handleVenueClick(venue.id)}
                                                 onMouseEnter={() => {
                                                     // Only trigger hover event if this isn't the currently selected venue
@@ -691,12 +693,6 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
                                                             ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
                                                             : 'Guest count not specified'}
                                                     </div>
-                                                    <button
-                                                        className="px-4 py-2 bg-[#273287] text-white rounded hover:bg-[#273287]/90 transition-colors duration-200"
-                                                        onClick={() => {/* TODO: Implement messaging */ }}
-                                                    >
-                                                        Message
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -713,6 +709,7 @@ function ExploreContent({ onVenueHover }: { onVenueHover: (venueId: string | nul
 
 export default function ExplorePage() {
     const [hoveredVenueId, setHoveredVenueId] = useState<string | null>(null);
+    const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
 
     return (
         <div className="relative h-screen w-screen">
@@ -721,7 +718,7 @@ export default function ExplorePage() {
                 <Suspense fallback={<div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                 </div>}>
-                    <ExploreMap hoveredVenueId={hoveredVenueId} />
+                    <ExploreMap hoveredVenueId={hoveredVenueId} selectedVenueId={selectedVenueId} onVenueSelect={(venueId) => setSelectedVenueId(venueId)} />
                 </Suspense>
             </div>
 
@@ -737,7 +734,7 @@ export default function ExplorePage() {
                 <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                 </div>}>
-                    <ExploreContent onVenueHover={setHoveredVenueId} />
+                    <ExploreContent onVenueHover={setHoveredVenueId} selectedVenueId={selectedVenueId} onVenueSelect={(venueId) => setSelectedVenueId(venueId)} />
                 </Suspense>
             </div>
         </div>
@@ -745,10 +742,12 @@ export default function ExplorePage() {
 }
 
 // Map component that will receive venue data
-function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
-    const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+function ExploreMap({ hoveredVenueId, selectedVenueId, onVenueSelect }: { 
+    hoveredVenueId: string | null;
+    selectedVenueId: string | null;
+    onVenueSelect: (venueId: string | null) => void;
+}) {
     const searchParams = useSearchParams();
-    const { user } = useUser();
 
     // Get the view from URL parameters, default to 'spaces'
     const view = searchParams.get('view') || 'spaces';
@@ -757,13 +756,13 @@ function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
     // Use React Query to fetch venues
     const { data: allVenues = [], isLoading: venuesLoading } = useVenues();
 
-    // Filter out venues owned by the current user
-    const venues = allVenues.filter(venue => venue.owner_id !== user?.id && venue.status === 'approved');
+    // Filter venues to only show approved ones (removed owner filter)
+    const venues = allVenues.filter(venue => venue.status === 'approved');
 
     const handleMarkerClick = useCallback((venueId: string) => {
         // If venueId is empty string, it means deselect
         if (venueId === '') {
-            setSelectedVenueId(null);
+            onVenueSelect(null);
             return;
         }
 
@@ -773,8 +772,8 @@ function ExploreMap({ hoveredVenueId }: { hoveredVenueId: string | null }) {
             return;
         }
 
-        setSelectedVenueId(venueId);
-    }, [selectedVenueId]);
+        onVenueSelect(venueId);
+    }, [selectedVenueId, onVenueSelect]);
 
     if (venuesLoading) {
         return (
@@ -1055,8 +1054,8 @@ function MapboxMapComponent({ venues, selectedVenueId, hoveredVenueId, onMarkerC
             const map = new mapboxgl.Map({
                 container: node,
                 style: 'mapbox://styles/mapbox/streets-v12',
-                center: [-73.9880154, 40.7209735],
-                zoom: 12,
+                center: [-74.05, 40.7],
+                zoom: 11,
                 attributionControl: false,
                 preserveDrawingBuffer: true // Helps prevent white flashes
             });

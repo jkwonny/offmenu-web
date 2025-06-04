@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { SpaceFormData } from '@/app/types/space';
 import { VenueFormData } from '@/app/types/venue';
 import GoogleAutoComplete from './GoogleAutoComplete';
+import ServicesFormStep, { DEFAULT_VENUE_SERVICES } from './ServicesFormStep';
 
 export interface SpaceFormDataWithImages extends SpaceFormData {
     image_urls?: string[];
@@ -24,117 +25,7 @@ export interface CreateOrEditSpaceFormProps {
 }
 
 // VenueServicesFormStep component (moved from original page)
-const VenueServicesFormStep = ({
-    selectedServices,
-    onServicesChange
-}: {
-    selectedServices: string[];
-    onServicesChange: (services: string[]) => void;
-}) => {
-    const [customService, setCustomService] = useState<string>('');
-    const presetServices = [
-        'DJ Booth', 'Kitchen Access', 'Moveable Tables', 'Live Music Allowed',
-        'Staff On Site', 'Projector/AV', 'Wifi', 'Outdoor Space', 'Parking',
-        'Wine', 'Liquor', 'Outside Food Allowed', 'Catering Available', 'Smoking Area',
-        'Wheelchair Accessible', 'Sound System', 'Patio', 'Rooftop'
-    ];
-
-    const addCustomService = () => {
-        if (customService.trim() && !selectedServices.includes(customService.trim())) {
-            onServicesChange([...selectedServices, customService.trim()]);
-            setCustomService('');
-        }
-    };
-
-    const toggleService = (service: string) => {
-        if (selectedServices.includes(service)) {
-            onServicesChange(selectedServices.filter(s => s !== service));
-        } else {
-            onServicesChange([...selectedServices, service]);
-        }
-    };
-
-    const removeService = (service: string) => {
-        onServicesChange(selectedServices.filter(s => s !== service));
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addCustomService();
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-lg font-medium text-gray-700 mb-3">
-                    What services or features does your space offer?
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
-                    {presetServices.map((service) => (
-                        <button
-                            key={service}
-                            type="button"
-                            onClick={() => toggleService(service)}
-                            className={`py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${selectedServices.includes(service)
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
-                                }`}
-                            aria-pressed={selectedServices.includes(service)}
-                        >
-                            {service}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex mt-4">
-                    <input
-                        type="text"
-                        value={customService}
-                        onChange={(e) => setCustomService(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Add a custom service"
-                        className="flex-grow p-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        aria-label="Add a custom service"
-                    />
-                    <button
-                        type="button"
-                        onClick={addCustomService}
-                        disabled={!customService.trim()}
-                        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        + Add
-                    </button>
-                </div>
-            </div>
-            {selectedServices.length > 0 && (
-                <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Services</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {selectedServices.map((service) => (
-                            <div
-                                key={service}
-                                className="inline-flex items-center bg-blue-50 text-blue-700 rounded-full px-3 py-1 text-sm"
-                            >
-                                {service}
-                                <button
-                                    type="button"
-                                    onClick={() => removeService(service)}
-                                    className="ml-2 rounded-full h-5 w-5 flex items-center justify-center bg-blue-200 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    aria-label={`Remove ${service}`}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
+// This component has been replaced by the modular ServicesFormStep
 
 const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, isSubmitting }: CreateOrEditSpaceFormProps) => {
     const [step, setStep] = useState<number>(1);
@@ -599,7 +490,16 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                 return (
                     <div className="mt-6">
                         <h2 className="text-2xl font-bold mb-4 text-center">Services & Policies</h2>
-                        <VenueServicesFormStep selectedServices={formData.services || []} onServicesChange={handleServicesChange} />
+                        <ServicesFormStep 
+                            selectedServices={formData.services || []} 
+                            onServicesChange={handleServicesChange}
+                            title="What services or features does your space offer?"
+                            presetServices={DEFAULT_VENUE_SERVICES}
+                            placeholder="Add a custom service"
+                            showPresetServices={true}
+                            allowCustomServices={true}
+                            addOnSpace={false}
+                        />
                     </div>
                 );
             case 5:

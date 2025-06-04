@@ -71,6 +71,8 @@ export async function POST(request: Request) {
         postal_code: body.postal_code,
         latitude: body.latitude ? parseFloat(body.latitude) : null,
         longitude: body.longitude ? parseFloat(body.longitude) : null,
+        website: body.website,
+        instagram_handle: body.instagram_handle,
       })
       .select()
       .single();

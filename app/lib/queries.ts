@@ -21,16 +21,80 @@ export interface Venue {
   owner_id?: string;
   neighborhood?: string;
   collaboration_type?: string[];
+  status?: string;
 }
 
-// Function to fetch venues from Supabase
-async function fetchVenues() {
-  const { data, error } = await supabase
+export interface VenueFilters {
+  capacity?: number;
+  neighborhood?: string;
+  collaboration_type?: string[];
+  city?: string;
+  featured?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+// Optimized function to fetch venues with filters
+async function fetchVenues(filters: VenueFilters = {}) {
+  let query = supabase
     .from('venues')
     .select(`
-      *,
-      venue_images(image_url, sort_order)
-    `);
+      id,
+      name,
+      latitude,
+      longitude,
+      category,
+      city,
+      address,
+      state,
+      description,
+      max_guests,
+      tags,
+      neighborhood,
+      owner_id,
+      status,
+      collaboration_type,
+      venue_images(id, image_url, sort_order)
+    `, { count: 'exact' });
+
+  // Apply filters
+  if (filters.capacity) {
+    query = query.gte('max_guests', filters.capacity);
+  }
+
+  if (filters.neighborhood) {
+    query = query.eq('neighborhood', filters.neighborhood);
+  }
+
+  if (filters.city) {
+    query = query.eq('city', filters.city);
+  }
+
+  if (filters.collaboration_type && filters.collaboration_type.length > 0) {
+    query = query.contains('collaboration_type', filters.collaboration_type);
+  }
+
+  if (filters.featured !== undefined) {
+    query = query.eq('featured', filters.featured);
+  }
+
+  // Only show approved venues by default
+  query = query.eq('status', 'approved');
+
+  // Add pagination
+  if (filters.limit) {
+    query = query.limit(filters.limit);
+  }
+
+  if (filters.offset) {
+    query = query.range(filters.offset, (filters.offset + (filters.limit || 10)) - 1);
+  }
+
+  // Order by featured first, then by name
+  query = query.order('featured', { ascending: false });
+  query = query.order('name', { ascending: true });
+
+  const { data, error, count } = await query;
 
   if (error) {
     console.error('Supabase error:', error);
@@ -39,7 +103,7 @@ async function fetchVenues() {
 
   if (data) {
     // Transform data to match our Venue interface
-    return data.map(venue => {
+    const venues = data.map(venue => {
       // Find the image with the lowest sort_order (primary image)
       const primaryImage = venue.venue_images && venue.venue_images.length > 0
         ? venue.venue_images.sort((a: { sort_order: number }, b: { sort_order: number }) =>
@@ -52,7 +116,7 @@ async function fetchVenues() {
         latitude: parseFloat(venue.latitude) || 0,
         longitude: parseFloat(venue.longitude) || 0,
         category: venue.category || 'Venue',
-        image_url: primaryImage && primaryImage.image_url,
+        image_url: primaryImage?.image_url || null,
         city: venue.city,
         address: venue.address,
         state: venue.state,
@@ -66,19 +130,33 @@ async function fetchVenues() {
         collaboration_type: venue.collaboration_type || '',
       };
     });
+
+    return { venues, totalCount: count || 0 };
   }
 
-  return [];
+  return { venues: [], totalCount: 0 };
 }
 
-// Hook to use the venue data with React Query
-export function useVenues() {
+// Hook to use the venue data with React Query and filters
+export function useVenues(filters: VenueFilters = {}) {
   return useQuery({
-    queryKey: ['venues'],
-    queryFn: fetchVenues,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    staleTime: 0
+    queryKey: ['venues', filters],
+    queryFn: () => fetchVenues(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    select: (data) => data.venues, // Only return venues array for backward compatibility
+  });
+}
+
+// New hook for paginated venues with metadata
+export function useVenuesPaginated(filters: VenueFilters = {}) {
+  return useQuery({
+    queryKey: ['venues-paginated', filters],
+    queryFn: () => fetchVenues(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -87,60 +165,55 @@ export function useVenue(venueId: string) {
   return useQuery({
     queryKey: ['venue', venueId],
     queryFn: async () => {
-      const venues = await fetchVenues();
-      return venues.find(venue => venue.id === venueId) || null;
+      const { data, error } = await supabase
+        .from('venues')
+        .select(`
+          *,
+          venue_images(id, image_url, sort_order)
+        `)
+        .eq('id', venueId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data) return null;
+
+      // Transform to match Venue interface
+      const primaryImage = data.venue_images && data.venue_images.length > 0
+        ? data.venue_images.sort((a: { sort_order: number }, b: { sort_order: number }) =>
+          a.sort_order - b.sort_order)[0]
+        : null;
+
+      return {
+        id: data.id.toString(),
+        name: data.name,
+        latitude: parseFloat(data.latitude) || 0,
+        longitude: parseFloat(data.longitude) || 0,
+        category: data.category || 'Venue',
+        image_url: primaryImage?.image_url || null,
+        city: data.city,
+        address: data.address,
+        state: data.state,
+        description: data.description || '',
+        capacity: data.max_guests ? parseInt(data.max_guests) : 0,
+        tags: data.tags || [],
+        venue_images: data.venue_images || [],
+        neighborhood: data.neighborhood || '',
+        owner_id: data.owner_id,
+        status: data.status || 'approved',
+        collaboration_type: data.collaboration_type || '',
+      };
     },
     enabled: !!venueId,
+    staleTime: 10 * 60 * 1000, // 10 minutes for individual venues
   });
 }
 
 // Function to fetch featured venues from Supabase
 async function fetchFeaturedVenues() {
-  const { data, error } = await supabase
-    .from('venues')
-    .select(`
-      *,
-      venue_images(image_url, sort_order)
-    `)
-    .eq('featured', true);
-
-  if (error) {
-    console.error('Supabase error:', error);
-    throw error;
-  }
-
-  if (data) {
-    // Transform data to match our Venue interface
-    return data.map(venue => {
-      // Find the image with the lowest sort_order (primary image)
-      const primaryImage = venue.venue_images && venue.venue_images.length > 0
-        ? venue.venue_images.sort((a: { sort_order: number }, b: { sort_order: number }) =>
-          a.sort_order - b.sort_order)[0]
-        : null;
-
-      return {
-        id: venue.id.toString(),
-        name: venue.name,
-        latitude: parseFloat(venue.latitude) || 0,
-        longitude: parseFloat(venue.longitude) || 0,
-        category: venue.category || 'Venue',
-        image_url: primaryImage && primaryImage.image_url,
-        city: venue.city,
-        address: venue.address,
-        state: venue.state,
-        price: venue.price ? parseFloat(venue.price) : undefined,
-        pricing_type: venue.pricing_type,
-        min_hours: venue.min_hours ? parseInt(venue.min_hours) : undefined,
-        description: venue.description || '',
-        capacity: venue.max_guests ? parseInt(venue.max_guests) : 0,
-        tags: venue.rental_type || [],
-        venue_images: venue.venue_images || [],
-        owner_id: venue.owner_id,
-      };
-    });
-  }
-
-  return [];
+  return fetchVenues({ featured: true, limit: 10 });
 }
 
 // Hook to use the featured venue data with React Query
@@ -148,9 +221,10 @@ export function useFeaturedVenues() {
   return useQuery({
     queryKey: ['featuredVenues'],
     queryFn: fetchFeaturedVenues,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    staleTime: 0
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    select: (data) => data.venues, // Only return venues array
   });
 }
 
@@ -195,8 +269,8 @@ export function useEvents<T = {
   return useQuery<T>({
     queryKey: ['events'],
     queryFn: fetchEvents,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    staleTime: 0
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
   });
 } 

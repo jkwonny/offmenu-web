@@ -7,6 +7,7 @@ import Image from "next/image";
 import DateTimePicker from "./DateTimePicker";
 import RangeSlider from "./RangeSlider";
 import GoogleAutoComplete from "./GoogleAutoComplete";
+import ServicesFormStep, { DEFAULT_EVENT_SERVICES } from "./ServicesFormStep";
 import { Event, EventImage } from "@/app/types/event";
 import { VenueFormData } from "@/app/types/venue";
 
@@ -67,7 +68,6 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
     const [title, setTitle] = useState<string>(initialData?.title || "");
     const [description, setDescription] = useState<string>(initialData?.description || "");
     const [assetsNeeded, setAssetsNeeded] = useState<string[]>(initialData?.assets_needed || []);
-    const [assetInput, setAssetInput] = useState<string>("");
 
     // Address state
     const [address, setAddress] = useState<string>(initialData?.address || "");
@@ -296,18 +296,6 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
         }
     };
 
-    const handleAssetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === ' ' && assetInput.trim()) {
-            e.preventDefault();
-            setAssetsNeeded([...assetsNeeded, assetInput.trim()]);
-            setAssetInput("");
-        }
-    };
-
-    const removeAsset = (index: number) => {
-        setAssetsNeeded(assetsNeeded.filter((_, i) => i !== index));
-    };
-
     const handleCancel = () => {
         if (mode === 'edit' && initialData?.id) {
             router.push(`/event/${initialData.id}`);
@@ -526,36 +514,17 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                     </div>
 
                     <div className="mb-6">
-                        <label htmlFor="assetsNeeded" className="block mb-1.5 text-sm font-medium text-gray-700">
-                            Required Services/Features
-                        </label>
-                        <input
-                            type="text"
-                            id="assetsNeeded"
-                            value={assetInput}
-                            onChange={(e) => setAssetInput(e.target.value)}
-                            onKeyDown={handleAssetKeyDown}
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-                            placeholder="e.g., DJ Booth, Projector (press space to add)"
+                        <ServicesFormStep
+                            selectedServices={assetsNeeded}
+                            onServicesChange={setAssetsNeeded}
+                            title="Required Services/Features"
+                            description="Select or add services and features you need for your event"
+                            placeholder="Add a custom service"
+                            presetServices={DEFAULT_EVENT_SERVICES}
+                            showPresetServices={true}
+                            allowCustomServices={true}
+                            addOnSpace={false}
                         />
-                        <div className="flex flex-wrap gap-2 mt-3">
-                            {assetsNeeded.map((asset, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full text-sm text-gray-700 border border-gray-200"
-                                >
-                                    <span>{asset}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeAsset(index)}
-                                        className="text-gray-500 hover:text-gray-800 text-lg leading-none -mr-1"
-                                        aria-label={`Remove ${asset}`}
-                                    >
-                                        &times;
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
                     </div>
 
                     <div className="mb-8">
