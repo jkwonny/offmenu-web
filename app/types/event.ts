@@ -33,4 +33,6 @@ export interface Event {
     owner_id?: string;
     event_status?: string;
     duration?: number;
+    website?: string;
+    instagram_handle?: string;
 }

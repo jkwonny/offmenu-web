@@ -35,7 +35,6 @@ export default function MultiStepLayout({
     canGoNext,
     canGoPrevious,
     nextButtonText = "Next",
-    showOptionalText = false,
     isSubmitting = false,
 }: MultiStepLayoutProps) {
     return (
@@ -109,7 +108,7 @@ export default function MultiStepLayout({
                     <button
                         onClick={onPrevious}
                         disabled={!canGoPrevious}
-                        className={`px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg transition-colors duration-200 ${
+                        className={`cursor-pointer px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg transition-colors duration-200 ${
                             canGoPrevious
                                 ? "hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                                 : "opacity-50 cursor-not-allowed"
@@ -119,15 +118,10 @@ export default function MultiStepLayout({
                     </button>
 
                     <div className="flex flex-col items-center">
-                        {showOptionalText && (
-                            <p className="text-xs text-gray-500 mb-1">
-                                This is optional, you may enter your pop up address later
-                            </p>
-                        )}
                         <button
                             onClick={onNext}
                             disabled={!canGoNext || isSubmitting}
-                            className={`px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 ${
+                            className={`cursor-pointer px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 ${
                                 canGoNext && !isSubmitting
                                     ? "hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                     : "opacity-60 cursor-not-allowed"

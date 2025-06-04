@@ -74,7 +74,7 @@ Event Details:
 • Duration: ${eventData.duration} hour${eventData.duration !== 1 ? 's' : ''}${assetsText}
 
 ${eventData.description ? `\nEvent Description:\n${eventData.description}\n` : ''}
-Would you be interested in hosting this event? I&apos;d love to discuss the details and see how we can work together.
+Would you be interested in hosting this event? I'd love to discuss the details and see how we can work together.
 
 Looking forward to hearing from you!`;
 

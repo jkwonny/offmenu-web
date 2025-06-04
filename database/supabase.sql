@@ -82,7 +82,9 @@ CREATE TABLE events (
   ADD COLUMN state TEXT,
   ADD COLUMN postal_code TEXT,
   ADD COLUMN latitude DOUBLE PRECISION,
-  ADD COLUMN longitude DOUBLE PRECISION;
+  ADD COLUMN longitude DOUBLE PRECISION,
+  ADD COLUMN website TEXT,
+  ADD COLUMN instagram_handle TEXT,
 
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),

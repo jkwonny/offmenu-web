@@ -21,6 +21,8 @@ interface EventFormData {
   postal_code: string;
   latitude: string;
   longitude: string;
+  website?: string;
+  instagram_handle?: string;
 }
 
 export async function createEvent(formData: EventFormData) {
@@ -56,6 +58,8 @@ export async function createEvent(formData: EventFormData) {
       postal_code: formData.postal_code,
       latitude: formData.latitude ? parseFloat(formData.latitude) : null,
       longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+      website: formData.website,
+      instagram_handle: formData.instagram_handle,
     })
     .select()
     .single();
@@ -109,6 +113,8 @@ export async function updateEvent(formData: UpdateEventFormData) {
       postal_code: formData.postal_code,
       latitude: formData.latitude ? parseFloat(formData.latitude) : null,
       longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+      website: formData.website,
+      instagram_handle: formData.instagram_handle,
       // owner_id: session.user.id, // owner_id should not change on update
       // user_id: session.user.id, // user_id should not change on update
       // is_active: true, // is_active should likely be managed elsewhere or not updated here

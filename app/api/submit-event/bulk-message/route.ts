@@ -103,6 +103,8 @@ export async function POST(request: NextRequest) {
                 duration: eventData.duration,
                 assets_needed: eventData.assets_needed,
                 event_status: eventData.event_status,
+                website: eventData.website,
+                instagram_handle: eventData.instagram_handle,
                 user_id: userId,
                 owner_id: userId,
                 is_active: true,

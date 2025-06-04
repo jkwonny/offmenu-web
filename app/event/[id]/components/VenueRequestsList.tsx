@@ -263,7 +263,7 @@ export default function VenueRequestsList({ eventId, isOwner, onEventUpdate }: V
                 <h2 className="text-xl font-semibold text-gray-800">List of Spaces</h2>
                 <button
                     onClick={() => loadRequests(false)}
-                    className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                    className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1 cursor-pointer"
                     title="Refresh requests"
                 >
                     <RefreshCw className="h-4 w-4" />

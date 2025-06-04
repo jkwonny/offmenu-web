@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useUser } from "../../context/UserContext";
 import Image from "next/image";
 import DateTimePicker from "../../components/DateTimePicker";
+import ServicesFormStep, { DEFAULT_EVENT_SERVICES } from "../../components/ServicesFormStep";
 
 type EventType = 'Pop Up' | 'Birthday' | 'Corporate' | 'Wedding' | 'Other';
 type GuestRange = '1-15' | '16-30' | '31-50' | '51-75' | '75-100' | '100+';
@@ -20,6 +21,8 @@ export interface EventFormData {
     assets_needed: string[];
     event_status: "private_pending" | "public_pending" | "public_approved" | "private_approved";
     duration: number;
+    website?: string;
+    instagram_handle?: string;
     // Address fields removed - will be added in step 3 if needed
 }
 
@@ -42,7 +45,6 @@ export default function EventDetailsStep({
 }: EventDetailsStepProps) {
     const { isLoading: isUserLoading } = useUser();
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
-    const [assetInput, setAssetInput] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -127,20 +129,6 @@ export default function EventDetailsStep({
         
         onImagesChange(newUploadedImages);
         onImagePreviewUrlsChange(newPreviewUrls);
-    };
-
-    const handleAssetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === ' ' && assetInput.trim()) {
-            e.preventDefault();
-            const newAssets = [...formData.assets_needed, assetInput.trim()];
-            onFormDataChange({ ...formData, assets_needed: newAssets });
-            setAssetInput("");
-        }
-    };
-
-    const removeAsset = (index: number) => {
-        const newAssets = formData.assets_needed.filter((_, i) => i !== index);
-        onFormDataChange({ ...formData, assets_needed: newAssets });
     };
 
     if (isUserLoading) {
@@ -338,37 +326,50 @@ export default function EventDetailsStep({
                         />
                     </div>
 
-                    <div className="mb-6">
-                        <label htmlFor="assetsNeeded" className="block mb-1.5 text-sm font-medium text-gray-700">
-                            Required Services/Features
-                        </label>
-                        <input
-                            type="text"
-                            id="assetsNeeded"
-                            value={assetInput}
-                            onChange={(e) => setAssetInput(e.target.value)}
-                            onKeyDown={handleAssetKeyDown}
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-                            placeholder="e.g., DJ Booth, Projector (press space to add)"
-                        />
-                        <div className="flex flex-wrap gap-2 mt-3">
-                            {formData.assets_needed.map((asset, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full text-sm text-gray-700 border border-gray-200"
-                                >
-                                    <span>{asset}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeAsset(index)}
-                                        className="text-gray-500 hover:text-gray-800 text-lg leading-none -mr-1"
-                                        aria-label={`Remove ${asset}`}
-                                    >
-                                        &times;
-                                    </button>
-                                </div>
-                            ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label htmlFor="website" className="block mb-1.5 text-sm font-medium text-gray-700">
+                                Event Website
+                            </label>
+                            <input
+                                id="website"
+                                type="url"
+                                value={formData.website || ''}
+                                onChange={(e) => onFormDataChange({ ...formData, website: e.target.value })}
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                placeholder="https://your-event-website.com"
+                            />
                         </div>
+                        <div>
+                            <label htmlFor="instagram" className="block mb-1.5 text-sm font-medium text-gray-700">
+                                Instagram Handle
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
+                                <input
+                                    id="instagram"
+                                    type="text"
+                                    value={formData.instagram_handle || ''}
+                                    onChange={(e) => onFormDataChange({ ...formData, instagram_handle: e.target.value })}
+                                    className="w-full pl-8 pr-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                    placeholder="your_handle"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <ServicesFormStep
+                            selectedServices={formData.assets_needed}
+                            onServicesChange={(services) => onFormDataChange({ ...formData, assets_needed: services })}
+                            title="Required Services/Features"
+                            description="What services or features do you need for your event?"
+                            presetServices={DEFAULT_EVENT_SERVICES}
+                            placeholder="e.g., DJ Booth, Projector"
+                            showPresetServices={true}
+                            allowCustomServices={true}
+                            addOnSpace={true}
+                        />
                     </div>
 
                     <div className="mb-8">

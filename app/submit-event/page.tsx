@@ -280,7 +280,7 @@ export default function SubmitEventPage() {
             case 2:
                 return venueCount > 0 
                     ? `Message Spaces (${venueCount} selected)`
-                    : "Add Address";
+                    : "Skip (Add Address Later)";
             case 3:
                 return "Create Event";
             default:

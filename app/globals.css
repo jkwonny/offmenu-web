@@ -106,6 +106,10 @@ body {
   /* Chrome, Safari and Opera */
 }
 
+button {
+  cursor: pointer;
+}
+
 /* Dropdown menu animation */
 @keyframes menuOpen {
   0% {
