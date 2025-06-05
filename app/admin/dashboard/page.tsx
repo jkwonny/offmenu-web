@@ -365,7 +365,10 @@ function AdminDashboardContent() {
         event.event_status === 'private_pending' || event.event_status === 'public_pending'
     );
     const approvedEvents = events.filter(event => 
-        event.event_status === 'private_approved' || event.event_status === 'public_approved'
+        event.event_status === 'public_approved'
+    );
+    const declinedEvents = events.filter(event => 
+        event.event_status === 'private_approved'
     );
 
     // Check if all pending venues are selected
@@ -746,6 +749,39 @@ function AdminDashboardContent() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Declined Events Section */}
+                        <div className="mb-12">
+                            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Declined Events ({declinedEvents.length})</h2>
+                            {declinedEvents.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-gray-400 mb-4">
+                                        <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No declined events</h3>
+                                    <p className="text-gray-500">Declined events will appear here</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {declinedEvents.map(event => (
+                                        <EventCard
+                                            key={event.id}
+                                            event={event}
+                                            actionButtons={
+                                                <button
+                                                    onClick={() => handleEventStatusChange(event.id, 'public_approved')}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm font-medium w-full"
+                                                >
+                                                    Activate
+                                                </button>
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>
@@ -941,11 +977,13 @@ function EventCard({
                 <div className={`inline-flex self-start mb-4 items-center px-3 py-1 rounded-full text-sm font-medium ${
                     event.event_status === 'private_pending' || event.event_status === 'public_pending' 
                         ? 'bg-yellow-100 text-yellow-800' 
-                        : 'bg-green-100 text-green-800'
+                        : event.event_status === 'public_approved'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
                     {event.event_status === 'private_pending' ? 'Private Pending' :
                         event.event_status === 'public_pending' ? 'Public Pending' :
-                        event.event_status === 'private_approved' ? 'Private Approved' : 'Public Approved'}
+                        event.event_status === 'public_approved' ? 'Public Approved' : 'Declined'}
                 </div>
 
                 {/* Action buttons */}

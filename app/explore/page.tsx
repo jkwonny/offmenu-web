@@ -42,6 +42,7 @@ interface Event {
     price?: number;
     user_id?: string;
     owner_id?: string;
+    event_status?: string;
 }
 
 // PopupContent component for MapboxMap
@@ -254,6 +255,8 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
     const { data: allVenues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
     const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
 
+    console.log('allEvents', allEvents);
+
     // Filter venues to only show approved ones (removed owner filter)
     const venues = allVenues.filter(venue => venue.status === 'approved');
 
@@ -285,8 +288,8 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
         return true;
     });
 
-    // Show all events (removed owner filter)
-    const events = allEvents;
+    // Filter events to only show public_approved ones
+    const events = allEvents.filter(event => event.event_status === 'public_approved');
 
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
