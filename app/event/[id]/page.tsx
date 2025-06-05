@@ -37,9 +37,6 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
     const successParam = searchParams.get('success');
     const venuesParam = searchParams.get('venues');
 
-    console.log('eventData', eventData);
-    console.log('user', user);
-
     useEffect(() => {
         // Show success message if redirected from submit form
         if (successParam === 'created' && venuesParam) {

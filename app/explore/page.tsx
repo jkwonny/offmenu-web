@@ -255,8 +255,6 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
     const { data: allVenues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
     const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
 
-    console.log('allEvents', allEvents);
-
     // Filter venues to only show approved ones (removed owner filter)
     const venues = allVenues.filter(venue => venue.status === 'approved');
 

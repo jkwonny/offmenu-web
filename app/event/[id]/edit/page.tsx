@@ -35,11 +35,8 @@ export default function EditEventPage() {
                         throw new Error(errorData.error || `Error: ${response.status}`);
                     }
                     const data = await response.json();
-                    console.log('data', data);
-                    console.log('user', user);
                     setEventData(data);
                     if (user && data.user_id !== user.id) {
-                        console.log('not authorized');
                         setError("You are not authorized to edit this event.");
                         // Redirect or show a message
                         setTimeout(() => router.push(`/event/${eventId}`), 3000);

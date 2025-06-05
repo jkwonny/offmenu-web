@@ -28,7 +28,6 @@ async function fetchSenderRooms(userId: string) {
                 services
             `)
         .eq('sender_id', userId);
-        console.log('data', data);
     if (error) throw error;
     return data;
 }

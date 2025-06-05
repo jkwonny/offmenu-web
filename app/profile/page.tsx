@@ -169,7 +169,6 @@ export default function Profile() {
 
         // Validate phone number
         if (!validatePhone()) {
-            console.log('phone number', phone)
             return;
         }
 
