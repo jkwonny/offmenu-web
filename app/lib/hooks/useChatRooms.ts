@@ -24,10 +24,11 @@ async function fetchSenderRooms(userId: string) {
                 guest_count,
                 collaboration_types,
                 request_id,
-                venue:venues(name)
+                venue:venues(name),
+                services
             `)
         .eq('sender_id', userId);
-        
+        console.log('data', data);
     if (error) throw error;
     return data;
 }
@@ -54,7 +55,8 @@ async function fetchRecipientRooms(userId: string) {
             guest_count,
             collaboration_types,
             request_id,
-            venue:venues(name)
+            venue:venues(name),
+            services
         `)
         .eq('recipient_id', userId);
         
@@ -192,7 +194,8 @@ export function useChatRooms(userId: string | undefined) {
                 instagram_handle: room.instagram_handle,
                 website: room.website,
                 guest_count: room.guest_count,
-                collaboration_types: room.collaboration_types
+                collaboration_types: room.collaboration_types,
+                services: room.services
             };
         });
         

@@ -121,7 +121,7 @@ function SignUpForm() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md"
                         placeholder="you@example.com"
                         required
                     />
@@ -136,7 +136,7 @@ function SignUpForm() {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md"
                         placeholder="John Doe"
                     />
                 </div>
@@ -150,7 +150,7 @@ function SignUpForm() {
                         type="tel"
                         value={phone}
                         onChange={handlePhoneChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md"
                         placeholder="(123) 456-7890"
                     />
                 </div>
@@ -164,7 +164,7 @@ function SignUpForm() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md"
                         placeholder="••••••••"
                         required
                     />
@@ -173,7 +173,7 @@ function SignUpForm() {
                 <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-2 px-4 rounded-md text-white font-medium ${loading ? "bg-amber-400" : "bg-amber-600 hover:bg-amber-700"
+                    className={`cursor-pointer w-full py-2 px-4 rounded-md text-white font-medium ${loading ? "bg-[#273287]" : "bg-[#273287] hover:bg-[#273287]/70"
                         } transition-colors`}
                 >
                     {loading ? "Signing up..." : "Sign up"}
@@ -194,7 +194,7 @@ export default function SignUp() {
             <NavBar />
 
             <div className="max-w-md mx-auto p-6 mt-16">
-                <h1 className="text-3xl font-bold text-amber-950 mb-8 text-center">Create an Account</h1>
+                <h1 className="text-3xl font-bold text-black mb-8 text-center">Create an Account</h1>
 
                 <Suspense fallback={<SignUpFormLoading />}>
                     <SignUpForm />
@@ -202,7 +202,7 @@ export default function SignUp() {
 
                 <p className="mt-6 text-center text-gray-600">
                     Already have an account?{" "}
-                    <Link href="/auth/sign-in" className="text-amber-600 hover:text-amber-800">
+                    <Link href="/auth/sign-in" className="text-black hover:text-gray-800">
                         Sign in
                     </Link>
                 </p>

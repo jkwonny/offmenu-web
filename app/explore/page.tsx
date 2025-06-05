@@ -42,6 +42,7 @@ interface Event {
     price?: number;
     user_id?: string;
     owner_id?: string;
+    event_status?: string;
 }
 
 // PopupContent component for MapboxMap
@@ -254,6 +255,8 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
     const { data: allVenues = [], isLoading: venuesLoading, error: venuesError } = useVenues();
     const { data: allEvents = [], isLoading: eventsLoading, error: eventsError } = useEvents<Event[]>();
 
+    console.log('allEvents', allEvents);
+
     // Filter venues to only show approved ones (removed owner filter)
     const venues = allVenues.filter(venue => venue.status === 'approved');
 
@@ -285,8 +288,8 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
         return true;
     });
 
-    // Show all events (removed owner filter)
-    const events = allEvents;
+    // Filter events to only show public_approved ones
+    const events = allEvents.filter(event => event.event_status === 'public_approved');
 
     const isLoading = selectedView === 'spaces' ? venuesLoading : eventsLoading;
     const error = selectedView === 'spaces' ? venuesError : eventsError;
@@ -385,7 +388,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
             </div>
 
             {/* Content container */}
-            <div className="mt-2 w-full p-6 bg-white lg:rounded-lg shadow-lg flex-1 overflow-hidden lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+            <div className="w-full p-6 bg-white lg:rounded-lg shadow-lg flex-1 overflow-hidden lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
                 {/* Mobile header - only show space count when minimized */}
                 <div className="lg:hidden mb-4">
                     <h2 className="text-xl font-semibold">
@@ -730,7 +733,7 @@ export default function ExplorePage() {
             </div>
 
             {/* Floating content container below navbar - responsive positioning */}
-            <div className="absolute bottom-0 left-0 right-0 lg:top-22 lg:left-3 lg:bottom-auto lg:right-auto lg:w-1/2 lg:max-w-[1/2] z-50">
+            <div className="absolute bottom-0 left-0 right-0 lg:top-23 lg:left-3 lg:bottom-auto lg:right-auto lg:w-1/2 lg:max-w-[1/2] z-50">
                 <Suspense fallback={<div className="flex items-center justify-center h-12 w-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#273287]"></div>
                 </div>}>

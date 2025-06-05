@@ -56,7 +56,7 @@ export default function VenueAvailabilityPage() {
                         <h3 className="text-lg font-medium mb-2">You don&apos;t have any venues yet</h3>
                         <p className="text-gray-600 mb-4">Add a venue to manage its availability.</p>
                         <Link
-                            href="/submit-venue"
+                            href="/submit-space"
                             className="inline-block bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
                         >
                             Add a Venue

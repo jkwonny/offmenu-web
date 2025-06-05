@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       special_requests, 
       instagram_handle, 
       website, 
-      guest_count 
+      guest_count,
+      services
     } = await request.json();
 
     // Validate required fields
@@ -75,7 +76,8 @@ export async function POST(request: NextRequest) {
           instagram_handle,
           website,
           guest_count,
-          collaboration_types
+          collaboration_types,
+          services
         })
         .select('id')
         .single();
@@ -111,7 +113,8 @@ export async function POST(request: NextRequest) {
         instagram_handle,
         website,
         guest_count,
-        room_id: roomId // Link to the chat room
+        room_id: roomId, // Link to the chat room
+        services
       })
       .select('id')
       .single();
