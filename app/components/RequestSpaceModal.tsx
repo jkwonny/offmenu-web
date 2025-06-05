@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
 import { useRouter } from "next/navigation";
 import DateTimePicker from "./DateTimePicker";
+import ServicesFormStep, { DEFAULT_EVENT_SERVICES } from "./ServicesFormStep";
 
 export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal: () => void, venue: Venue }) {
     const params = useParams();
@@ -17,13 +18,15 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [collaborationTypes, setCollaborationTypes] = useState({
-        minimumSpend: false,
-        revenueShare: false,
-        fixedRental: false,
-        freePromotion: false
+        open_venue: false,
+        open_space: false,
+        minimum_spend: false,
+        flat: false,
+        no_minimum_spend: false,
+        revenue_share: false,
     });
     const [requirements, setRequirements] = useState('');
-    const [specialRequests, setSpecialRequests] = useState('');
+    const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [instagramHandle, setInstagramHandle] = useState('');
     const [website, setWebsite] = useState('');
     const [guestCount, setGuestCount] = useState<string | null>(null);
@@ -111,7 +114,7 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
                     selected_date: selectedDate,
                     selected_time: selectedTime,
                     requirements,
-                    special_requests: specialRequests,
+                    services: selectedServices,
                     instagram_handle: instagramHandle,
                     website,
                     guest_count: guestCount,
@@ -125,7 +128,7 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
             }
 
             // On success, redirect directly to the chat room
-            router.push(`/chat?chatId=${data.room_id}`);
+            router.push(`/chat?chatRoomId=${data.room_id}`);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'An error occurred while sending your request.';
             setError(errorMessage);
@@ -141,7 +144,7 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
             onClick={toggleModal}
         >
             <div
-                className="bg-white rounded-xl w-full max-w-lg relative p-2 max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-xl w-full max-w-2xl relative p-2 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button
@@ -273,14 +276,16 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
                     </div>
 
                     <div className="mb-4 w-full">
-                        <label className="block text-sm font-medium text-black mb-1">
-                            Special Requests
-                        </label>
-                        <textarea
-                            value={specialRequests}
-                            onChange={(e) => setSpecialRequests(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300 min-h-[100px]"
-                            placeholder="Enter your message"
+                        <ServicesFormStep
+                            selectedServices={selectedServices}
+                            onServicesChange={setSelectedServices}
+                            title="Services & Features Needed"
+                            description="Select services and features you need for your event"
+                            placeholder="Add a custom service"
+                            presetServices={DEFAULT_EVENT_SERVICES}
+                            showPresetServices={true}
+                            allowCustomServices={true}
+                            addOnSpace={false}
                         />
                     </div>
 
@@ -292,38 +297,38 @@ export default function RequestSpaceModal({ toggleModal, venue }: { toggleModal:
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={collaborationTypes.minimumSpend}
-                                    onChange={() => handleCollaborationTypeChange('minimumSpend')}
+                                    checked={collaborationTypes.minimum_spend}
+                                    onChange={() => handleCollaborationTypeChange('minimum_spend')}
                                     className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
                                 />
-                                <span>Minimum spend</span>
+                                <span>Minimum Spend</span>
                             </label>
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={collaborationTypes.revenueShare}
-                                    onChange={() => handleCollaborationTypeChange('revenueShare')}
+                                    checked={collaborationTypes.revenue_share}
+                                    onChange={() => handleCollaborationTypeChange('revenue_share')}
                                     className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
                                 />
-                                <span>Revenue share on ticket sales</span>
+                                <span>Revenue Share</span>
                             </label>
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={collaborationTypes.fixedRental}
-                                    onChange={() => handleCollaborationTypeChange('fixedRental')}
+                                    checked={collaborationTypes.flat}
+                                    onChange={() => handleCollaborationTypeChange('flat')}
                                     className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
                                 />
-                                <span>Fixed space rental fee</span>
+                                <span>Flat Fee</span>
                             </label>
                             <label className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    checked={collaborationTypes.freePromotion}
-                                    onChange={() => handleCollaborationTypeChange('freePromotion')}
+                                    checked={collaborationTypes.no_minimum_spend}
+                                    onChange={() => handleCollaborationTypeChange('no_minimum_spend')}
                                     className="mr-2 h-4 w-4 text-amber-600 focus:ring-amber-500 border-amber-300 rounded"
                                 />
-                                <span>Free venue space for promotion</span>
+                                <span>No Minimum Spend</span>
                             </label>
                         </div>
                     </div>

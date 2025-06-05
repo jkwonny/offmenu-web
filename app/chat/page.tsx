@@ -15,6 +15,7 @@ import {
 } from '@/app/lib/queries/chat';
 import Image from 'next/image';
 import Link from 'next/link';
+import { CollaborationTypes } from '@/constants/CollaborationTypes';
 
 function ChatContent() {
     const router = useRouter();
@@ -22,8 +23,10 @@ function ChatContent() {
     const [error, setError] = useState('');
     const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
     const [showChatView, setShowChatView] = useState(false); // For mobile view state
+    const [waitingForRoom, setWaitingForRoom] = useState(false); // Add state to track if we're waiting for a room to appear
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const currentRoomIdRef = useRef<string | null>(null);
+    const roomNotFoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // React Query hooks
     const { data: user, isLoading: userLoading, error: userError } = useCurrentUser();
@@ -72,6 +75,15 @@ function ChatContent() {
                 const room = chatRooms.find(r => r.id === chatRoomId);
 
                 if (room) {
+                    console.log('room', room);
+                    // Clear any pending timeout and waiting state
+                    if (roomNotFoundTimeoutRef.current) {
+                        clearTimeout(roomNotFoundTimeoutRef.current);
+                        roomNotFoundTimeoutRef.current = null;
+                    }
+                    setWaitingForRoom(false);
+                    setError(''); // Clear any existing errors
+                    
                     // Convert to proper ChatRoom type with all required properties
                     const roomData = room as ChatRoom & {
                         event_date?: string;
@@ -85,6 +97,7 @@ function ChatContent() {
                         guest_count?: string;
                         collaboration_types?: string[];
                         request_id?: string;
+                        services?: string[];
                     };
 
                     const typedRoom: ChatRoom = {
@@ -104,12 +117,13 @@ function ChatContent() {
                         collaboration_types: roomData.collaboration_types,
                         request_id: roomData.request_id,
                         venue: room.venue,
+                        services: roomData.services,
                         latest_message: room.latest_message ? {
                             content: room.latest_message.content,
                             created_at: room.latest_message.created_at,
                             sender: {
                                 name: room.latest_message.sender.name
-                            }
+                            },
                         } : undefined
                     };
 
@@ -117,20 +131,52 @@ function ChatContent() {
                     setShowChatView(true); // Show chat view on mobile when room is selected
                     currentRoomIdRef.current = chatRoomId;
                 } else {
-                    console.warn(`Chat room with ID ${chatRoomId} not found`);
-                    setError('Chat room not found');
-                    setSelectedRoom(null);
-                    setShowChatView(false);
-                    currentRoomIdRef.current = null;
+                    // Room not found - but don't immediately show error
+                    // Set waiting state and give it time for the room to be created
+                    setWaitingForRoom(true);
+                    
+                    // Clear any existing timeout
+                    if (roomNotFoundTimeoutRef.current) {
+                        clearTimeout(roomNotFoundTimeoutRef.current);
+                    }
+                    
+                    // Wait 5 seconds before showing the error (room should be created by then)
+                    roomNotFoundTimeoutRef.current = setTimeout(() => {
+                        console.warn(`Chat room with ID ${chatRoomId} not found after waiting`);
+                        setError('Chat room not found');
+                        setSelectedRoom(null);
+                        setShowChatView(false);
+                        setWaitingForRoom(false);
+                        currentRoomIdRef.current = null;
+                        roomNotFoundTimeoutRef.current = null;
+                    }, 5000);
                 }
             }
         } else if (!chatRoomId) {
             // Clear selected room if no chatRoomId in URL
             setSelectedRoom(null);
             setShowChatView(false);
+            setWaitingForRoom(false);
             currentRoomIdRef.current = null;
+            // Clear any pending timeout
+            if (roomNotFoundTimeoutRef.current) {
+                clearTimeout(roomNotFoundTimeoutRef.current);
+                roomNotFoundTimeoutRef.current = null;
+            }
+        } else if (chatRoomId && chatRooms.length === 0 && !chatRoomsLoading) {
+            // We have a chatRoomId but no rooms loaded and not loading - wait a bit
+            setWaitingForRoom(true);
         }
-    }, [searchParams, chatRooms]);
+    }, [searchParams, chatRooms, chatRoomsLoading]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (roomNotFoundTimeoutRef.current) {
+                clearTimeout(roomNotFoundTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleChatRoomClick = (roomId: string) => {
         // Update URL without navigation
@@ -155,7 +201,7 @@ function ChatContent() {
     }, [chatMessages]); // Remove selectedRoom from the dependency array
 
     // Set overall loading state based on user loading and chat rooms loading
-    const isLoading = userLoading || venuesLoading || requestsLoading || chatRoomsLoading;
+    const isLoading = userLoading || venuesLoading || requestsLoading || chatRoomsLoading || waitingForRoom;
 
     if (!user && !userLoading) {
         return (
@@ -332,7 +378,7 @@ function ChatContent() {
                     {/* Right Sidebar - Event Info */}
                     <div className="col-span-1 bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col p-2">
                         {selectedSpace?.venue_images && selectedSpace.venue_images.length > 0 ? (
-                            <div className="relative w-full h-72">
+                            <div className="relative w-full h-64">
                                 <Image
                                     src={selectedSpace.venue_images[0].image_url}
                                     alt={selectedSpace?.name || "Venue"}
@@ -346,41 +392,152 @@ function ChatContent() {
                                 />
                             </div>
                         ) : (
-                            <div className="w-full h-72 bg-gray-200 flex items-center justify-center">
+                            <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg">
                                 <span className="text-gray-500">No image available</span>
                             </div>
                         )}
 
-                        <div className="p-5 flex flex-col gap-2 justify-between h-full">
-                            <div>
-                                <h2 className="text-2xl font-bold mb-2">{selectedSpace?.name}</h2>
+                        <div className="p-4 flex flex-col gap-4 justify-between h-full overflow-y-auto">
+                            <div className="space-y-4">
+                                <div>
+                                    <h2 className="text-xl font-bold mb-2">{selectedSpace?.name}</h2>
+                                    <p className="text-gray-600 text-sm line-clamp-3">
+                                        {selectedSpace?.description}
+                                    </p>
+                                </div>
 
-                                <p className="text-gray-600 mb-6">
-                                    {selectedSpace?.description}
-                                </p>
+                                {/* Event Details */}
+                                <div className="border-t pt-4">
+                                    <h3 className="font-semibold text-gray-900 mb-3">Event Details</h3>
+                                    <div className="space-y-2">
+                                        {selectedRoom?.popup_name && (
+                                            <div className="flex items-start gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm0 2a7 7 0 00-7 7h14a7 7 0 00-7-7z" clipRule="evenodd" />
+                                                </svg>
+                                                <span className="text-sm text-gray-600">{selectedRoom.popup_name}</span>
+                                            </div>
+                                        )}
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                        </svg>
-                                        <span className="text-gray-600">{selectedSpace?.address}</span>
-                                    </div>
+                                        {selectedRoom?.event_date && (
+                                            <div className="flex items-start gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                                                </svg>
+                                                <span className="text-sm text-gray-600">{selectedRoom.event_date}</span>
+                                            </div>
+                                        )}
 
-                                    <div className="flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                                        </svg>
-                                        <span className="text-gray-600">{selectedRoom?.event_date}</span>
+                                        {selectedRoom?.guest_count && (
+                                            <div className="flex items-start gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                                                </svg>
+                                                <span className="text-sm text-gray-600">{selectedRoom.guest_count} guests expected</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-start gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                            </svg>
+                                            <span className="text-sm text-gray-600">{selectedSpace?.address}</span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Services Requested */}
+                                {selectedRoom?.services && (
+                                    <div className="border-t pt-4">
+                                        <h3 className="font-semibold text-gray-900 mb-3">Services Requested</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {selectedRoom.services.map((service: string, index: number) => (
+                                                <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
+                                                    <div className="bg-blue-500 rounded-full p-1 flex-shrink-0">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                    <span className="text-sm text-gray-700 font-xs">{service}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Collaboration Types */}
+                                {selectedRoom?.collaboration_types && selectedRoom.collaboration_types.length > 0 && (
+                                    <div className="border-t pt-4">
+                                        <h3 className="font-semibold text-gray-900 mb-3">Collaboration Types</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedRoom.collaboration_types.map((type, index) => (
+                                                <span 
+                                                    key={index} 
+                                                    className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
+                                                >
+                                                    {CollaborationTypes[type as keyof typeof CollaborationTypes] || type}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Contact Information */}
+                                {(selectedRoom?.instagram_handle || selectedRoom?.website) && (
+                                    <div className="border-t pt-4">
+                                        <h3 className="font-semibold text-gray-900 mb-3">Contact Information</h3>
+                                        <div className="space-y-2">
+                                            {selectedRoom?.instagram_handle && (
+                                                <a
+                                                    href={`https://instagram.com/${selectedRoom.instagram_handle.replace('@', '')}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-pink-600 transition-colors"
+                                                >
+                                                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-400 via-pink-500 to-yellow-500 flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-2.5 h-2.5">
+                                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                                                        </svg>
+                                                    </div>
+                                                    <span>@{selectedRoom.instagram_handle.replace('@', '')}</span>
+                                                </a>
+                                            )}
+
+                                            {selectedRoom?.website && (
+                                                <a
+                                                    href={selectedRoom.website.startsWith('http') ? selectedRoom.website : `https://${selectedRoom.website}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="truncate">{selectedRoom.website.replace(/^https?:\/\//, '')}</span>
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Special Requests */}
+                                {selectedRoom?.special_requests && (
+                                    <div className="border-t pt-4">
+                                        <h3 className="font-semibold text-gray-900 mb-3">Special Requests</h3>
+                                        <p className="text-sm text-gray-600 whitespace-pre-line">{selectedRoom.special_requests}</p>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="mt-8">
-                                <h3 className="font-medium text-gray-900 mb-3">Revenue share on ticket sales</h3>
-                                <button className="w-full bg-gray-800 text-white py-3 rounded-md hover:bg-gray-700 transition">
-                                    View Pop-up
-                                </button>
+                            <div className="mt-6 pt-4 border-t">
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-gray-900 mb-3">Revenue share on ticket sales</p>
+                                    <Link href={`/spaces/${selectedSpace?.id}`}>
+                                        <button className="w-full bg-gray-800 text-white py-3 rounded-md hover:bg-gray-700 transition">
+                                            View Pop-up
+                                        </button>
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>

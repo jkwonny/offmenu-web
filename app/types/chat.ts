@@ -27,6 +27,7 @@ export interface ChatRoom {
     request_id?: string;
     isRequest?: boolean;
     status?: string;
+    services?: string[];
 }
 
 export interface ChatMessage {

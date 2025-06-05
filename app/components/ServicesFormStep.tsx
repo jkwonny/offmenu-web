@@ -17,13 +17,13 @@ interface ServicesFormStepProps {
 
 const DEFAULT_VENUE_SERVICES = [
     'DJ Booth', 'Kitchen Access', 'Moveable Tables', 'Live Music Allowed',
-    'Staff On Site', 'Projector/AV', 'Wifi', 'Outdoor Space', 'Parking',
+    'Staff On Site', 'Projector', 'Wifi', 'Outdoor Space', 'Parking',
     'Wine', 'Liquor', 'Outside Food Allowed', 'Catering Available', 'Smoking Area',
     'Wheelchair Accessible', 'Sound System', 'Patio', 'Rooftop'
 ];
 
 const DEFAULT_EVENT_SERVICES = [
-    'DJ Booth', 'Projector/AV', 'Sound System', 'Live Music', 'Catering',
+    'DJ Booth', 'Projector', 'Sound System', 'Live Music', 'Catering',
     'Bar Service', 'Photography', 'Decorations', 'Security', 'Cleaning Service',
     'Valet Parking', 'Coat Check', 'WiFi', 'Chairs', 'Moveable Tables'
 ];
