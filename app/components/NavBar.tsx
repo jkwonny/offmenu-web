@@ -91,8 +91,15 @@ export default function NavBar() {
             <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
-                    <Link href="/" className="text-md md:text-xl font-bold font-heading">
-                        OFFMENU
+                    <Link href="/" className="text-md md:text-xl font-bold font-heading flex items-center gap-1">
+                        <Image 
+                            src="/LOGO_TRANSPARENT_BG.png" 
+                            alt="OffMenu" 
+                            width={40} 
+                            height={40} 
+                            className="w-[40px] h-[40px] object-cover object-center scale-90" 
+                        />
+                        <span className="text-xl font-bold text-black">OFFMENU</span>
                     </Link>
                 </div>
 
