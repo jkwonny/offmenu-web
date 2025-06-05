@@ -98,7 +98,10 @@ export async function GET() {
 
         const { data, error } = await supabase
             .from('venues')
-            .select('*');
+            .select(`
+                *,
+                venue_images(image_url, sort_order)
+            `);
 
         if (error) {
             console.error('Supabase fetch error:', error);
