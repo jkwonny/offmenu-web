@@ -639,67 +639,77 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                 ) : (
                     <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
-                            {events.map((event: Event) => {
-                                // Determine the image URL for the event
-                                let eventImageUrl: string | undefined = undefined;
-                                if (event.event_images && event.event_images.length > 0) {
-                                    eventImageUrl = getImageUrl(event.event_images[0]);
-                                } else if (event.image_url) {
-                                    eventImageUrl = event.image_url;
-                                }
+                            {events.length > 0 ? (
+                                events.map((event: Event) => {
+                                    // Determine the image URL for the event
+                                    let eventImageUrl: string | undefined = undefined;
+                                    if (event.event_images && event.event_images.length > 0) {
+                                        eventImageUrl = getImageUrl(event.event_images[0]);
+                                    } else if (event.image_url) {
+                                        eventImageUrl = event.image_url;
+                                    }
 
-                                return (
-                                    <Link key={event.id} href={`/event/${event.id}`} passHref>
-                                        <div
-                                            className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-                                        >
-                                            {eventImageUrl && (
-                                                <div className="w-full h-32 lg:h-48 relative">
-                                                    <Image
-                                                        src={eventImageUrl}
-                                                        alt={event.title}
-                                                        layout="fill"
-                                                        objectFit="cover"
-                                                        className="transition-transform duration-300 group-hover:scale-105"
-                                                    />
-                                                </div>
-                                            )}
-                                            <div className="p-6">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                                    <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
-                                                        {formatText(event.event_type)}
-                                                    </span>
-                                                </div>
-                                                <div className="text-gray-600 mb-4">
-                                                    {format(event.selected_date, 'MMM d, yyyy')}
-                                                    {event.selected_time && ` at ${event.selected_time}`}
-                                                </div>
-                                                <p className="text-gray-700 mb-4 line-clamp-3">
-                                                    {event.description || 'No description available'}
-                                                </p>
-                                                <div className="flex flex-wrap gap-2 mb-4">
-                                                    {event.assets_needed?.map((tag: string, index: number) => (
-                                                        <span
-                                                            key={index}
-                                                            className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
-                                                        >
-                                                            {formatText(tag)}
+                                    return (
+                                        <Link key={event.id} href={`/event/${event.id}`} passHref>
+                                            <div
+                                                className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                                            >
+                                                {eventImageUrl && (
+                                                    <div className="w-full h-32 lg:h-48 relative">
+                                                        <Image
+                                                            src={eventImageUrl}
+                                                            alt={event.title}
+                                                            layout="fill"
+                                                            objectFit="cover"
+                                                            className="transition-transform duration-300 group-hover:scale-105"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="p-6">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h2 className="text-2xl font-semibold">{event.title}</h2>
+                                                        <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
+                                                            {formatText(event.event_type)}
                                                         </span>
-                                                    ))}
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <div className="text-sm text-gray-600">
-                                                        {event.expected_capacity_min && event.expected_capacity_max
-                                                            ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                            : 'Guest count not specified'}
+                                                    </div>
+                                                    <div className="text-gray-600 mb-4">
+                                                        {format(event.selected_date, 'MMM d, yyyy')}
+                                                        {event.selected_time && ` at ${event.selected_time}`}
+                                                    </div>
+                                                    <p className="text-gray-700 mb-4 line-clamp-3">
+                                                        {event.description || 'No description available'}
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-2 mb-4">
+                                                        {event.assets_needed?.map((tag: string, index: number) => (
+                                                            <span
+                                                                key={index}
+                                                                className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
+                                                            >
+                                                                {formatText(tag)}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="text-sm text-gray-600">
+                                                            {event.expected_capacity_min && event.expected_capacity_max
+                                                                ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
+                                                                : 'Guest count not specified'}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                );
-                            })}
+                                        </Link>
+                                    );
+                                })
+                            ) : (
+                                <div className="col-span-2 flex flex-col items-center justify-center py-10 text-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No pop-ups found</h3>
+                                    <p className="text-gray-500">Check back later for upcoming events</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
