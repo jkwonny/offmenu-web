@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DateTimePickerProps {
     selectedDate: string;
@@ -27,9 +28,28 @@ export default function DateTimePicker({
 }: DateTimePickerProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isAnimating, setIsAnimating] = useState(false);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+    const [mounted, setMounted] = useState(false);
     const dateTimePickerRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement | HTMLDivElement>(null);
     const isToggleClick = useRef(false);
+
+    // Set mounted to true after component mounts
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Calculate dropdown position when it opens
+    useEffect(() => {
+        if (showPicker && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + window.scrollY + 4, // 4px gap
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+    }, [showPicker]);
 
     // Calendar navigation
     const prevMonth = () => {
@@ -183,13 +203,17 @@ export default function DateTimePicker({
                 </button>
             )}
 
-            {showPicker && (
+            {showPicker && mounted && createPortal(
                 <div
-                    className={`absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden
-                               fixed inset-x-4 top-auto
-                               md:w-[600px] md:max-w-none md:absolute md:right-0 md:left-auto
+                    ref={dateTimePickerRef}
+                    className={`absolute z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden
+                               w-[calc(100vw-2rem)] max-w-[600px]
                                transition-all duration-100 ease-out
                                ${isAnimating ? 'opacity-0 scale-95 translate-y-[-10px]' : 'opacity-100 scale-100 translate-y-0'}`}
+                    style={{
+                        top: `${dropdownPosition.top}px`,
+                        left: `${Math.max(16, Math.min(dropdownPosition.left, window.innerWidth - 600 - 16))}px`, // Keep within viewport with 16px margin
+                    }}
                 >
                     {/* Mobile: Stack vertically, Desktop: Side by side */}
                     <div className="flex flex-col md:flex-row border-b">
@@ -296,7 +320,8 @@ export default function DateTimePicker({
                             Apply
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

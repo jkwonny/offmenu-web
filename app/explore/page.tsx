@@ -163,6 +163,29 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
     const containerRef = useRef<HTMLDivElement>(null);
     const dragHandleRef = useRef<HTMLDivElement>(null);
 
+    // Initialize filters from URL search parameters
+    useEffect(() => {
+        const urlDate = searchParams.get('date');
+        const urlTime = searchParams.get('time');
+        const urlGuests = searchParams.get('guests');
+
+        // Set initial date if provided in URL
+        if (urlDate) {
+            setSelectedDate(urlDate);
+        }
+
+        // Set initial time if provided in URL (decode URL encoding)
+        if (urlTime) {
+            const decodedTime = decodeURIComponent(urlTime);
+            setSelectedTime(decodedTime);
+        }
+
+        // Set initial capacity filter if provided in URL
+        if (urlGuests) {
+            setCapacityFilter(urlGuests);
+        }
+    }, [searchParams]);
+
     // Check if we're on mobile
     useEffect(() => {
         const checkMobile = () => {
