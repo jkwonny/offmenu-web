@@ -88,7 +88,6 @@ function ChatContent() {
                         recipient_id?: string;
                         popup_name?: string;
                         requirements?: string;
-                        special_requests?: string;
                         instagram_handle?: string;
                         website?: string;
                         guest_count?: string;
@@ -107,7 +106,6 @@ function ChatContent() {
                         recipient_id: roomData.recipient_id || '',
                         popup_name: roomData.popup_name,
                         requirements: roomData.requirements,
-                        special_requests: roomData.special_requests,
                         instagram_handle: roomData.instagram_handle,
                         website: roomData.website,
                         guest_count: roomData.guest_count,
@@ -211,6 +209,8 @@ function ChatContent() {
             </div>
         );
     }
+
+    console.log(selectedRoom);
 
     return (
         <div className="min-h-screen min-w-screen flex flex-col">
@@ -517,13 +517,6 @@ function ChatContent() {
                                     </div>
                                 )}
 
-                                {/* Special Requests */}
-                                {selectedRoom?.special_requests && (
-                                    <div className="border-t pt-4">
-                                        <h3 className="font-semibold text-gray-900 mb-3">Special Requests</h3>
-                                        <p className="text-sm text-gray-600 whitespace-pre-line">{selectedRoom.special_requests}</p>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="mt-6 pt-4 border-t">
@@ -531,7 +524,7 @@ function ChatContent() {
                                     <p className="text-sm font-medium text-gray-900 mb-3">Revenue share on ticket sales</p>
                                     <Link href={`/spaces/${selectedSpace?.id}`}>
                                         <button className="w-full bg-gray-800 text-white py-3 rounded-md hover:bg-gray-700 transition">
-                                            View Pop-up
+                                            View Space
                                         </button>
                                     </Link>
                                 </div>

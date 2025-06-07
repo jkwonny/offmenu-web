@@ -20,7 +20,6 @@ interface SupabaseRequestResponse {
     selected_time?: Date;
     guest_count?: string;
     requirements?: string;
-    special_requests?: string;
     instagram_handle?: string;
     website?: string;
     collaboration_types?: string[];
@@ -43,7 +42,6 @@ export interface BookingRequest {
     room_id?: string;
     guest_count?: string;
     requirements?: string;
-    special_requests?: string;
     instagram_handle?: string;
     website?: string;
     collaboration_types?: string[];
@@ -90,7 +88,6 @@ export const fetchBookingRequests = async (venueIds: number[]) => {
             selected_time,
             guest_count,
             requirements,
-            special_requests,
             instagram_handle,
             website,
             collaboration_types,
@@ -133,7 +130,6 @@ export const fetchBookingRequests = async (venueIds: number[]) => {
             room_id: req.room_id,
             guest_count: req.guest_count,
             requirements: req.requirements,
-            special_requests: req.special_requests,
             instagram_handle: req.instagram_handle,
             website: req.website,
             collaboration_types: req.collaboration_types
