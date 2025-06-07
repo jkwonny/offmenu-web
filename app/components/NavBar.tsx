@@ -87,7 +87,7 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="w-full py-3 px-4 rounded-lg relative">
+        <nav className="w-full py-3 px-3 md:px-4 rounded-lg relative">
             <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
@@ -95,11 +95,11 @@ export default function NavBar() {
                         <Image 
                             src="/LOGO_TRANSPARENT_BG.png" 
                             alt="OffMenu" 
-                            width={40} 
-                            height={40} 
-                            className="w-[40px] h-[40px] object-cover object-center scale-90" 
+                            width={25} 
+                            height={25} 
+                            className="w-[25px] h-[25px] md:w-[40px] md:h-[40px] object-cover object-center scale-90" 
                         />
-                        <span className="text-xl font-bold text-black">OFFMENU</span>
+                        <span className="text-md md:text-xl font-bold text-black">OFFMENU</span>
                     </Link>
                 </div>
 
