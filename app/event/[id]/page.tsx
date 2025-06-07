@@ -278,15 +278,18 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
 
                 {/* General Tags */}
                 {eventData.assets_needed && eventData.assets_needed.length > 0 && (
-                    <div className="flex space-x-2 mb-8">
+                    <div className="flex flex-col space-x-2 mb-8">
+                        <p className="text-gray-700 mb-3">Assets needed:</p>
+                        <div className="flex flex-wrap gap-2">
                         {eventData.assets_needed.map((tag) => (
                             <span
                                 key={tag}
-                                className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium"
+                                className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium capitalize"
                             >
                                 {tag}
                             </span>
                         ))}
+                        </div>
                     </div>
                 )}
 

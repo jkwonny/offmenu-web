@@ -87,17 +87,19 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="w-full py-3 px-3 md:px-4 rounded-lg relative">
+        <nav className="w-full py-3 pl-2 pr-3 md:px-4 rounded-lg relative">
             <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
-                    <Link href="/" className="text-md md:text-xl font-bold font-heading flex items-center gap-1">
+                    <Link href="/" className="text-md md:text-xl font-bold font-heading flex items-center md:gap-1">
                         <Image 
                             src="/LOGO_TRANSPARENT_BG.png" 
                             alt="OffMenu" 
-                            width={25} 
-                            height={25} 
-                            className="w-[25px] h-[25px] md:w-[40px] md:h-[40px] object-cover object-center scale-90" 
+                            width={120}
+                            height={120} 
+                            quality={95}
+                            priority={true}
+                            className="w-[40px] h-[40px] md:w-[60px] md:h-[60px] object-contain" 
                         />
                         <span className="text-md md:text-xl font-bold text-black">OFFMENU</span>
                     </Link>

@@ -756,7 +756,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                     <p className="text-gray-700 mb-4 line-clamp-3">
                                                         {event.description || 'No description available'}
                                                     </p>
-                                                    <div className="flex flex-wrap gap-2 mb-4">
+                                                    {/* <div className="flex flex-wrap gap-2 mb-4">
                                                         {event.assets_needed?.map((tag: string, index: number) => (
                                                             <span
                                                                 key={index}
@@ -765,7 +765,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                                 {formatText(tag)}
                                                             </span>
                                                         ))}
-                                                    </div>
+                                                    </div> */}
                                                     <div className="flex justify-between items-center">
                                                         <div className="text-sm text-gray-600">
                                                             {event.expected_capacity_min && event.expected_capacity_max

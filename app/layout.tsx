@@ -11,7 +11,7 @@ import { ToastProvider } from './context/ToastContext';
 
 
 export const metadata: Metadata = {
-  title: "OffMenu - Event Booking Platform",
+  title: "OFFMENU - Event Booking Platform",
   description: "Find and book the perfect venue for your event",
   icons: {
     icon: [
