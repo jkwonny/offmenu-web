@@ -15,7 +15,6 @@ export interface BookingRequest {
     selected_date?: string;
     selected_time?: string;
     requirements?: string;
-    special_requests?: string;
     instagram_handle?: string;
     website?: string;
     guest_count?: string;

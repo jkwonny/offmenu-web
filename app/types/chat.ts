@@ -8,7 +8,6 @@ export interface ChatRoom {
     recipient_id: string;
     popup_name?: string;
     requirements?: string;
-    special_requests?: string;
     instagram_handle?: string;
     website?: string;
     guest_count?: string;

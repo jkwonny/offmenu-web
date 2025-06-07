@@ -241,6 +241,13 @@ export async function POST(request: NextRequest) {
                 sender_id: userId, // Event creator is the sender
                 recipient_id: booking.venue_owner_id, // Venue owner is the recipient
                 event_date: eventData.selected_date,
+                selected_date: eventData.selected_date,
+                selected_time: eventData.selected_time,
+                popup_name: eventData.title, // Map title to popup_name
+                collaboration_types: [eventData.event_type], // Map event_type to collaboration_types array
+                website: eventData.website,
+                instagram_handle: eventData.instagram_handle,
+                services: eventData.assets_needed, // Map assets_needed to services
                 guest_count: eventData.expected_capacity_max ? `${eventData.expected_capacity_min || 0}-${eventData.expected_capacity_max}` : (eventData.expected_capacity_min?.toString() || 'TBD'),
                 requirements: eventData.description || 'Event details to be discussed',
                 status: 'active'
