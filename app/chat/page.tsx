@@ -45,8 +45,6 @@ function ChatContent() {
     const { data: chatMessages = [], isLoading: messagesLoading } = useChatMessages(selectedRoomId || undefined);
     const { data: selectedSpace, isLoading: venueDetailsLoading } = useVenueDetails(selectedRoom?.venue_id);
 
-    console.log('chatRooms', chatRooms);
-
     const scrollToBottom = () => {
         if (messagesContainerRef.current) {
             const element = messagesContainerRef.current;
@@ -75,7 +73,6 @@ function ChatContent() {
                 const room = chatRooms.find(r => r.id === chatRoomId);
 
                 if (room) {
-                    console.log('room', room);
                     // Clear any pending timeout and waiting state
                     if (roomNotFoundTimeoutRef.current) {
                         clearTimeout(roomNotFoundTimeoutRef.current);
