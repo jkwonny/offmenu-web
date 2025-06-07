@@ -191,23 +191,6 @@ export default function Page() {
     }
   };
 
-  // Calculate the correct transform percentage accounting for gaps
-  const getTransformPercentage = () => {
-    // For mobile (single item view), we still need to account for gap-4
-    console.log(itemsPerView);
-    if (itemsPerView === 1) {
-      // On mobile, gap-4 (1rem = 16px) affects positioning
-      // Need to slide slightly more than 100% to account for the gap
-      return carouselIndex * 102;
-    } else if (itemsPerView === 2) {
-      // For 2 items, slide by ~52% instead of 50% to account for gap
-      return carouselIndex * 52;
-    } else {
-      // For 3 items, slide by ~35% instead of 33.33% to account for gap
-      return carouselIndex * 35;
-    }
-  };
-
   return (
     <div className="relative min-h-screen bg-white">
       {/* Floating navbar with margin on all sides */}
