@@ -613,7 +613,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
 
                         {/* Content that shows when expanded on mobile or always on desktop */}
                         <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
                                 {venues.length > 0 ? (
                                     venues.map((venue) => {
                                         const venueImages = venue.venue_images && venue.venue_images.length > 0
@@ -643,7 +643,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                     }
                                                 }}
                                             >
-                                                <div className="aspect-[4/3] lg:aspect-square w-full overflow-hidden rounded-xl relative group">
+                                                <div className="aspect-[4/3] lg:aspect-square xl:aspect-[3/2] w-full overflow-hidden rounded-xl relative group">
                                                     <Image
                                                         src={venueImages[currentIndex]}
                                                         alt={venue.name}
@@ -715,7 +715,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                     </div>
                 ) : (
                     <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
                             {events.length > 0 ? (
                                 events.map((event: Event) => {
                                     // Determine the image URL for the event
@@ -732,7 +732,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                 className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
                                             >
                                                 {eventImageUrl && (
-                                                    <div className="w-full h-32 lg:h-48 relative">
+                                                    <div className="w-full h-32 lg:h-48 xl:h-32 relative">
                                                         <Image
                                                             src={eventImageUrl}
                                                             alt={event.title}
@@ -756,7 +756,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                     <p className="text-gray-700 mb-4 line-clamp-3">
                                                         {event.description || 'No description available'}
                                                     </p>
-                                                    <div className="flex flex-wrap gap-2 mb-4">
+                                                    {/* <div className="flex flex-wrap gap-2 mb-4">
                                                         {event.assets_needed?.map((tag: string, index: number) => (
                                                             <span
                                                                 key={index}
@@ -765,7 +765,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                                 {formatText(tag)}
                                                             </span>
                                                         ))}
-                                                    </div>
+                                                    </div> */}
                                                     <div className="flex justify-between items-center">
                                                         <div className="text-sm text-gray-600">
                                                             {event.expected_capacity_min && event.expected_capacity_max
@@ -811,8 +811,8 @@ export default function ExplorePage() {
             </div>
 
             {/* Floating navbar with margin on all sides */}
-            <div className="absolute top-0 left-0 right-0 m-3 z-[60]">
-                <div className="bg-white rounded-lg shadow-lg">
+            <div className="absolute top-0 left-0 right-0 md:m-3 z-[60]">
+                <div className="bg-white md:rounded-lg shadow-lg">
                     <NavBar />
                 </div>
             </div>
