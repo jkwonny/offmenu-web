@@ -613,7 +613,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
 
                         {/* Content that shows when expanded on mobile or always on desktop */}
                         <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
                                 {venues.length > 0 ? (
                                     venues.map((venue) => {
                                         const venueImages = venue.venue_images && venue.venue_images.length > 0
