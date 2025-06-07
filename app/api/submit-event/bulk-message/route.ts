@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate minimum 3 images requirement
+        if (imageFiles.length < 3) {
+            return NextResponse.json(
+                { error: `At least 3 images are required for event creation. Received ${imageFiles.length} image${imageFiles.length === 1 ? '' : 's'}.` },
+                { status: 400 }
+            );
+        }
+
         // Verify the user exists
         const { data: user, error: userError } = await supabase
             .from('users')

@@ -79,6 +79,13 @@ export default function SubmitEventPage() {
                 setError("Please fill in the required fields (title and date).");
                 return;
             }
+            
+            // Validate minimum 3 images requirement
+            if (uploadedImages.length < 3) {
+                setError(`Please add at least 3 images for your event. You currently have ${uploadedImages.length} image${uploadedImages.length === 1 ? '' : 's'}.`);
+                return;
+            }
+            
             setCurrentStep(2);
         } else if (currentStep === 2) {
             if (venueCount > 0) {
@@ -134,6 +141,11 @@ export default function SubmitEventPage() {
             
             if (!message.trim()) {
                 throw new Error("Please write a message to send to venues");
+            }
+            
+            // Validate minimum 3 images requirement
+            if (uploadedImages.length < 3) {
+                throw new Error(`Please add at least 3 images for your event. You currently have ${uploadedImages.length} image${uploadedImages.length === 1 ? '' : 's'}.`);
             }
             
             if (!user?.id) {
@@ -247,7 +259,9 @@ export default function SubmitEventPage() {
     const canGoNext = () => {
         switch (currentStep) {
             case 1:
-                return eventFormData.title.trim() !== "" && eventFormData.selected_date !== "";
+                return eventFormData.title.trim() !== "" && 
+                       eventFormData.selected_date !== "" && 
+                       uploadedImages.length >= 3;
             case 2:
                 return true; // Always allow proceeding from venue selection
             case 3:

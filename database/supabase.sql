@@ -106,6 +106,8 @@ CREATE TABLE event_images (
   created_at TIMESTAMP DEFAULT now()
 );
 
+-- Note: Events require a minimum of 3 images (enforced at application level)
+
 -- Chat functionality
 CREATE TABLE booking_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
