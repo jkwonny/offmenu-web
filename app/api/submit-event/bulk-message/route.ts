@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate minimum 3 images requirement
-        if (imageFiles.length < 3) {
+        // Validate minimum 1 image requirement
+        if (imageFiles.length < 1) {
             return NextResponse.json(
-                { error: `At least 3 images are required for event creation. Received ${imageFiles.length} image${imageFiles.length === 1 ? '' : 's'}.` },
+                { error: `At least 1 image is required for event creation. Received ${imageFiles.length} image${imageFiles.length === 1 ? '' : 's'}.` },
                 { status: 400 }
             );
         }

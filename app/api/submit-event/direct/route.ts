@@ -34,18 +34,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Validate required fields
-        if (!eventData.title || !eventData.selected_date || !userId) {
+        // Validate minimum 1 image requirement
+        if (imageFiles.length < 1) {
             return NextResponse.json(
-                { error: 'Missing required fields' },
+                { error: `At least 1 image is required for event creation. Received ${imageFiles.length} image${imageFiles.length === 1 ? '' : 's'}.` },
                 { status: 400 }
             );
         }
 
-        // Validate minimum 3 images requirement
-        if (imageFiles.length < 3) {
+        // Validate required fields
+        if (!eventData.title || !eventData.selected_date || !userId) {
             return NextResponse.json(
-                { error: `At least 3 images are required for event creation. Received ${imageFiles.length} image${imageFiles.length === 1 ? '' : 's'}.` },
+                { error: 'Missing required fields' },
                 { status: 400 }
             );
         }
