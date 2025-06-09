@@ -179,8 +179,8 @@ const EventPopupContent = ({ event, eventImages, onClose }: EventPopupContentPro
                     <LuMapPin className="mr-1" /> {event.address}
                 </p>
                 <p className="text-sm mb-2">
-                    {format(new Date(event.selected_date), 'MMM d, yyyy')}
-                    {event.selected_time && ` at ${event.selected_time}`}
+                    {format(new Date(event.selected_date), 'MMMM d, yyyy')}
+                    {event.selected_time && ` at ${formatTime(event.selected_time)}`}
                 </p>
                 <a
                     href={`/event/${event.id}`}
@@ -207,9 +207,27 @@ const EventPopupContent = ({ event, eventImages, onClose }: EventPopupContentPro
     );
 };
 
-// Helper function to format text
-const formatText = (text: string) => {
-    return text.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+// Helper function to format time from "12:00:00" to "12PM"
+const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    
+    // Handle various time formats
+    const timeParts = timeString.split(':');
+    if (timeParts.length < 2) return timeString;
+    
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+    
+    // Convert to 12-hour format
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    
+    // Only show minutes if they're not zero
+    if (minutes === 0) {
+        return `${displayHour}${period}`;
+    } else {
+        return `${displayHour}:${minutes.toString().padStart(2, '0')}${period}`;
+    }
 };
 
 // Helper function to get image URL from VenueImage or string
@@ -643,6 +661,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                     }
                                                 }}
                                             >
+                                                
                                                 <div className="aspect-[4/3] lg:aspect-square w-full overflow-hidden rounded-xl relative group">
                                                     <Image
                                                         src={venueImages[currentIndex]}
@@ -715,7 +734,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                     </div>
                 ) : (
                     <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto" style={{ maxHeight: containerHeight > 180 ? `${containerHeight - 200}px` : 'none' }}>
                             {events.length > 0 ? (
                                 events.map((event: Event) => {
                                     // Determine the image URL for the event
@@ -728,51 +747,26 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
 
                                     return (
                                         <Link key={event.id} href={`/event/${event.id}`} passHref>
-                                            <div
-                                                className="bg-[#F6F8FC] rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-                                            >
-                                                {eventImageUrl && (
-                                                    <div className="w-full h-32 lg:h-48 xl:h-32 relative">
-                                                        <Image
-                                                            src={eventImageUrl}
-                                                            alt={event.title}
-                                                            layout="fill"
-                                                            objectFit="cover"
-                                                            className="transition-transform duration-300 group-hover:scale-105"
-                                                        />
-                                                    </div>
-                                                )}
-                                                <div className="p-6">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <h2 className="text-2xl font-semibold">{event.title}</h2>
-                                                        <span className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm font-medium whitespace-nowrap">
-                                                            {formatText(event.event_type)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-gray-600 mb-4">
-                                                        {format(event.selected_date, 'MMM d, yyyy')}
-                                                        {event.selected_time && ` at ${event.selected_time}`}
-                                                    </div>
-                                                    <p className="text-gray-700 mb-4 line-clamp-3">
-                                                        {event.description || 'No description available'}
+                                            <div className="cursor-pointer bg-[#F6F8FC] p-2 rounded-lg transition-all hover:opacity-90">
+                                                <div className="aspect-[4/3] lg:aspect-square w-full overflow-hidden rounded-xl relative group">
+                                                    <Image
+                                                        src={eventImageUrl || '/images/default-venue-image.jpg'}
+                                                        alt={event.title}
+                                                        className="h-full w-full object-cover transition-all duration-500"
+                                                        width={300}
+                                                        height={300}
+                                                    />
+                                                </div>
+                                                <div className="py-3 px-3">
+                                                    <h3 className="font-medium text-xl text-base">{event.title}</h3>
+                                                   {event.address && <p className="text-gray-500 text-sm mt-0.5 flex items-center">
+                                                        <LuMapPin className="w-4 h-4 mr-1" />
+                                                        {event.address}
+                                                    </p>}
+                                                    <p className="text-sm mt-1 font-medium">
+                                                        {format(new Date(event.selected_date), 'MMMM d, yyyy')}
+                                                        {event.selected_time && ` at ${formatTime(event.selected_time)}`}
                                                     </p>
-                                                    {/* <div className="flex flex-wrap gap-2 mb-4">
-                                                        {event.assets_needed?.map((tag: string, index: number) => (
-                                                            <span
-                                                                key={index}
-                                                                className="px-3 py-1 bg-[#273287] text-white rounded-full text-sm"
-                                                            >
-                                                                {formatText(tag)}
-                                                            </span>
-                                                        ))}
-                                                    </div> */}
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="text-sm text-gray-600">
-                                                            {event.expected_capacity_min && event.expected_capacity_max
-                                                                ? `${event.expected_capacity_min}-${event.expected_capacity_max} guests`
-                                                                : 'Guest count not specified'}
-                                                        </div>
-                                                    </div>
                                                 </div>
                                             </div>
                                         </Link>
