@@ -255,7 +255,7 @@ export default function VenuePage() {
                                         
                                         {/* Show more photos button if there are more than 3 images */}
                                         {venue.venue_images.length > 3 && (
-                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-black/20 flex items-end justify-center pb-4">
                                                 <button 
                                                     className="bg-white/90 hover:bg-white text-black px-4 py-2 rounded-lg font-medium transition-all"
                                                     onClick={(e) => {

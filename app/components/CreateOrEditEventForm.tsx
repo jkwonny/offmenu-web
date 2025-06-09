@@ -251,10 +251,10 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
             return;
         }
 
-        // Validate minimum 3 images requirement
+        // Validate minimum 1 image requirement
         const totalImages = imagePreviewUrls.length;
-        if (totalImages < 3) {
-            setError(`Please add at least 3 images for your event. You currently have ${totalImages} image${totalImages === 1 ? '' : 's'}.`);
+        if (totalImages < 1) {
+            setError(`Please add at least 1 image for your event. You currently have ${totalImages} image${totalImages === 1 ? '' : 's'}.`);
             return;
         }
 
@@ -350,7 +350,7 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                         <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-gray-700 text-sm mb-4">
                             <p className="font-medium">Image Requirements:</p>
                             <ul className="list-disc pl-5 mt-1">
-                                <li className="font-semibold text-blue-700">Minimum 3 images required</li>
+                                <li className="font-semibold text-blue-700">Minimum 1 image required</li>
                                 <li>Max 5MB per image</li>
                                 <li>Accepted formats: JPG, PNG, WebP</li>
                                 <li>High-quality images make your event stand out!</li>
@@ -361,10 +361,9 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                         {/* Calculate total images (existing + new uploads) */}
                         {(() => {
                             const totalImages = imagePreviewUrls.length;
-                            const remainingNeeded = Math.max(0, 3 - totalImages);
                             
-                            // Show warning if less than 3 images total
-                            if (totalImages > 0 && totalImages < 3) {
+                            // Show warning if no images total
+                            if (totalImages === 0) {
                                 return (
                                     <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
                                         <div className="flex items-center">
@@ -372,8 +371,7 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                                                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                             </svg>
                                             <span className="font-medium">
-                                                Please add {remainingNeeded} more image{remainingNeeded === 1 ? '' : 's'} 
-                                                ({totalImages}/3 minimum)
+                                                Please add at least 1 image for your event
                                             </span>
                                         </div>
                                     </div>
@@ -381,7 +379,7 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                             }
                             
                             // Show success message when minimum is met
-                            if (totalImages >= 3) {
+                            if (totalImages >= 1) {
                                 return (
                                     <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
                                         <div className="flex items-center">
@@ -389,7 +387,7 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
                                             <span className="font-medium">
-                                                Great! You have {totalImages} images uploaded.
+                                                Great! You have {totalImages} image{totalImages === 1 ? '' : 's'} uploaded.
                                             </span>
                                         </div>
                                     </div>
@@ -419,13 +417,10 @@ export default function CreateOrEditEventForm({ initialData, onSubmit, isSubmitt
                                 </svg>
                                 <p className="mt-2 text-sm text-gray-600">Click to upload or drag images here</p>
                                 <p className="mt-1 text-xs text-gray-500">PNG, JPG, WebP up to 5MB each.</p>
-                                <p className="mt-1 text-xs text-red-600 font-medium">Minimum 3 images required</p>
-                                {(uploadedImages.length > 0 || (mode === 'edit' && imagePreviewUrls.length > 0)) && (
+                                <p className="mt-1 text-xs text-red-600 font-medium">Minimum 1 image required</p>
+                                {imagePreviewUrls.length > 0 && (
                                     <p className="mt-2 text-sm text-blue-600 font-medium">
-                                        {imagePreviewUrls.length} {imagePreviewUrls.length === 1 ? 'image' : 'images'} {mode === 'edit' && initialData?.image_url?.length ? 'selected/existing' : 'selected'}
-                                        {imagePreviewUrls.length < 3 && (
-                                            <span className="text-red-600"> • Need {3 - imagePreviewUrls.length} more</span>
-                                        )}
+                                        {imagePreviewUrls.length} {imagePreviewUrls.length === 1 ? 'image' : 'images'} selected
                                     </p>
                                 )}
                             </div>

@@ -163,37 +163,36 @@ export default function EventDetailsStep({
                         <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-gray-700 text-sm mb-4">
                             <p className="font-medium">Image Requirements:</p>
                             <ul className="list-disc pl-5 mt-1">
-                                <li className="font-semibold text-blue-700">Minimum 3 images required</li>
+                                <li className="font-semibold text-blue-700">Minimum 1 image required</li>
                                 <li>Max 5MB per image</li>
                                 <li>Accepted formats: JPG, PNG, WebP</li>
                                 <li>High-quality images make your event stand out!</li>
                             </ul>
                         </div>
 
-                        {/* Show warning if less than 3 images */}
-                        {imagePreviewUrls.length > 0 && imagePreviewUrls.length < 3 && (
+                        {/* Show warning if no images */}
+                        {imagePreviewUrls.length === 0 && (
                             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
                                 <div className="flex items-center">
                                     <svg className="h-4 w-4 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                     </svg>
                                     <span className="font-medium">
-                                        Please add {3 - imagePreviewUrls.length} more image{3 - imagePreviewUrls.length === 1 ? '' : 's'} 
-                                        ({imagePreviewUrls.length}/3 minimum)
+                                        Please add at least 1 image for your event
                                     </span>
                                 </div>
                             </div>
                         )}
 
                         {/* Show success message when minimum is met */}
-                        {imagePreviewUrls.length >= 3 && (
+                        {imagePreviewUrls.length >= 1 && (
                             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
                                 <div className="flex items-center">
                                     <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
                                     <span className="font-medium">
-                                        Great! You have {imagePreviewUrls.length} images uploaded.
+                                        Great! You have {imagePreviewUrls.length} image{imagePreviewUrls.length === 1 ? '' : 's'} uploaded.
                                     </span>
                                 </div>
                             </div>
@@ -219,13 +218,10 @@ export default function EventDetailsStep({
                                 </svg>
                                 <p className="mt-2 text-sm text-gray-600">Click to upload or drag images here</p>
                                 <p className="mt-1 text-xs text-gray-500">PNG, JPG, WebP up to 5MB each.</p>
-                                <p className="mt-1 text-xs text-red-600 font-medium">Minimum 3 images required</p>
+                                <p className="mt-1 text-xs text-red-600 font-medium">Minimum 1 image required</p>
                                 {imagePreviewUrls.length > 0 && (
                                     <p className="mt-2 text-sm text-blue-600 font-medium">
                                         {imagePreviewUrls.length} {imagePreviewUrls.length === 1 ? 'image' : 'images'} selected
-                                        {imagePreviewUrls.length < 3 && (
-                                            <span className="text-red-600"> • Need {3 - imagePreviewUrls.length} more</span>
-                                        )}
                                     </p>
                                 )}
                             </div>

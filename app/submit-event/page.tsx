@@ -80,9 +80,9 @@ export default function SubmitEventPage() {
                 return;
             }
             
-            // Validate minimum 3 images requirement
-            if (uploadedImages.length < 3) {
-                setError(`Please add at least 3 images for your event. You currently have ${uploadedImages.length} image${uploadedImages.length === 1 ? '' : 's'}.`);
+            // Validate minimum 1 image requirement
+            if (uploadedImages.length < 1) {
+                setError("Please add at least 1 image for your event.");
                 return;
             }
             
@@ -124,9 +124,9 @@ export default function SubmitEventPage() {
                 throw new Error("Event date is required");
             }
             
-            // Validate minimum 3 images requirement
-            if (uploadedImages.length < 3) {
-                throw new Error(`Please add at least 3 images for your event. You currently have ${uploadedImages.length} image${uploadedImages.length === 1 ? '' : 's'}.`);
+            // Validate minimum 1 image requirement
+            if (uploadedImages.length < 1) {
+                throw new Error("Please add at least 1 image for your event.");
             }
             
             if (!user?.id) {
@@ -239,9 +239,9 @@ export default function SubmitEventPage() {
                 throw new Error("Please write a message to send to venues");
             }
             
-            // Validate minimum 3 images requirement
-            if (uploadedImages.length < 3) {
-                throw new Error(`Please add at least 3 images for your event. You currently have ${uploadedImages.length} image${uploadedImages.length === 1 ? '' : 's'}.`);
+            // Validate minimum 1 image requirement
+            if (uploadedImages.length < 1) {
+                throw new Error("Please add at least 1 image for your event.");
             }
             
             if (!user?.id) {
@@ -357,7 +357,7 @@ export default function SubmitEventPage() {
             case 1:
                 return eventFormData.title.trim() !== "" && 
                        eventFormData.selected_date !== "" && 
-                       uploadedImages.length >= 3;
+                       uploadedImages.length >= 1;
             case 2:
                 return true; // Always allow proceeding from venue selection
             case 3:

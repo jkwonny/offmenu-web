@@ -106,7 +106,7 @@ CREATE TABLE event_images (
   created_at TIMESTAMP DEFAULT now()
 );
 
--- Note: Events require a minimum of 3 images (enforced at application level)
+-- Note: Events require a minimum of 1 image (enforced at application level)
 
 -- Chat functionality
 CREATE TABLE booking_requests (
