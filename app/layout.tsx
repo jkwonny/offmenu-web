@@ -6,6 +6,7 @@ import QueryProvider from "./lib/query-provider";
 import { EventProvider } from "./context/EventContext";
 import { UserProvider } from "./context/UserContext";
 import { ToastProvider } from './context/ToastContext';
+import { PostHogProvider } from "./providers";
 
 
 
@@ -52,6 +53,7 @@ export default function RootLayout({
       <body
         className={`antialiased`}
       >
+        <PostHogProvider>
         <QueryProvider>
           <UserProvider>
             <ToastProvider>
@@ -63,6 +65,7 @@ export default function RootLayout({
             </ToastProvider>
           </UserProvider>
         </QueryProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
