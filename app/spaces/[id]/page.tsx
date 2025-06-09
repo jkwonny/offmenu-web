@@ -22,11 +22,34 @@ export default function VenuePage() {
     const [error, setError] = useState<string | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [galleryImageIndex, setGalleryImageIndex] = useState(0);
     const isOwner = user?.id === venue?.owner_id;
     const router = useRouter();
 
     const toggleModal = () => {
         setIsModalOpen(!isModalOpen);
+    };
+
+    const openGallery = (imageIndex: number = 0) => {
+        setGalleryImageIndex(imageIndex);
+        setIsGalleryOpen(true);
+    };
+
+    const closeGallery = () => {
+        setIsGalleryOpen(false);
+    };
+
+    const nextImage = () => {
+        if (venue?.venue_images) {
+            setGalleryImageIndex((prev) => (prev + 1) % venue.venue_images!.length);
+        }
+    };
+
+    const prevImage = () => {
+        if (venue?.venue_images) {
+            setGalleryImageIndex((prev) => (prev - 1 + venue.venue_images!.length) % venue.venue_images!.length);
+        }
     };
 
     useEffect(() => {
@@ -49,6 +72,30 @@ export default function VenuePage() {
             fetchVenue();
         }
     }, [params.id]);
+
+    // Keyboard navigation for gallery
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (!isGalleryOpen) return;
+
+            switch (event.key) {
+                case 'Escape':
+                    closeGallery();
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    prevImage();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    nextImage();
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isGalleryOpen, venue?.venue_images]);
 
     if (loading) {
         return (
@@ -94,21 +141,21 @@ export default function VenuePage() {
             {/* Image Gallery */}
             <div className="relative w-full p-4 md:p-4">
                 {venue?.venue_images && Array.isArray(venue.venue_images) && venue.venue_images.length > 0 ? (
-                    <div className="relative w-full overflow-hidden">
-                        {/* Mobile Carousel - Simple without side images */}
+                    <div className="w-full">
+                        {/* Mobile - Show single image with simple navigation */}
                         <div className="block md:hidden">
                             <div className="relative w-full h-[40vh] bg-gray-100 rounded-lg">
                                 <Image
                                     src={venue.venue_images[currentImageIndex].image_url}
                                     alt={venue.name}
                                     fill
-                                    className="object-contain rounded-lg"
+                                    className="object-cover rounded-lg"
                                     priority
                                 />
                                 {/* Tags on active image */}
                                 <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                                     {venue?.tags && venue.tags.map((tag, index) => (
-                                        <span key={`carousel-tag-${index}`} className="text-sm font-medium bg-white/90 text-black px-3 py-1 rounded-full capitalize">
+                                        <span key={`mobile-tag-${index}`} className="text-sm font-medium bg-white/90 text-black px-3 py-1 rounded-full capitalize">
                                             {tag}
                                         </span>
                                     ))}
@@ -160,95 +207,73 @@ export default function VenuePage() {
                             )}
                         </div>
 
-                        {/* Desktop Carousel - With side images */}
+                        {/* Desktop - Airbnb style layout */}
                         <div className="hidden md:block">
-                            <div className="flex items-center gap-4">
-                                {venue.venue_images.length > 1 && (
-                                    <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
-                                        <Image
-                                            src={venue.venue_images[(currentImageIndex - 1 + venue.venue_images.length) % venue.venue_images.length].image_url}
-                                            alt={venue.name}
-                                            fill
-                                            className="object-contain rounded-lg"
-                                        />
-                                    </div>
-                                )}
-                                <div className="relative w-full h-[40vh] flex-grow bg-gray-100 rounded-lg">
+                            <div className="flex gap-2 h-[60vh] rounded-lg overflow-hidden">
+                                {/* Main image - 50% width */}
+                                <div className="relative w-1/2 bg-gray-100">
                                     <Image
-                                        src={venue.venue_images[currentImageIndex].image_url}
+                                        src={venue.venue_images[0].image_url}
                                         alt={venue.name}
                                         fill
-                                        className="object-contain rounded-lg"
+                                        className="object-cover hover:brightness-95 transition-all cursor-pointer"
                                         priority
+                                        onClick={() => openGallery(0)}
                                     />
-                                    {/* Tags on active image */}
+                                    {/* Tags on main image */}
                                     <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                                         {venue?.tags && venue.tags.map((tag, index) => (
-                                            <span key={`carousel-tag-${index}`} className="text-sm font-medium bg-white/90 text-black px-3 py-1 rounded-full capitalize">
+                                            <span key={`desktop-tag-${index}`} className="text-sm font-medium bg-white/90 text-black px-3 py-1 rounded-full capitalize">
                                                 {tag}
                                             </span>
                                         ))}
                                     </div>
                                 </div>
-                                {venue.venue_images.length > 1 && (
-                                    <div className="relative w-1/4 h-[40vh] opacity-50 bg-gray-100 rounded-lg">
+
+                                {/* Side images - 50% width split into two rows */}
+                                <div className="w-1/2 flex flex-col gap-2">
+                                    {/* Top image */}
+                                    <div className="relative h-1/2 bg-gray-100">
                                         <Image
-                                            src={venue.venue_images[(currentImageIndex + 1) % venue.venue_images.length].image_url}
+                                            src={venue.venue_images[1]?.image_url || venue.venue_images[0].image_url}
                                             alt={venue.name}
                                             fill
-                                            className="object-contain rounded-lg"
+                                            className="object-cover hover:brightness-95 transition-all cursor-pointer"
+                                            onClick={() => openGallery(1)}
                                         />
                                     </div>
-                                )}
-                            </div>
-
-                            {venue.venue_images.length > 1 && (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            setCurrentImageIndex((prevIndex) =>
-                                                (prevIndex - 1 + venue.venue_images!.length) % venue.venue_images!.length
-                                            );
-                                        }}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
-                                        aria-label="Previous image"
-                                    >
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M15 18L9 12L15 6" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setCurrentImageIndex((prevIndex) =>
-                                                (prevIndex + 1) % venue.venue_images!.length
-                                            );
-                                        }}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-white/90 z-10 w-10 h-10 flex items-center justify-center"
-                                        aria-label="Next image"
-                                    >
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M9 6L15 12L9 18" stroke="#1A1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                                        {venue.venue_images.map((_, i) => (
-                                            <button
-                                                key={i}
-                                                onClick={() => setCurrentImageIndex(i)}
-                                                className={`w-3 h-3 rounded-full transition-all ${i === currentImageIndex
-                                                    ? 'bg-white scale-100'
-                                                    : 'bg-white/50 scale-75 hover:bg-white/70'
-                                                    }`}
-                                                aria-label={`Go to image ${i + 1}`}
-                                            />
-                                        ))}
+                                    
+                                    {/* Bottom image */}
+                                    <div className="relative h-1/2 bg-gray-100">
+                                        <Image
+                                            src={venue.venue_images[2]?.image_url || venue.venue_images[1]?.image_url || venue.venue_images[0].image_url}
+                                            alt={venue.name}
+                                            fill
+                                            className="object-cover hover:brightness-95 transition-all cursor-pointer"
+                                            onClick={() => openGallery(2)}
+                                        />
+                                        
+                                        {/* Show more photos button if there are more than 3 images */}
+                                        {venue.venue_images.length > 3 && (
+                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                                <button 
+                                                    className="bg-white/90 hover:bg-white text-black px-4 py-2 rounded-lg font-medium transition-all"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openGallery(0);
+                                                    }}
+                                                >
+                                                    +{venue.venue_images.length - 3} more photos
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="w-full h-[60vh] bg-gray-200 flex items-center justify-center">
+                    <div className="w-full h-[60vh] bg-gray-200 flex items-center justify-center rounded-lg">
                         <span className="text-gray-500">No images available</span>
                     </div>
                 )}
@@ -443,6 +468,94 @@ export default function VenuePage() {
                     toggleModal={toggleModal}
                     venue={venue}
                 />
+            )}
+
+            {/* Image Gallery Modal */}
+            {isGalleryOpen && venue?.venue_images && (
+                <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+                    {/* Close button */}
+                    <button
+                        onClick={closeGallery}
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+                        aria-label="Close gallery"
+                    >
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                    </button>
+
+                    {/* Image counter */}
+                    <div className="absolute top-4 left-4 text-white text-lg z-10">
+                        {galleryImageIndex + 1} / {venue.venue_images.length}
+                    </div>
+
+                    {/* Main image */}
+                    <div className="relative w-full h-full flex items-center justify-center p-8">
+                        <div className="relative max-w-full max-h-full">
+                            <Image
+                                src={venue.venue_images[galleryImageIndex].image_url}
+                                alt={`${venue.name} - Image ${galleryImageIndex + 1}`}
+                                width={1200}
+                                height={800}
+                                className="object-contain max-w-full max-h-full"
+                                priority
+                            />
+                        </div>
+                    </div>
+
+                    {/* Navigation buttons */}
+                    {venue.venue_images.length > 1 && (
+                        <>
+                            <button
+                                onClick={prevImage}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-all z-10"
+                                aria-label="Previous image"
+                            >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </button>
+                            <button
+                                onClick={nextImage}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-all z-10"
+                                aria-label="Next image"
+                            >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </button>
+                        </>
+                    )}
+
+                    {/* Thumbnail strip at bottom */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4">
+                        {venue.venue_images.map((image, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setGalleryImageIndex(index)}
+                                className={`relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                                    index === galleryImageIndex 
+                                        ? 'border-white opacity-100' 
+                                        : 'border-transparent opacity-60 hover:opacity-80'
+                                }`}
+                            >
+                                <Image
+                                    src={image.image_url}
+                                    alt={`Thumbnail ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                />
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Click outside to close */}
+                    <div
+                        className="absolute inset-0 -z-10"
+                        onClick={closeGallery}
+                        aria-label="Close gallery"
+                    />
+                </div>
             )}
         </div>
     );

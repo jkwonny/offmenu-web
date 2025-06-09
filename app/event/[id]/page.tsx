@@ -30,8 +30,6 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
     const pendingEvent = eventData?.event_status === 'private_pending' || eventData?.event_status === 'public_approved'
     const isOwner = eventData && user && eventData.user_id == user.id;
 
-    // Check if event has venue requests (no confirmed address)
-    const hasVenueRequests = eventData && (!eventData.address || eventData.address === 'Address TBD.');
 
     // Handle success parameters from URL
     const successParam = searchParams.get('success');
@@ -308,12 +306,13 @@ export default function EventPage({ params: paramsPromise }: EventPageProps) {
                 </div>
 
                 {/* Venue Requests Section */}
-                {hasVenueRequests && isOwner && (
+                {isOwner && (
                     <div className="mb-8">
                         <VenueRequestsList 
                             eventId={params.id} 
                             isOwner={isOwner}
                             onEventUpdate={handleEventUpdate}
+                            address={eventData.address}
                         />
                     </div>
                 )}

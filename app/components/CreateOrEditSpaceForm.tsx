@@ -165,6 +165,12 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
             if (!formData.tags.trim()) errors.tags = 'Tags are required';
             if (!formData.website.trim()) errors.website = 'Website is required';
             if (!formData.instagram_handle.trim()) errors.instagram_handle = 'Instagram handle is required';
+        } else if (currentStep === 6) {
+            // Validate minimum 3 images requirement
+            const totalImages = imagePreviewUrls.length;
+            if (totalImages < 3) {
+                errors.images = `Please add at least 3 images for your space. You currently have ${totalImages} image${totalImages === 1 ? '' : 's'}.`;
+            }
         }
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
@@ -540,31 +546,77 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                         <h2 className="text-2xl font-bold mb-4 text-center">Space Images</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-gray-700 text-sm font-medium mb-2">Upload Photos</label>
+                                <label className="block text-gray-700 text-sm font-medium mb-2">
+                                    Upload Photos <span className="text-red-500">*</span>
+                                </label>
                                 <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md text-gray-700 text-sm mb-4">
-                                    <p className="font-medium">Image Guidelines:</p>
+                                    <p className="font-medium">Image Requirements:</p>
                                     <ul className="list-disc pl-5 mt-1">
+                                        <li className="font-semibold text-blue-700">Minimum 3 images required</li>
                                         <li>Max 5MB per image</li>
                                         <li>Accepted formats: JPG, PNG, WebP</li>
+                                        <li>High-quality images make your space stand out!</li>
                                     </ul>
                                 </div>
+
+                                {/* Show validation error */}
+                                {validationErrors.images && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                                        <div className="flex items-center">
+                                            <svg className="h-4 w-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            <span className="font-medium">
+                                                {validationErrors.images}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Show status when requirement is met */}
+                                {imagePreviewUrls.length >= 3 && (
+                                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
+                                        <div className="flex items-center">
+                                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                            <span className="font-medium">
+                                                Great! You have {imagePreviewUrls.length} images uploaded.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/jpeg,image/png,image/webp" multiple className="hidden" id="space-images" />
-                                <div className="flex items-center space-x-4">
-                                    <button type="button" onClick={() => fileInputRef.current?.click()}
-                                        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                        Select Images
-                                    </button>
-                                    <span className="text-sm text-gray-600">
-                                        {imagePreviewUrls.length} {imagePreviewUrls.length === 1 ? 'image' : 'images'} selected
-                                    </span>
+                                
+                                <div
+                                    className="h-60 w-full border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer mb-4 hover:border-blue-500 transition-colors duration-150"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <div className="text-center p-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p className="mt-2 text-sm text-gray-600">Click to upload or drag images here</p>
+                                        <p className="mt-1 text-xs text-gray-500">PNG, JPG, WebP up to 5MB each.</p>
+                                        <p className="mt-1 text-xs text-red-600 font-medium">Minimum 3 images required</p>
+                                        {imagePreviewUrls.length > 0 && (
+                                            <p className="mt-2 text-sm text-blue-600 font-medium">
+                                                {imagePreviewUrls.length} {imagePreviewUrls.length === 1 ? 'image' : 'images'} selected
+                                                {imagePreviewUrls.length < 3 && (
+                                                    <span className="text-red-600"> • Need {3 - imagePreviewUrls.length} more</span>
+                                                )}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {imagePreviewUrls.length > 0 && (
                                 <div className="mt-4">
-                                    <h3 className="text-gray-700 text-sm font-medium mb-2">Image Previews</h3>
+                                    <h3 className="text-gray-700 text-xs font-medium mb-2 uppercase tracking-wider">Image Previews</h3>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
                                         {imagePreviewUrls.map((url, index) => (
-                                            <div key={url || index} className="relative group"> {/* Use url as key if available and unique */}
+                                            <div key={url || index} className="relative group"> 
                                                 <div className="h-24 w-full rounded-md overflow-hidden border border-gray-300 relative">
                                                     <Image src={url} alt={`Preview ${index + 1}`} className="object-cover" fill sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 200px" />
                                                 </div>

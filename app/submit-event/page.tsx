@@ -109,14 +109,110 @@ export default function SubmitEventPage() {
     };
 
     // Placeholder for direct event creation (no venues selected)
-    const handleCreateEventDirectly = () => {
+    const handleCreateEventDirectly = async () => {
         setIsSubmitting(true);
+        setError(null);
+        setSubmitAttempted(true);
         
-        // For Phase 1, we'll just show a placeholder
-        setTimeout(() => {
-            setError("Direct event creation without venue selection is not yet implemented. Please select at least one venue to continue.");
+        try {
+            // Validate form data before submission
+            if (!eventFormData.title.trim()) {
+                throw new Error("Event title is required");
+            }
+            
+            if (!eventFormData.selected_date) {
+                throw new Error("Event date is required");
+            }
+            
+            // Validate minimum 3 images requirement
+            if (uploadedImages.length < 3) {
+                throw new Error(`Please add at least 3 images for your event. You currently have ${uploadedImages.length} image${uploadedImages.length === 1 ? '' : 's'}.`);
+            }
+            
+            if (!user?.id) {
+                throw new Error("User authentication required. Please sign in and try again.");
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+            try {
+                // Create FormData to handle file uploads
+                const formData = new FormData();
+                
+                // Add text fields
+                formData.append('eventData', JSON.stringify({
+                    ...eventFormData,
+                    // Remove images from eventData since we're handling them separately
+                }));
+                formData.append('userId', user.id);
+                
+                // Add image files
+                uploadedImages.forEach((file, index) => {
+                    formData.append(`image_${index}`, file);
+                });
+
+                const response = await fetch('/api/submit-event/direct', {
+                    method: 'POST',
+                    body: formData, // Send FormData instead of JSON
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    let errorMessage = `Server error (${response.status})`;
+                    
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch {
+                        // If we can't parse the error response, use the default message
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Failed to create event');
+                }
+
+                // Clear venue cart and redirect to event page
+                clearVenues();
+                router.push(`/event/${result.event.id}?success=created&venues=0`);
+                
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                
+                if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+                    throw new Error('Request timed out. Please check your internet connection and try again.');
+                }
+                
+                throw fetchError;
+            }
+            
+        } catch (err) {
+            console.error('Event creation error:', err);
+            
+            let errorMessage = 'Failed to create event. Please try again.';
+            
+            if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+            
+            // Add retry suggestion for network errors
+            if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('timeout')) {
+                errorMessage += ' Please check your internet connection and try again.';
+            }
+            
+            setError(errorMessage);
+            setRetryCount(prev => prev + 1);
+            
+        } finally {
             setIsSubmitting(false);
-        }, 1000);
+        }
     };
 
     // Enhanced event creation with comprehensive error handling

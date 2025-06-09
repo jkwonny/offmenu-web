@@ -10,11 +10,13 @@ import {
     getChatRoomForRequest,
     VenueBookingRequest 
 } from '@/app/lib/queries/venue-requests';
+import AddEventAddressSection from './AddEventAddressSection';
 
 interface VenueRequestsListProps {
     eventId: string;
     isOwner: boolean;
     onEventUpdate?: () => void; // Callback to refresh event data
+    address?: string;
 }
 
 interface ActionState {
@@ -46,7 +48,7 @@ const getStatusConfig = (status: string) => {
     }
 };
 
-export default function VenueRequestsList({ eventId, isOwner, onEventUpdate }: VenueRequestsListProps) {
+export default function VenueRequestsList({ eventId, isOwner, onEventUpdate, address }: VenueRequestsListProps) {
     const router = useRouter();
     const [requests, setRequests] = useState<VenueBookingRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -240,20 +242,22 @@ export default function VenueRequestsList({ eventId, isOwner, onEventUpdate }: V
         );
     }
 
-    if (requests.length === 0) {
+    if (requests.length === 0 && address === 'Address TBD.') {
         return (
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">List of Spaces</h2>
-                <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
-                        <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No venue requests yet</h3>
-                    <p className="text-gray-600 text-sm">Venue requests will appear here once you contact spaces.</p>
+
+                <div className="py-8">
+                    <AddEventAddressSection
+                            eventId={eventId}
+                            onAddressUpdated={() => onEventUpdate?.()}
+                        />
                 </div>
-            </div>
+     
+        );
+    }
+
+    if (requests.length === 0 && address !== 'Address TBD.') {
+        return (
+            <div></div>
         );
     }
 
