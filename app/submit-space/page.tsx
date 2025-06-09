@@ -63,6 +63,11 @@ export default function SubmitSpacePage() {
         setPageSuccess(null);
 
         try {
+            // Validate minimum 3 images requirement
+            if (newImages.length < 3) {
+                throw new Error(`Please add at least 3 images for your space. You currently have ${newImages.length} image${newImages.length === 1 ? '' : 's'}.`);
+            }
+
             const submissionData = {
                 owner_id: user?.id ?? 'd03d1efd-7b00-4828-ac89-4f3f55b830d4',
                 rental_type: formData.rental_type,
@@ -117,7 +122,7 @@ export default function SubmitSpacePage() {
 
             setPageSuccess(`"${result.name}" space submitted successfully!${imageUploadMessage}`);
             setTimeout(() => {
-                router.push('/manage/dashboard'); // Or a more relevant page like dashboard or the new space's page
+                router.push(`/spaces/${result.id}`); // Redirect to the newly created space page
             }, 3000);
             return { success: true, message: `"${result.name}" space submitted successfully!${imageUploadMessage}`, venueId: result.id };
 

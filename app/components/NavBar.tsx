@@ -87,7 +87,7 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="w-full py-3 pl-2 pr-3 md:px-4 rounded-lg relative">
+        <nav className="w-full py-1 md:py-2 pl-2 pr-3 md:px-4 rounded-lg relative">
             <div className="grid grid-cols-3 items-center">
                 {/* Left section - Logo */}
                 <div className="flex items-center">
@@ -99,7 +99,7 @@ export default function NavBar() {
                             height={120} 
                             quality={95}
                             priority={true}
-                            className="w-[40px] h-[40px] md:w-[60px] md:h-[60px] object-contain" 
+                            className="w-[40px] h-[40px] md:w-[40px] md:h-[40px] object-contain scale-125" 
                         />
                         <span className="text-md md:text-xl font-bold text-black">OFFMENU</span>
                     </Link>

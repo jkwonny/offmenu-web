@@ -643,7 +643,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                     }
                                                 }}
                                             >
-                                                <div className="aspect-[4/3] lg:aspect-square xl:aspect-[3/2] w-full overflow-hidden rounded-xl relative group">
+                                                <div className="aspect-[4/3] lg:aspect-square w-full overflow-hidden rounded-xl relative group">
                                                     <Image
                                                         src={venueImages[currentIndex]}
                                                         alt={venue.name}
@@ -812,7 +812,7 @@ export default function ExplorePage() {
 
             {/* Floating navbar with margin on all sides */}
             <div className="absolute top-0 left-0 right-0 md:m-3 z-[60]">
-                <div className="bg-white md:rounded-lg shadow-lg">
+                <div className="bg-white md:rounded-lg shadow-lg py-2 md:py-0">
                     <NavBar />
                 </div>
             </div>
@@ -1435,85 +1435,93 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
         // Update the previous selected venue ID ref
         previousSelectedVenueIdRef.current = selectedVenueId;
 
-        // Check if we're on mobile
-        const isMobile = window.innerWidth < 1024;
+        // Function to handle the map centering with proper offset calculation
+        const centerMapOnVenue = () => {
+            if (!mapRef.current) return;
 
-        let targetCenter: [number, number];
+            // Ensure map is fully loaded and has proper dimensions
+            const container = mapRef.current.getContainer();
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
 
-        if (isMobile) {
-            // On mobile, center the marker but lower it by 10% vertically for better popup visibility
-            const containerHeight = mapRef.current.getContainer().clientHeight;
-
-            // Project the marker coordinates to pixel space
-            const markerCoords: [number, number] = [selectedItem.longitude, selectedItem.latitude];
-            const point = mapRef.current.project(markerCoords);
-
-            // Move the marker down by 10% of container height
-            const offsetY = containerHeight * -.2;
-
-            // Unproject back to geographic coordinates
-            const offsetPoint = mapRef.current.unproject([point.x, point.y + offsetY]);
-            targetCenter = [offsetPoint.lng, offsetPoint.lat];
-        } else {
-            // On desktop, use the existing offset logic
-            // Get map container dimensions
-            const containerWidth = mapRef.current.getContainer().clientWidth;
-            const containerHeight = mapRef.current.getContainer().clientHeight;
-
-            // Calculate the offset to position marker in bottom-right quadrant
-            // Project the marker coordinates to pixel space
-            const markerCoords: [number, number] = [selectedItem.longitude, selectedItem.latitude];
-            const point = mapRef.current.project(markerCoords);
-
-            // Apply offset to move marker to bottom-right quadrant
-            const offsetX = -containerWidth * 0.25; // Move left by 25% of container width
-            const offsetY = -containerHeight * 0.25; // Move up by 25% of container height
-
-            // Unproject back to geographic coordinates
-            const offsetPoint = mapRef.current.unproject([point.x + offsetX, point.y + offsetY]);
-            targetCenter = [offsetPoint.lng, offsetPoint.lat];
-        }
-
-        // Animate the map to the new center position
-        mapRef.current.easeTo({
-            center: targetCenter,
-            zoom: 12,
-            duration: 1000
-        });
-
-        // Find the marker for the selected venue
-        const marker = markersRef.current[selectedVenueId];
-
-        if (marker) {
-            // Store this venue ID as having an open popup
-            openPopupVenueIdRef.current = selectedVenueId;
-
-            const popup = marker.getPopup();
-
-            // Only set up the popup if it's not already open
-            if (popup && !popup.isOpen() && popup !== popupRef.current) {
-                popup.setLngLat([selectedItem.longitude, selectedItem.latitude]);
-                popup.addTo(mapRef.current);
-                popupRef.current = popup;
+            // If container dimensions are not ready, try again after a short delay
+            if (containerWidth === 0 || containerHeight === 0) {
+                setTimeout(centerMapOnVenue, 100);
+                return;
             }
-        }
 
-        // Update all marker styles
-        [...venues, ...events].forEach(item => {
-            const marker = markersRef.current[item.id];
+            // Check if we're on mobile
+            const isMobile = window.innerWidth < 1024;
+
+            let targetCenter: [number, number];
+
+            if (isMobile) {
+                // On mobile, apply a small vertical offset using geographic coordinates
+                // This is more reliable than pixel-based calculations
+                const latOffset = 0.008; // Roughly equivalent to moving the view up slightly
+                targetCenter = [selectedItem.longitude as number, (selectedItem.latitude as number) - latOffset];
+            } else {
+                // On desktop, apply geographic offsets to position marker in bottom-right area
+                // Calculate approximate offsets based on zoom level and typical map bounds
+                const lonOffset = 0.015; // Move view left (marker appears more to the right)
+                const latOffset = 0.01;  // Move view down (marker appears higher up)
+                
+                targetCenter = [
+                    (selectedItem.longitude as number) - lonOffset,
+                    (selectedItem.latitude as number) - latOffset
+                ];
+            }
+
+            // Animate the map to the new center position
+            mapRef.current.easeTo({
+                center: targetCenter,
+                zoom: 12,
+                duration: 1000
+            });
+
+            // Find the marker for the selected venue
+            const marker = markersRef.current[selectedVenueId];
+
             if (marker) {
-                const element = marker.getElement();
-                const imageMarker = element.querySelector('.image-marker');
+                // Store this venue ID as having an open popup
+                openPopupVenueIdRef.current = selectedVenueId;
 
-                if (imageMarker) {
-                    if (item.id === selectedVenueId) {
-                        imageMarker.classList.add('selected');
-                    } else {
-                        imageMarker.classList.remove('selected');
-                    }
+                const popup = marker.getPopup();
+
+                // Only set up the popup if it's not already open
+                if (popup && !popup.isOpen() && popup !== popupRef.current) {
+                    popup.setLngLat([selectedItem.longitude as number, selectedItem.latitude as number]);
+                    popup.addTo(mapRef.current);
+                    popupRef.current = popup;
                 }
             }
-        });
+
+            // Update all marker styles
+            [...venues, ...events].forEach(item => {
+                const marker = markersRef.current[item.id];
+                if (marker) {
+                    const element = marker.getElement();
+                    const imageMarker = element.querySelector('.image-marker');
+
+                    if (imageMarker) {
+                        if (item.id === selectedVenueId) {
+                            imageMarker.classList.add('selected');
+                        } else {
+                            imageMarker.classList.remove('selected');
+                        }
+                    }
+                }
+            });
+        };
+
+        // Wait for map to be fully loaded before centering
+        if (mapRef.current.loaded()) {
+            // Small delay to ensure everything is settled
+            setTimeout(centerMapOnVenue, 50);
+        } else {
+            // If map is not loaded yet, wait for load event
+            mapRef.current.once('idle', centerMapOnVenue);
+        }
     }, [selectedVenueId, venues, events]);
 
     // Add custom CSS for the popup and markers

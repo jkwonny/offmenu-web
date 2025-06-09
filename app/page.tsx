@@ -201,7 +201,7 @@ export default function Page() {
       </div>
 
       {/* Hero Section */}
-      <section className="px-4 sm:px-8 md:px-12 lg:px-24 pt-24 pb-12 md:pt-40 md:pb-20 border-b border-gray-200 min-h-screen flex items-start" style={{ background: 'linear-gradient(to bottom, #89a7cc, #ddeedb)' }}>
+      <section className="px-4 sm:px-8 md:px-12 lg:px-24 pt-24 pb-12 md:pt-40 md:pb-20 border-b border-gray-200 min-h-screen flex items-start" style={{ background: 'linear-gradient(to bottom, #89a7cc, #f4f4f4)' }}>
         <div className="max-w-8xl mx-auto w-full">
           <div className="max-w-full">
             <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-2 md:mb-4 font-heading">
