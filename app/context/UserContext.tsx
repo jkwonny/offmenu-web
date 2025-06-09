@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { UserProfile, UserContextType } from '../types/user';
 import { useUserProfileQuery } from '../queries/userQueries';
+import posthog from 'posthog-js';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
@@ -18,6 +19,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (profileError) {
         console.error('Error from useUserProfileQuery:', profileError);
     }
+
+    // Helper function to identify user with PostHog
+    const identifyUserWithPostHog = (user: User, userProfile?: UserProfile | null) => {
+        if (typeof window !== 'undefined' && user && posthog) {
+            try {
+                // Identify the user with PostHog
+                posthog.identify(user.id, {
+                    email: user.email,
+                    name: userProfile?.name,
+                    role: userProfile?.role,
+                    offmenu_host: userProfile?.offmenu_host,
+                });
+            } catch (error) {
+                console.error('Error identifying user with PostHog:', error);
+            }
+        }
+    };
+
+    // Identify user when userProfile is loaded/updated
+    useEffect(() => {
+        if (user && userProfile && !isProfileLoading) {
+            identifyUserWithPostHog(user, userProfile);
+        }
+    }, [user, userProfile, isProfileLoading]);
 
     useEffect(() => {
         const combinedIsLoading = isLoading || isProfileLoading;
@@ -53,17 +78,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 if (data?.session?.user) {
                     setSession(data.session);
                     setUser(data.session.user);
-                    // User profile will be fetched by useUserProfileQuery automatically when user.id is set
                 } else {
                     setSession(null);
                     setUser(null);
-                    // setUserProfile(null); // Managed by useUserProfileQuery
+                    // Reset PostHog identification for anonymous users
+                    if (typeof window !== 'undefined' && posthog) {
+                        posthog.reset();
+                    }
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
                 setSession(null);
                 setUser(null);
-                // setUserProfile(null); // Managed by useUserProfileQuery
             } finally {
                 setIsLoading(false);
             }
@@ -80,6 +106,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     setUser(newSession.user);
                 } else if (event === 'SIGNED_OUT') {
                     setUser(null);
+                    // Reset PostHog identification
+                    if (typeof window !== 'undefined' && posthog) {
+                        posthog.reset();
+                    }
                 }
                 setIsLoading(false);
             }
@@ -110,7 +140,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                         name: name || null,
                         phone: phone || null,
                         role: 'user',
-                        spaces_host: false
+                        offmenu_host: false
                     });
 
                 if (insertError) {
@@ -164,6 +194,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const { error } = await supabase.auth.signOut();
             if (error) {
                 console.error('Error signing out:', error);
+            } else {
+                // Reset PostHog identification
+                if (typeof window !== 'undefined' && posthog) {
+                    posthog.reset();
+                }
             }
         } catch (error) {
             console.error('Exception during sign out:', error);
