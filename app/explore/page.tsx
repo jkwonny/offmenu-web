@@ -716,7 +716,11 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                                     </p>
                                                     <p className="text-sm mt-1 font-medium flex items-center">
                                                         <FaRegHandshake className="w-4 h-4 mr-1" />
-                                                        {venue.collaboration_type?.map((type: CollaborationType) => collaborationTypeLookUp[type as keyof typeof collaborationTypeLookUp]).join(', ')}
+                                                        {venue.collaboration_type && Array.isArray(venue.collaboration_type) ? 
+                                                            venue.collaboration_type.map((type: CollaborationType) => 
+                                                                collaborationTypeLookUp[type as keyof typeof collaborationTypeLookUp]
+                                                            ).join(', ') : 
+                                                            venue.collaboration_type ? collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp] : 'Contact for pricing'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -958,7 +962,12 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
             popupRootsRef.current[venue.id].render(
                 <PopupContent
                     venue={venue}
-                    priceDisplay={collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp]}
+                    priceDisplay={venue.collaboration_type && Array.isArray(venue.collaboration_type) ? 
+                        venue.collaboration_type.map((type: CollaborationType) => 
+                            collaborationTypeLookUp[type as keyof typeof collaborationTypeLookUp]
+                        ).join(', ') : 
+                        venue.collaboration_type ? collaborationTypeLookUp[venue.collaboration_type as keyof typeof collaborationTypeLookUp] : 'Contact for pricing'
+                    }
                     venueImages={venueImages}
                     onClose={() => {
                         // This handler is ONLY for the explicit close button click
