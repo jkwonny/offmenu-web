@@ -33,8 +33,7 @@ export const TabsSection = () => {
                         : 'text-black hover:text-[#06048D]'
                 }`}
             >
-                <span className="block sm:hidden">Spaces</span>
-                <span className="hidden sm:block">Spaces</span>
+                <span className="block">Spaces</span>
             </Link>
             <Link
                 href={isExplorePage ? "/explore?view=popups" : "/manage/dashboard?view=popups"}
@@ -44,8 +43,7 @@ export const TabsSection = () => {
                         : 'text-black hover:text-[#06048D]'
                 }`}
             >
-                <span className="block sm:hidden">Pop-ups</span>
-                <span className="hidden sm:block">Pop-ups</span>
+                <span className="block">Pop-ups</span>
             </Link>
         </div>
     );
