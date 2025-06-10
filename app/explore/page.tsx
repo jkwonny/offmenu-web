@@ -53,9 +53,10 @@ interface PopupContentProps {
     priceDisplay: string;
     venueImages?: string[];
     onClose?: () => void;
+    isMobile?: boolean;
 }
 
-const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupContentProps) => {
+const PopupContent = ({ venue, priceDisplay, venueImages, onClose, isMobile = false }: PopupContentProps) => {
     // Handle click on the carousel container
     const handleCarouselClick = (e: React.MouseEvent) => {
         // Check if the click event target is a button or button child element
@@ -71,7 +72,7 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
     };
 
     return (
-        <div className="p-0 w-[300px] z-[5] bg-[#E9EDF4] p-2 text-black relative">
+        <div className={`p-0 ${isMobile ? 'w-[220px]' : 'w-[300px]'} z-[5] bg-[#E9EDF4] p-2 text-black relative`}>
             <button
                 onClick={onClose}
                 className="absolute top-3 right-3 z-[5] bg-[#E9EDF4] bg-opacity-70 p-1 rounded-full text-gray-800 hover:bg-opacity-100 transition-all"
@@ -81,19 +82,19 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
             </button>
             <div
                 id={`carousel-container-${venue.id}`}
-                className="relative w-full h-64 cursor-pointer"
+                className={`relative w-full ${isMobile ? 'h-32' : 'h-64'} cursor-pointer`}
                 onClick={handleCarouselClick}
             >
                 <Image
                     src={venueImages?.[0] ?? '/images/default-venue-image.jpg'}
-                    height={256}
-                    width={256}
+                    height={isMobile ? 192 : 256}
+                    width={isMobile ? 192 : 256}
                     alt={venue.name}
                     className="w-full h-full object-cover"
                 />
             </div>
-            <div className="p-3">
-                <h3 className="font-bold text-xl mb-1 font-heading">
+            <div className={`${isMobile ? 'p-2' : 'p-3'}`}>
+                <h3 className={`font-bold ${isMobile ? 'text-lg' : 'text-xl'} mb-1 font-heading`}>
                     {venue.name}
                 </h3>
                 <p className="text-sm mb-2 flex items-center">
@@ -112,7 +113,7 @@ const PopupContent = ({ venue, priceDisplay, venueImages, onClose }: PopupConten
                 </a>
 
                 {/* Tags section */}
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className={`flex flex-wrap gap-2 ${isMobile ? 'mt-2' : 'mt-3'}`}>
                     {venue.tags && venue.tags.map((tag, index) => (
                         <span
                             key={index}
@@ -132,9 +133,10 @@ interface EventPopupContentProps {
     event: Event;
     eventImages?: string[];
     onClose?: () => void;
+    isMobile?: boolean;
 }
 
-const EventPopupContent = ({ event, eventImages, onClose }: EventPopupContentProps) => {
+const EventPopupContent = ({ event, eventImages, onClose, isMobile = false }: EventPopupContentProps) => {
     // Handle click on the carousel container
     const handleCarouselClick = (e: React.MouseEvent) => {
         // Check if the click event target is a button or button child element
@@ -150,7 +152,7 @@ const EventPopupContent = ({ event, eventImages, onClose }: EventPopupContentPro
     };
 
     return (
-        <div className="p-0 w-[300px] z-[5] bg-[#E9EDF4] p-2 text-black relative">
+        <div className={`p-0 ${isMobile ? 'w-[250px]' : 'w-[300px]'} z-[5] bg-[#E9EDF4] p-2 text-black relative`}>
             <button
                 onClick={onClose}
                 className="absolute top-3 right-3 z-[5] bg-[#E9EDF4] bg-opacity-70 p-1 rounded-full text-gray-800 hover:bg-opacity-100 transition-all"
@@ -160,19 +162,19 @@ const EventPopupContent = ({ event, eventImages, onClose }: EventPopupContentPro
             </button>
             <div
                 id={`carousel-container-${event.id}`}
-                className="relative w-full h-64 cursor-pointer"
+                className={`relative w-full ${isMobile ? 'h-48' : 'h-64'} cursor-pointer`}
                 onClick={handleCarouselClick}
             >
                 <Image
                     src={eventImages?.[0] ?? '/images/default-venue-image.jpg'}
-                    height={256}
-                    width={256}
+                    height={isMobile ? 192 : 256}
+                    width={isMobile ? 192 : 256}
                     alt={event.title}
                     className="w-full h-full object-cover"
                 />
             </div>
-            <div className="p-3">
-                <h3 className="font-bold text-xl mb-1 font-heading">
+            <div className={`${isMobile ? 'p-2' : 'p-3'}`}>
+                <h3 className={`font-bold ${isMobile ? 'text-lg' : 'text-xl'} mb-1 font-heading`}>
                     {event.title}
                 </h3>
                 <p className="text-sm mb-2 flex items-center">
@@ -192,7 +194,7 @@ const EventPopupContent = ({ event, eventImages, onClose }: EventPopupContentPro
                 </a>
 
                 {/* Tags section */}
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className={`flex flex-wrap gap-2 ${isMobile ? 'mt-2' : 'mt-3'}`}>
                     {event.assets_needed && event.assets_needed.map((asset, index) => (
                         <span
                             key={index}
@@ -289,7 +291,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
     // Check if we're on mobile
     useEffect(() => {
         const checkMobile = () => {
-            setIsMobile(window.innerWidth < 1024);
+            setIsMobile(window.innerWidth < 768); // Use 768px as mobile breakpoint for more precise mobile detection
         };
 
         checkMobile();
@@ -894,6 +896,7 @@ interface MapboxMapProps {
 
 function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, onMarkerClick }: MapboxMapProps) {
     const [error, setError] = useState<string | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
     const popupRef = useRef<mapboxgl.Popup | null>(null);
@@ -907,6 +910,18 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
     // Add a ref to store React roots for popup containers
     const popupRootsRef = useRef<{ [key: string]: import('react-dom/client').Root }>({});
 
+    // Check if we're on mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // Use 768px as mobile breakpoint for more precise mobile detection
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // Helper function to create a popup for a venue
     const createVenuePopup = useCallback((venue: Venue): mapboxgl.Popup => {
         const venueImages = Array.isArray(venue.venue_images)
@@ -917,7 +932,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
         const popup = new mapboxgl.Popup({
             offset: 25,
             closeButton: false,
-            maxWidth: '700px',
+            maxWidth: isMobile ? '270px' : '700px',
             className: 'venue-popup',
             closeOnClick: false,
             focusAfterOpen: false,
@@ -967,6 +982,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
                             markerClickedRef.current = false;
                         }, 100);
                     }}
+                    isMobile={isMobile}
                 />
             );
 
@@ -992,7 +1008,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
         });
 
         return popup;
-    }, [onMarkerClick]);
+    }, [onMarkerClick, isMobile]);
 
     // Helper function to create a popup for an event
     const createEventPopup = useCallback((event: Event): mapboxgl.Popup => {
@@ -1004,7 +1020,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
         const popup = new mapboxgl.Popup({
             offset: 25,
             closeButton: false,
-            maxWidth: '700px',
+            maxWidth: isMobile ? '270px' : '700px',
             className: 'venue-popup',
             closeOnClick: false,
             focusAfterOpen: false,
@@ -1053,6 +1069,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
                             markerClickedRef.current = false;
                         }, 100);
                     }}
+                    isMobile={isMobile}
                 />
             );
 
@@ -1078,7 +1095,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
         });
 
         return popup;
-    }, [onMarkerClick]);
+    }, [onMarkerClick, isMobile]);
 
     // Function to update markers
     const updateMarkers = useCallback((venues: Venue[], events: Event[]): void => {
@@ -1315,12 +1332,19 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
         try {
             mapboxgl.accessToken = token;
 
+            // Set different center coordinates based on device type
+            const mapCenter: [number, number] = isMobile 
+                ? [-74.006, 40.7128] // Center of New York City for mobile
+                : [-74.1, 40.75]; // Current desktop center
+            
+            const mapZoom = isMobile ? 10.5 : 11; // Slightly different zoom for mobile
+
             // Create the map
             const map = new mapboxgl.Map({
                 container: node,
                 style: 'mapbox://styles/mapbox/streets-v12',
-                center: [-74.05, 40.7],
-                zoom: 11,
+                center: mapCenter,
+                zoom: mapZoom,
                 attributionControl: false,
                 preserveDrawingBuffer: true // Helps prevent white flashes
             });
@@ -1369,7 +1393,7 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
             console.error('Map initialization error:', err);
             setError('Failed to initialize map: ' + (err instanceof Error ? err.message : String(err)));
         }
-    }, []);
+    }, [isMobile]);
 
     // Initialize markers when venues data loads (if map is already initialized)
     useEffect(() => {
@@ -1452,24 +1476,47 @@ function MapboxMapComponent({ venues, events, selectedVenueId, hoveredVenueId, o
             if (isMobile) {
                 // On mobile, apply a small vertical offset using geographic coordinates
                 // This is more reliable than pixel-based calculations
-                const latOffset = 0.008; // Roughly equivalent to moving the view up slightly
+                const latOffset = 0.005; // Roughly equivalent to moving the view up slightly
                 targetCenter = [selectedItem.longitude as number, (selectedItem.latitude as number) - latOffset];
             } else {
-                // On desktop, apply geographic offsets to position marker in bottom-right area
-                // Calculate approximate offsets based on zoom level and typical map bounds
-                const lonOffset = 0.015; // Move view left (marker appears more to the right)
-                const latOffset = 0.01;  // Move view down (marker appears higher up)
+                // On desktop, calculate the proper center based on the visible map area
+                // The content panel takes up the left half, so we need to center within the right half
                 
-                targetCenter = [
-                    (selectedItem.longitude as number) - lonOffset,
-                    (selectedItem.latitude as number) - latOffset
-                ];
+                // Calculate the width of the visible map area (right half)
+                // Account for the content panel width and margins
+                const navbarHeight = 300; // Approximate navbar height
+                const contentPanelWidth = containerWidth * 0.55; // Left half for content
+                const mapAreaWidth = containerWidth - contentPanelWidth;
+                
+                // Calculate the center of the visible map area in screen coordinates
+                const visibleMapCenterX = contentPanelWidth + (mapAreaWidth / 2) - 65; // Include the user's offset
+                const visibleMapCenterY = navbarHeight + ((containerHeight - navbarHeight) / 2);
+                
+                // Calculate the screen center (where the map currently centers)
+                const screenCenterX = containerWidth / 2;
+                const screenCenterY = containerHeight / 2;
+                
+                // Calculate the offset from screen center to our desired visible center
+                const offsetFromScreenCenterX = visibleMapCenterX - screenCenterX;
+                const offsetFromScreenCenterY = visibleMapCenterY - screenCenterY;
+                
+                // Project the marker position to screen coordinates
+                const markerScreenPoint = mapRef.current.project([selectedItem.longitude as number, selectedItem.latitude as number]);
+                
+                // Calculate where the new map center should be in screen coordinates
+                // to position the marker at our desired visible center
+                const newMapCenterScreenX = markerScreenPoint.x - offsetFromScreenCenterX;
+                const newMapCenterScreenY = markerScreenPoint.y - offsetFromScreenCenterY;
+                
+                // Convert back to geographic coordinates
+                const newCenter = mapRef.current.unproject([newMapCenterScreenX, newMapCenterScreenY]);
+                targetCenter = [newCenter.lng, newCenter.lat];
             }
 
             // Animate the map to the new center position
             mapRef.current.easeTo({
                 center: targetCenter,
-                zoom: 12,
+                zoom: 11.5,
                 duration: 1000
             });
 

@@ -101,7 +101,7 @@ export default function NavBar() {
                             priority={true}
                             className="w-[40px] h-[40px] md:w-[40px] md:h-[40px] object-contain scale-125" 
                         />
-                        <span className="text-md md:text-xl font-bold text-black">OFFMENU</span>
+                        <span className="hidden md:inline text-md md:text-xl font-bold text-black">OFFMENU</span>
                     </Link>
                 </div>
 
