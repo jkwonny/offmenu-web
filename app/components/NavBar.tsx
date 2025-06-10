@@ -2,7 +2,7 @@
 
 import { useUser } from '../context/UserContext';
 import { useState, Suspense, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useProfilePictureUrl } from '../lib/queries/user';
 import { BiSolidMessageRounded } from "react-icons/bi";
 import { IoMdClose } from "react-icons/io";
@@ -24,6 +24,7 @@ export default function NavBar() {
     const chatDropdownRef = useRef<HTMLDivElement>(null);
     const { data: profilePictureUrl } = useProfilePictureUrl(userProfile?.profile_picture);
     const router = useRouter();
+    const pathname = usePathname();
 
     // Use the custom hook to fetch chat rooms
     const { rooms: chatRooms, isLoading: loadingChats } = useChatRooms(user?.id);
@@ -86,6 +87,9 @@ export default function NavBar() {
         };
     }, []);
 
+    // Check if we should hide OFFMENU text (only on mobile AND explore page)
+    const shouldHideOffMenuText = pathname?.startsWith('/explore');
+
     return (
         <nav className="w-full py-1 md:py-2 pl-2 pr-3 md:px-4 rounded-lg relative">
             <div className="grid grid-cols-3 items-center">
@@ -101,7 +105,7 @@ export default function NavBar() {
                             priority={true}
                             className="w-[40px] h-[40px] md:w-[40px] md:h-[40px] object-contain scale-125" 
                         />
-                        <span className="hidden md:inline text-md md:text-xl font-bold text-black">OFFMENU</span>
+                        <span className={`${shouldHideOffMenuText ? 'hidden' : 'inline'} md:inline text-md md:text-xl font-bold text-black`}>OFFMENU</span>
                     </Link>
                 </div>
 
@@ -129,13 +133,6 @@ export default function NavBar() {
 
                     {/* Desktop navigation - hidden on mobile */}
                     <div className="hidden md:flex items-center gap-3 xl:gap-4">
-                        {/* <button className="flex items-center gap-2 text-gray-700 hover:text-black">
-                            <span>Change to list</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                            </svg>
-                        </button> */}
-
                         <Link href="/explore?view=spaces" className="text-gray-700 hover:text-black whitespace-nowrap">
                             Explore
                         </Link>
@@ -155,11 +152,6 @@ export default function NavBar() {
                                         <IoMdClose className="w-6 h-6" />
                                     </div>
                                 </div>
-                                {/* {chatRooms.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                                        {chatRooms.length > 9 ? '9+' : chatRooms.length}
-                                    </span>
-                                )} */}
                             </button>
 
                             {chatDropdownOpen && (
