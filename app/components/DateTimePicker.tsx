@@ -207,19 +207,19 @@ export default function DateTimePicker({
                 <div
                     ref={dateTimePickerRef}
                     className={`absolute z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden
-                               w-[calc(100vw-2rem)] max-w-[600px]
+                               w-[calc(100vw-2rem)] max-w-[800px]
                                transition-all duration-100 ease-out
                                ${isAnimating ? 'opacity-0 scale-95 translate-y-[-10px]' : 'opacity-100 scale-100 translate-y-0'}`}
                     style={{
                         top: `${dropdownPosition.top}px`,
-                        left: `${Math.max(16, Math.min(dropdownPosition.left, window.innerWidth - 600 - 16))}px`, // Keep within viewport with 16px margin
+                        left: `${Math.max(16, Math.min(dropdownPosition.left, window.innerWidth - 800 - 16))}px`, // Keep within viewport with 16px margin
                     }}
                 >
                     {/* Mobile: Stack vertically, Desktop: Side by side */}
-                    <div className="flex flex-col md:flex-row border-b">
+                    <div className="flex flex-col md:flex-row">
                         {/* Calendar Section */}
                         <div className="w-full md:w-3/5 md:border-r">
-                            <div className="flex justify-between items-center p-3 md:p-4 border-b">
+                            <div className="flex justify-between items-center p-3 md:p-4">
                                 <button onClick={prevMonth} className="p-1 md:p-2">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="md:w-5 md:h-5">
                                         <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -234,7 +234,22 @@ export default function DateTimePicker({
                                     </svg>
                                 </button>
                             </div>
+                        </div>
 
+                        {/* Time Section */}
+                        <div className="w-full md:w-2/5 border-t md:border-t-0">
+                            <div className="p-3 md:p-4">
+                                <h3 className="font-medium text-center text-sm md:text-lg">Time</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Unified border under both headers */}
+                    <div className="border-b"></div>
+
+                    <div className="flex flex-col md:flex-row max-h-48 md:max-h-full">
+                        {/* Calendar Section Content */}
+                        <div className="w-full md:w-3/5 md:border-r">
                             <div className="grid grid-cols-7 mb-1 border-b">
                                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
                                     <div key={day} className="text-center py-2 md:py-3 text-xs md:text-base font-medium">
@@ -278,30 +293,29 @@ export default function DateTimePicker({
                             </div>
                         </div>
 
-                        {/* Time Section */}
-                        <div className="w-full md:w-2/5 max-h-48 md:max-h-80 overflow-y-auto border-t md:border-t-0">
-                            <div className="p-3 md:p-4 border-b">
-                                <h3 className="font-medium text-center text-sm md:text-lg">Time</h3>
-                            </div>
-                            <div className="p-2 md:p-4 grid grid-cols-2 gap-1 md:gap-2">
-                                {generateTimeSlots().map((time) => (
-                                    <button
-                                        key={time}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            onTimeSelect(time);
-                                            // Close picker if both date and time are selected
-                                            if (selectedDate) {
-                                                onConfirm();
-                                            }
-                                        }}
-                                        className={`w-full text-center px-2 py-2 md:px-3 md:py-3 rounded text-xs md:text-base border
-                                          ${selectedTime === time ? 'bg-[#273287] text-white border-[#273287]' : 'bg-white border-gray-200 hover:bg-[#273287]/10 hover:border-[#273287]/30'}`}
-                                        type="button"
-                                    >
-                                        {time}
-                                    </button>
-                                ))}
+                        {/* Time Section Content */}
+                        <div className="w-full md:w-2/5 flex flex-col max-h-48 md:max-h-100 overflow-y-auto">
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="p-2 md:p-4 grid grid-cols-2 gap-1 md:gap-2">
+                                    {generateTimeSlots().map((time) => (
+                                        <button
+                                            key={time}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                onTimeSelect(time);
+                                                // Close picker if both date and time are selected
+                                                if (selectedDate) {
+                                                    onConfirm();
+                                                }
+                                            }}
+                                            className={`w-full text-center px-2 py-2 md:px-3 md:py-3 rounded text-xs md:text-base border
+                                              ${selectedTime === time ? 'bg-[#273287] text-white border-[#273287]' : 'bg-white border-gray-200 hover:bg-[#273287]/10 hover:border-[#273287]/30'}`}
+                                            type="button"
+                                        >
+                                            {time}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
