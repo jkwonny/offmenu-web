@@ -247,7 +247,7 @@ export default function DateTimePicker({
                     {/* Unified border under both headers */}
                     <div className="border-b"></div>
 
-                    <div className="flex flex-col md:flex-row max-h-48 md:max-h-full">
+                    <div className="flex flex-col md:flex-row max-h-96 md:max-h-full">
                         {/* Calendar Section Content */}
                         <div className="w-full md:w-3/5 md:border-r">
                             <div className="grid grid-cols-7 mb-1 border-b">
@@ -294,7 +294,7 @@ export default function DateTimePicker({
                         </div>
 
                         {/* Time Section Content */}
-                        <div className="w-full md:w-2/5 flex flex-col max-h-48 md:max-h-100 overflow-y-auto">
+                        <div className="w-full md:w-2/5 flex flex-col max-h-64 md:max-h-100 overflow-y-auto">
                             <div className="flex-1 overflow-y-auto">
                                 <div className="p-2 md:p-4 grid grid-cols-2 gap-1 md:gap-2">
                                     {generateTimeSlots().map((time) => (

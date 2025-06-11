@@ -247,9 +247,12 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
     const [capacityFilter, setCapacityFilter] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [selectedTime, setSelectedTime] = useState<string>('');
-    const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [showCapacityMenu, setShowCapacityMenu] = useState(false);
     const [isCapacityAnimating, setIsCapacityAnimating] = useState(false);
+
+    // Separate state for mobile and desktop date time pickers
+    const [showMobileDateTimePicker, setShowMobileDateTimePicker] = useState(false);
+    const [showDesktopDateTimePicker, setShowDesktopDateTimePicker] = useState(false);
 
     // Mobile swipe states
     const [containerHeight, setContainerHeight] = useState<number>(160); // Increased from 120 to 200 for better initial visibility
@@ -545,9 +548,9 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                         selectedTime={selectedTime}
                                         onDateSelect={setSelectedDate}
                                         onTimeSelect={setSelectedTime}
-                                        onConfirm={() => setShowDateTimePicker(false)}
-                                        showPicker={showDateTimePicker}
-                                        togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
+                                        onConfirm={() => setShowMobileDateTimePicker(false)}
+                                        showPicker={showMobileDateTimePicker}
+                                        togglePicker={() => setShowMobileDateTimePicker(!showMobileDateTimePicker)}
                                     />
                                 </div>
                             </div>
@@ -564,7 +567,7 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                         {error instanceof Error ? error.message : 'An error occurred while fetching data'}
                     </div>
                 ) : selectedView === 'spaces' ? (
-                    <div className="min-h-screen lg:min-h-0">
+                    <div className={`${(containerHeight > 180 || !isMobile) ? 'block' : 'hidden'} lg:block`}>
                         {/* Desktop header - hidden on mobile */}
                         <div className="hidden lg:block mb-8">
                             <h2 className="text-xl font-semibold mb-4">{venues.length} Spaces</h2>
@@ -623,9 +626,9 @@ function ExploreContent({ onVenueHover, selectedVenueId, onVenueSelect }: {
                                         selectedTime={selectedTime}
                                         onDateSelect={setSelectedDate}
                                         onTimeSelect={setSelectedTime}
-                                        onConfirm={() => setShowDateTimePicker(false)}
-                                        showPicker={showDateTimePicker}
-                                        togglePicker={() => setShowDateTimePicker(!showDateTimePicker)}
+                                        onConfirm={() => setShowDesktopDateTimePicker(false)}
+                                        showPicker={showDesktopDateTimePicker}
+                                        togglePicker={() => setShowDesktopDateTimePicker(!showDesktopDateTimePicker)}
                                     />
                                 </div>
                             </div>
