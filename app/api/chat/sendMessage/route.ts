@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail } from '@/app/lib/email';
+import { getChatMessageNotificationTemplate } from '@/app/lib/emailTemplates';
 
 // Get environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -49,7 +51,9 @@ export async function POST(request: NextRequest) {
       .select(`
         id, 
         sender_id,
-        recipient_id
+        recipient_id,
+        venue_name,
+        venue_id
       `)
       .eq('id', room_id)
       .single();
@@ -98,6 +102,50 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to send message' },
         { status: 500 }
       );
+    }
+
+    // Send email notification to the recipient
+    try {
+      // Determine the recipient ID (the other participant in the chat)
+      const recipientId = chatRoom.sender_id === sender_id ? chatRoom.recipient_id : chatRoom.sender_id;
+      
+      // Fetch sender and recipient information for the email
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('id, name, email')
+        .in('id', [sender_id, recipientId]);
+
+      if (!userError && userData && userData.length >= 2) {
+        const sender = userData.find(u => u.id === sender_id);
+        const recipient = userData.find(u => u.id === recipientId);
+
+        if (recipient?.email && sender?.name && content) {
+          const recipientName = recipient.name || 'User';
+          const senderName = sender.name;
+          const venueName = chatRoom.venue_name || 'Unknown Venue';
+          const chatLink = `https://offmenu.space/chat?chatRoomId=${room_id}`;
+          
+          // Create a preview of the message (first 100 characters)
+          const messagePreview = content.length > 100 ? content.substring(0, 100) : content;
+
+          const emailTemplate = getChatMessageNotificationTemplate(
+            recipientName,
+            senderName,
+            messagePreview,
+            venueName,
+            chatLink
+          );
+
+          await sendEmail({
+            to: recipient.email,
+            subject: `💬 New message from ${senderName}`,
+            html: emailTemplate
+          });
+        }
+      }
+    } catch (emailError) {
+      console.error('Error sending message notification email:', emailError);
+      // Don't fail the entire request if email fails
     }
 
     return NextResponse.json({
