@@ -28,6 +28,10 @@ function ChatContent() {
     const currentRoomIdRef = useRef<string | null>(null);
     const roomNotFoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Message sending state
+    const [newMessage, setNewMessage] = useState('');
+    const [sendingMessage, setSendingMessage] = useState(false);
+
     // React Query hooks
     const { data: user, isLoading: userLoading, error: userError } = useCurrentUser();
     const { data: userVenues = [], isLoading: venuesLoading } = useUserVenues(user?.id);
@@ -36,19 +40,79 @@ function ChatContent() {
     const venueIds = useMemo(() => userVenues.map((venue: { id: number }) => venue.id), [userVenues]);
     const { isLoading: requestsLoading } = useBookingRequests(venueIds);
 
-    const { rooms: chatRooms, isLoading: chatRoomsLoading, error: chatRoomsError } = useChatRooms(user?.id);
+    const { rooms: chatRooms, isLoading: chatRoomsLoading, error: chatRoomsError, refetch: refetchChatRooms } = useChatRooms(user?.id);
 
     // Get selected room ID from URL
     const selectedRoomId = searchParams.get('chatRoomId');
 
     // Fetch messages and venue details for selected room
-    const { data: chatMessages = [], isLoading: messagesLoading } = useChatMessages(selectedRoomId || undefined);
+    const { data: chatMessages = [], isLoading: messagesLoading, refetch: refetchMessages } = useChatMessages(selectedRoomId || undefined);
     const { data: selectedSpace, isLoading: venueDetailsLoading } = useVenueDetails(selectedRoom?.venue_id);
 
     const scrollToBottom = () => {
         if (messagesContainerRef.current) {
             const element = messagesContainerRef.current;
             element.scrollTop = element.scrollHeight;
+        }
+    };
+
+    // Handle sending a message
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        if (e) {
+            e.preventDefault();
+        }
+
+        if (!newMessage.trim() || !selectedRoom || !user || sendingMessage) {
+            return;
+        }
+
+        setSendingMessage(true);
+        setError('');
+
+        try {
+            const response = await fetch('/api/chat/sendMessage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    room_id: selectedRoom.id,
+                    sender_id: user.id,
+                    content: newMessage.trim(),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send message');
+            }
+
+            // Clear the input
+            setNewMessage('');
+
+            // Refetch messages and chat rooms to update the UI
+            await Promise.all([
+                refetchMessages(),
+                refetchChatRooms()
+            ]);
+
+            // Scroll to bottom after message is sent
+            setTimeout(scrollToBottom, 100);
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setError(error instanceof Error ? error.message : 'Failed to send message');
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    // Handle Enter key press in input
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
         }
     };
 
@@ -210,8 +274,6 @@ function ChatContent() {
         );
     }
 
-    console.log(selectedRoom);
-
     return (
         <div className="min-h-screen min-w-screen flex flex-col">
             <div className="fixed bg-white/30 backdrop-blur-md z-10"></div>
@@ -347,16 +409,30 @@ function ChatContent() {
                                 </div>
 
                                 <div className="p-4 border-t flex items-center">
-                                    <input
-                                        type="text"
-                                        placeholder="Enter your message here"
-                                        className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
-                                    />
-                                    <button className="ml-2 bg-gray-100 p-3 rounded-full">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                        </svg>
-                                    </button>
+                                    <form onSubmit={handleSendMessage} className="flex items-center w-full">
+                                        <input
+                                            type="text"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            onKeyPress={handleKeyPress}
+                                            placeholder="Enter your message here"
+                                            className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                            disabled={sendingMessage}
+                                        />
+                                        <button 
+                                            type="submit"
+                                            disabled={sendingMessage || !newMessage.trim()}
+                                            className="ml-2 bg-gray-100 p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {sendingMessage ? (
+                                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"></div>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </form>
                                 </div>
                             </>
                         ) : (
@@ -698,16 +774,30 @@ function ChatContent() {
 
                                     {/* Message Input */}
                                     <div className="p-4 border-t flex items-center">
-                                        <input
-                                            type="text"
-                                            placeholder="Enter your message here"
-                                            className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
-                                        />
-                                        <button className="ml-2 bg-gray-100 p-3 rounded-full">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                            </svg>
-                                        </button>
+                                        <form onSubmit={handleSendMessage} className="flex items-center w-full">
+                                            <input
+                                                type="text"
+                                                value={newMessage}
+                                                onChange={(e) => setNewMessage(e.target.value)}
+                                                onKeyPress={handleKeyPress}
+                                                placeholder="Enter your message here"
+                                                className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                                disabled={sendingMessage}
+                                            />
+                                            <button 
+                                                type="submit"
+                                                disabled={sendingMessage || !newMessage.trim()}
+                                                className="ml-2 bg-gray-100 p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {sendingMessage ? (
+                                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"></div>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </form>
                                     </div>
                                 </>
                             ) : (

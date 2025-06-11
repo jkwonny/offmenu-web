@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail } from '@/app/lib/email';
+import { getChatMessageRequestTemplate } from '@/app/lib/emailTemplates';
 
 // Get environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     let roomId: string;
+    let isNewRoom = false;
 
     if (existingRoom) {
       // Use existing room
@@ -89,6 +92,7 @@ export async function POST(request: NextRequest) {
       }
 
       roomId = newRoom.id;
+      isNewRoom = true;
     }
 
     // Create booking request (separate from chat room)
@@ -137,6 +141,44 @@ export async function POST(request: NextRequest) {
       if (messageError) {
         console.error('Error sending initial message:', messageError);
         // Don't fail the entire request if message fails
+      }
+    }
+
+    // Send email notification to venue manager for new chat requests
+    if (isNewRoom) {
+      try {
+        // Fetch sender and recipient information for the email
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from('users')
+          .select('id, name, email')
+          .in('id', [sender_id, recipient_id]);
+
+        if (!userError && userData && userData.length >= 2) {
+          const sender = userData.find(u => u.id === sender_id);
+          const recipient = userData.find(u => u.id === recipient_id);
+
+          if (recipient?.email && sender?.name) {
+            const recipientName = recipient.name || 'Venue Manager';
+            const senderName = sender.name;
+            const chatLink = `https://offmenu.space/chat?chatRoomId=${roomId}`;
+
+            const emailTemplate = getChatMessageRequestTemplate(
+              recipientName,
+              senderName,
+              venue_name,
+              chatLink
+            );
+
+            await sendEmail({
+              to: recipient.email,
+              subject: `💬 New chat request from ${senderName} for ${venue_name}`,
+              html: emailTemplate
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending chat notification email:', emailError);
+        // Don't fail the entire request if email fails
       }
     }
 

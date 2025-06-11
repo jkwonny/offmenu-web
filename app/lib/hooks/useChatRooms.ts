@@ -217,6 +217,17 @@ export function useChatRooms(userId: string | undefined) {
         error: 
             senderRoomsQuery.error || 
             recipientRoomsQuery.error ||
-            roomsWithMessagesQueries.find(query => query.error)?.error
+            roomsWithMessagesQueries.find(query => query.error)?.error,
+        refetch: async () => {
+            // Refetch both sender and recipient rooms
+            await Promise.all([
+                senderRoomsQuery.refetch(),
+                recipientRoomsQuery.refetch()
+            ]);
+            // Refetch all message queries
+            await Promise.all(
+                roomsWithMessagesQueries.map(query => query.refetch())
+            );
+        }
     };
 } 

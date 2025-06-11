@@ -34,5 +34,9 @@ export type UserContextType = {
         error: Error | null;
     }>;
     signOut: () => Promise<void>;
+    resetPassword: (email: string) => Promise<{
+        success: boolean;
+        error: Error | null;
+    }>;
     updateUserProfile: (fields: Partial<Pick<UserProfile, 'name' | 'phone' | 'profile_picture' | 'about'>>) => Promise<{ success: boolean; error: Error | null }>;
 };

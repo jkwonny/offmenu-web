@@ -20,6 +20,29 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Email Configuration
+
+OffMenu uses SendGrid for transactional email sending. To enable email functionality, you need to:
+
+1. Create a SendGrid account at [sendgrid.com](https://sendgrid.com)
+2. Generate an API key in your SendGrid dashboard
+3. Add the API key to your environment variables:
+
+```bash
+# In your .env.local file
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+```
+
+### Email Features
+
+The application automatically sends emails for:
+- **Event Approvals**: When a venue approves an event request
+- **Event Declines**: When a venue declines an event request  
+- **Chat Requests**: When someone sends a new chat request to a venue manager
+- **Chat Message Notifications**: When someone receives a new message in an ongoing conversation
+
+All emails are sent from `contact@offmenu.space` and use responsive HTML templates.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
