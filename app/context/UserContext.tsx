@@ -207,6 +207,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Add resetPassword function
+    const resetPassword = async (email: string) => {
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/auth/reset-password`,
+            });
+
+            return {
+                success: !error,
+                error: error,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error : new Error('Unknown error occurred'),
+            };
+        }
+    };
+
     // Add updateUserProfile function
     const updateUserProfile = async (fields: Partial<Pick<UserProfile, 'name' | 'phone' | 'profile_picture' | 'about'>>) => {
         if (!user) return { success: false, error: new Error('Not authenticated') };
@@ -237,6 +256,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         signOut,
+        resetPassword,
         updateUserProfile,
     };
 
