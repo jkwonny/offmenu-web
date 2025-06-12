@@ -70,6 +70,7 @@ export default function SubmitSpacePage() {
 
             const submissionData = {
                 owner_id: user?.id ?? 'd03d1efd-7b00-4828-ac89-4f3f55b830d4',
+                contact_email: formData.contact_email?.trim() || null,
                 rental_type: formData.rental_type,
                 collaboration_type: formData.collaboration_type || null,
                 website: formData.website?.trim() || null,

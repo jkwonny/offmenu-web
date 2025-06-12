@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../../context/UserContext';
-import { useVenues, useEvents } from '../../lib/queries';
+import { useVenues, useEvents, useClaimableVenues } from '../../lib/queries';
 import { useBookingRequests } from '../../lib/queries/chat';
 import NavBar from '../../components/NavBar';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { LuMapPin, LuCalendar, LuUser, LuMessageCircle, LuCheck, LuX } from 'rea
 import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Event } from '@/app/types/event';
+import { supabase } from '../../lib/supabase';
 
 function DashboardContent() {
     const searchParams = useSearchParams();
@@ -23,6 +24,7 @@ function DashboardContent() {
     // Fetch venues and events data
     const { data: venues = [], isLoading: venuesLoading } = useVenues();
     const { data: events = [], isLoading: eventsLoading } = useEvents<Event[]>();
+    const { data: claimableVenues = []} = useClaimableVenues(user?.email);
 
     // Filter venues and events to show only those owned by the current user
     const userVenues = venues.filter(venue => venue.owner_id === user?.id);
@@ -73,6 +75,37 @@ function DashboardContent() {
                 newSet.delete(requestId);
                 return newSet;
             });
+        }
+    };
+
+    const handleClaimVenue = async (venueId: string) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('Please sign in to claim venues');
+                return;
+            }
+
+            const response = await fetch('/api/venues/claim', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ venueId }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Venue claimed successfully!');
+                window.location.reload(); // Refresh to show updated data
+            } else {
+                alert(result.error || 'Failed to claim venue');
+            }
+        } catch (error) {
+            console.error('Error claiming venue:', error);
+            alert('Failed to claim venue. Please try again.');
         }
     };
 
@@ -327,6 +360,61 @@ function DashboardContent() {
                                         <p className="text-gray-600 mb-4">Booking requests will appear here when users contact you about your spaces.</p>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {/* Claimable Venues Section */}
+                        {claimableVenues.length > 0 && (
+                            <div className="mb-8">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-semibold text-blue-600">
+                                        🏢 Venues Available to Claim ({claimableVenues.length})
+                                    </h2>
+                                </div>
+                                
+                                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                                    <p className="text-blue-800 text-sm">
+                                        <strong>Good news!</strong> We found venues that were submitted for your email address. 
+                                        Click &quot;Claim Venue&quot; to take ownership and start managing them.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {claimableVenues.map((venue: { id: string; name: string; venue_images?: { image_url: string }[]; address?: string; city: string }) => {
+                                        const venueImage = venue.venue_images && venue.venue_images.length > 0
+                                            ? venue.venue_images[0].image_url
+                                            : null;
+
+                                        return (
+                                            <div key={venue.id} className="bg-white rounded-lg overflow-hidden shadow-md border-2 border-blue-200">
+                                                {venueImage && (
+                                                    <div className="aspect-[4/3] relative">
+                                                        <Image
+                                                            src={venueImage}
+                                                            alt={venue.name}
+                                                            fill
+                                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                            className="object-cover"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="p-4">
+                                                    <h3 className="font-medium text-lg mb-1">{venue.name}</h3>
+                                                    <div className="flex items-center text-gray-600 text-sm mb-3">
+                                                        <LuMapPin className="mr-1" />
+                                                        <span>{venue.address || venue.city}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleClaimVenue(venue.id)}
+                                                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        Claim Venue
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 

@@ -20,4 +20,5 @@ export interface SpaceFormData {
   max_sitting_guests: number;
   tags: string;
   services: string[];
+  contact_email?: string;
 } 

@@ -145,6 +145,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
                 if (insertError) {
                     console.error('Error creating user in database:', insertError);
+                } else {
+                    // Check for and transfer any unclaimed venues with this email
+                    await transferUnclaimedVenues(data.user.id, email);
                 }
             }
             setIsLoading(false);
@@ -161,6 +164,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Helper function to transfer unclaimed venues
+    const transferUnclaimedVenues = async (userId: string, email: string) => {
+        try {
+            
+            const { error } = await supabase
+                .from('venues')
+                .update({
+                    owner_id: userId,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('contact_email', email)
+
+            if (error) {
+                console.error('Error transferring venues on signup:', error);
+            } else {
+                console.log('Successfully transferred venues to new user');
+            }
+        } catch (error) {
+            console.error('Error in transferUnclaimedVenues:', error);
+        }
+    };
+
     const signIn = async (email: string, password: string) => {
         setIsLoading(true);
         try {
@@ -171,6 +196,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
             if (!error && data.user) {
                 await refetchUserProfile();
+                // Check for and transfer any unclaimed venues with this email
+                await transferUnclaimedVenues(data.user.id, email);
             }
 
             setIsLoading(false);

@@ -32,6 +32,7 @@ export interface Venue {
     latitude: number;
     neighborhood?: string;
     owner_id: string;
+    contact_email?: string;
     status?: 'pending' | 'approved' | 'declined';
     collaboration_type?: string;
     services?: string[];

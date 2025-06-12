@@ -22,6 +22,7 @@ export interface Venue {
   neighborhood?: string;
   collaboration_type?: string[];
   status?: string;
+  contact_email?: string;
 }
 
 export interface VenueFilters {
@@ -54,7 +55,8 @@ async function fetchVenues(filters: VenueFilters = {}) {
       owner_id,
       status,
       collaboration_type,
-      venue_images(id, image_url, sort_order)
+      venue_images(id, image_url, sort_order),
+      contact_email
     `, { count: 'exact' });
 
   // Apply filters
@@ -128,6 +130,7 @@ async function fetchVenues(filters: VenueFilters = {}) {
         owner_id: venue.owner_id,
         status: venue.status || 'approved',
         collaboration_type: venue.collaboration_type || '',
+        contact_email: venue.contact_email || '',
       };
     });
 
@@ -272,5 +275,40 @@ export function useEvents<T = {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
+  });
+}
+
+// Hook to get venues that can be claimed by the current user
+export function useClaimableVenues(userEmail: string | undefined) {
+  const ADMIN_USER_ID = 'd03d1efd-7b00-4828-ac89-4f3f55b830d4';
+  
+  return useQuery({
+    queryKey: ['claimableVenues', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      
+      const { data, error } = await supabase
+        .from('venues')
+        .select(`
+          id,
+          name,
+          address,
+          city,
+          contact_email,
+          venue_images(id, image_url, sort_order)
+        `)
+        .eq('contact_email', userEmail)
+        .eq('owner_id', ADMIN_USER_ID);
+
+      if (error) {
+        console.error('Error fetching claimable venues:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!userEmail,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 } 
