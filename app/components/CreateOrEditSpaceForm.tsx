@@ -53,6 +53,7 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
         max_sitting_guests: 0,
         tags: '',
         services: [],
+        contact_email: '',
     };
 
     const [formData, setFormData] = useState<SpaceFormDataWithImages>(() => ({
@@ -315,6 +316,23 @@ const CreateOrEditSpaceForm = ({ initialData, onSubmit, onCancel, mode, title, i
                                     className={`w-full p-3 border ${validationErrors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                                     placeholder="Describe your space's atmosphere, features, and what makes it special." />
                                 {validationErrors.description && <p className="mt-1 text-sm text-red-500">{validationErrors.description}</p>}
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="contact_email">
+                                    Venue Owner Email
+                                </label>
+                                <input 
+                                    id="contact_email" 
+                                    type="email" 
+                                    name="contact_email" 
+                                    value={formData.contact_email || ''} 
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="email@example.com (for venue ownership transfer)" 
+                                />
+                                <p className="mt-1 text-sm text-gray-500">
+                                    If submitting on behalf of someone else, enter their email. They&apos;ll be able to claim this venue when they sign up.
+                                </p>
                             </div>
                             <div className="col-span-2 md:col-span-1">
                                 <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="category">

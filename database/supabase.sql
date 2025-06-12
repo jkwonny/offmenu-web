@@ -43,6 +43,7 @@ CREATE TABLE venues (
   review_count INTEGER DEFAULT 0,
   featured BOOLEAN DEFAULT FALSE,
   owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  contact_email TEXT, -- Email of the intended venue owner for claiming
   status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'approved',
 
   created_at TIMESTAMP DEFAULT now(),
