@@ -27,6 +27,26 @@ export interface ChatRoom {
     isRequest?: boolean;
     status?: string;
     services?: string[];
+    booking_request?: {
+        id: string;
+        created_at: string;
+        message: string;
+        status: string;
+        venue_id: number;
+        venue_name: string;
+        event_date: string;
+        sender_id: string;
+        recipient_id: string;
+        selected_date?: Date;
+        selected_time?: Date;
+        sender_name: string;
+        recipient_name: string;
+        guest_count?: string;
+        requirements?: string;
+        instagram_handle?: string;
+        website?: string;
+        collaboration_types?: string[];
+    };
 }
 
 export interface ChatMessage {

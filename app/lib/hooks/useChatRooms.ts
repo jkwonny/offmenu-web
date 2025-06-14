@@ -24,7 +24,27 @@ async function fetchSenderRooms(userId: string) {
                 collaboration_types,
                 request_id,
                 venue:venues(name),
-                services
+                services,
+                booking_request:booking_requests!room_id(
+                    id,
+                    created_at,
+                    message,
+                    status,
+                    venue_id,
+                    venue_name,
+                    event_date,
+                    sender_id,
+                    recipient_id,
+                    selected_date,
+                    selected_time,
+                    guest_count,
+                    requirements,
+                    instagram_handle,
+                    website,
+                    collaboration_types,
+                    sender:users!sender_id(name),
+                    recipient:users!recipient_id(name)
+                )
             `)
         .eq('sender_id', userId);
     if (error) throw error;
@@ -53,7 +73,27 @@ async function fetchRecipientRooms(userId: string) {
             collaboration_types,
             request_id,
             venue:venues(name),
-            services
+            services,
+            booking_request:booking_requests!room_id(
+                id,
+                created_at,
+                message,
+                status,
+                venue_id,
+                venue_name,
+                event_date,
+                sender_id,
+                recipient_id,
+                selected_date,
+                selected_time,
+                guest_count,
+                requirements,
+                instagram_handle,
+                website,
+                collaboration_types,
+                sender:users!sender_id(name),
+                recipient:users!recipient_id(name)
+            )
         `)
         .eq('recipient_id', userId);
         
@@ -169,6 +209,47 @@ export function useChatRooms(userId: string | undefined) {
         const processedRooms = combinedItems.map((room, index) => {
             const latestMessage = roomsWithMessagesQueries[index]?.data;
             
+            // Process booking request if it exists
+            let processedBookingRequest = null;
+            if (room.booking_request && Array.isArray(room.booking_request) && room.booking_request.length > 0) {
+                const req = room.booking_request[0];
+                let senderName = 'Unknown';
+                let recipientName = 'Unknown';
+
+                if (req.sender && Array.isArray(req.sender) && req.sender.length > 0) {
+                    senderName = req.sender[0]?.name || 'Unknown';
+                } else if (req.sender && typeof req.sender === 'object') {
+                    senderName = (req.sender as { name?: string }).name || 'Unknown';
+                }
+
+                if (req.recipient && Array.isArray(req.recipient) && req.recipient.length > 0) {
+                    recipientName = req.recipient[0]?.name || 'Unknown';
+                } else if (req.recipient && typeof req.recipient === 'object') {
+                    recipientName = (req.recipient as { name?: string }).name || 'Unknown';
+                }
+
+                processedBookingRequest = {
+                    id: req.id,
+                    created_at: req.created_at,
+                    message: req.message,
+                    status: req.status,
+                    venue_id: req.venue_id,
+                    venue_name: req.venue_name || 'Unknown Venue',
+                    event_date: req.event_date || '',
+                    sender_id: req.sender_id,
+                    recipient_id: req.recipient_id,
+                    sender_name: senderName,
+                    selected_date: req.selected_date,
+                    selected_time: req.selected_time,
+                    recipient_name: recipientName,
+                    guest_count: req.guest_count,
+                    requirements: req.requirements,
+                    instagram_handle: req.instagram_handle,
+                    website: req.website,
+                    collaboration_types: req.collaboration_types
+                };
+            }
+            
             return {
                 id: room.id,
                 created_at: room.created_at,
@@ -191,7 +272,8 @@ export function useChatRooms(userId: string | undefined) {
                 website: room.website,
                 guest_count: room.guest_count,
                 collaboration_types: room.collaboration_types,
-                services: room.services
+                services: room.services,
+                booking_request: processedBookingRequest
             };
         });
         

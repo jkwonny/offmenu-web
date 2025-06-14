@@ -32,6 +32,12 @@ function ChatContent() {
     const [newMessage, setNewMessage] = useState('');
     const [sendingMessage, setSendingMessage] = useState(false);
 
+    // Booking request modification state
+    const [showModifyModal, setShowModifyModal] = useState(false);
+    const [modifyingRequest, setModifyingRequest] = useState(false);
+    const [modifyDate, setModifyDate] = useState('');
+    const [modifyTime, setModifyTime] = useState('');
+
     // React Query hooks
     const { data: user, isLoading: userLoading, error: userError } = useCurrentUser();
     const { data: userVenues = [], isLoading: venuesLoading } = useUserVenues(user?.id);
@@ -56,10 +62,11 @@ function ChatContent() {
         }
     };
 
+    console.log('selectedRoom', selectedRoom);
     // Handle sending a message
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) {
-            e.preventDefault();
+            e.preventDefault()
         }
 
         if (!newMessage.trim() || !selectedRoom || !user || sendingMessage) {
@@ -116,6 +123,141 @@ function ChatContent() {
         }
     };
 
+    // Booking request action handlers
+    const handleApproveRequest = async () => {
+        if (!selectedRoom || !user) return;
+
+        try {
+            const response = await fetch('/api/booking/approve', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    booking_request_id: selectedRoom.booking_request?.id,
+                    status: 'approved'
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to approve request');
+            }
+
+            // Refetch booking request data
+            await refetchMessages();
+
+            // Send a message to the chat
+            if (selectedRoom) {
+                await fetch('/api/chat/sendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        room_id: selectedRoom.id,
+                        sender_id: user.id,
+                        content: '✅ Request approved! Looking forward to working with you.',
+                    }),
+                });
+                await refetchMessages();
+                await refetchChatRooms();
+            }
+        } catch (error) {
+            console.error('Error approving request:', error);
+            setError('Failed to approve request');
+        }
+    };
+
+    const handleDeclineRequest = async () => {
+        if (!selectedRoom || !user) return;
+
+        try {
+            const response = await fetch('/api/booking/approve', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    booking_request_id: selectedRoom.booking_request?.id,
+                    status: 'rejected'
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to decline request');
+            }
+
+            // Refetch booking request data
+            await refetchMessages();
+
+            // Send a message to the chat
+            if (selectedRoom) {
+                await fetch('/api/chat/sendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        room_id: selectedRoom.id,
+                        sender_id: user.id,
+                        content: '❌ Unfortunately, we cannot accommodate this request at this time.',
+                    }),
+                });
+                await refetchMessages();
+                await refetchChatRooms();
+            }
+        } catch (error) {
+            console.error('Error declining request:', error);
+            setError('Failed to decline request');
+        }
+    };
+
+    const handleModifyRequest = () => {
+        if (!selectedRoom) return;
+
+        // Pre-populate with current values
+        setModifyDate(selectedRoom.booking_request?.event_date || '');
+        setModifyTime(selectedRoom.booking_request?.selected_time?.toString() || '');
+        setShowModifyModal(true);
+    };
+
+    const handleSubmitModification = async () => {
+        if (!selectedRoom || !user || !modifyDate) return;
+
+        setModifyingRequest(true);
+        setError('');
+
+        try {
+            // Send modification message to chat
+            if (selectedRoom) {
+                const modificationMessage = `📅 Suggested modification:\n\nNew Date: ${modifyDate}\n${modifyTime ? `New Time: ${modifyTime}` : ''}\n\nPlease let me know if this works for you!`;
+
+                await fetch('/api/chat/sendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        room_id: selectedRoom.id,
+                        sender_id: user.id,
+                        content: modificationMessage,
+                    }),
+                });
+                await refetchMessages();
+            }
+
+            setShowModifyModal(false);
+            setModifyDate('');
+            setModifyTime('');
+
+        } catch (error) {
+            console.error('Error sending modification:', error);
+            setError('Failed to send modification');
+        } finally {
+            setModifyingRequest(false);
+        }
+    };
+
     // Handle errors from React Query
     useEffect(() => {
         if (userError) {
@@ -144,7 +286,7 @@ function ChatContent() {
                     }
                     setWaitingForRoom(false);
                     setError(''); // Clear any existing errors
-                    
+
                     // Convert to proper ChatRoom type with all required properties
                     const roomData = room as ChatRoom & {
                         event_date?: string;
@@ -183,7 +325,8 @@ function ChatContent() {
                             sender: {
                                 name: room.latest_message.sender.name
                             },
-                        } : undefined
+                        } : undefined,
+                        booking_request: room.booking_request || undefined,
                     };
 
                     setSelectedRoom(typedRoom);
@@ -193,12 +336,12 @@ function ChatContent() {
                     // Room not found - but don't immediately show error
                     // Set waiting state and give it time for the room to be created
                     setWaitingForRoom(true);
-                    
+
                     // Clear any existing timeout
                     if (roomNotFoundTimeoutRef.current) {
                         clearTimeout(roomNotFoundTimeoutRef.current);
                     }
-                    
+
                     // Wait 5 seconds before showing the error (room should be created by then)
                     roomNotFoundTimeoutRef.current = setTimeout(() => {
                         console.warn(`Chat room with ID ${chatRoomId} not found after waiting`);
@@ -419,7 +562,7 @@ function ChatContent() {
                                             className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
                                             disabled={sendingMessage}
                                         />
-                                        <button 
+                                        <button
                                             type="submit"
                                             disabled={sendingMessage || !newMessage.trim()}
                                             className="ml-2 bg-gray-100 p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -472,58 +615,105 @@ function ChatContent() {
 
                         <div className="p-4 flex flex-col gap-4 justify-between h-full overflow-y-auto">
                             <div className="space-y-4">
-                                <div>
+                                <div className=''>
                                     <h2 className="text-xl font-bold mb-2">{selectedSpace?.name}</h2>
-                                    <p className="text-gray-600 text-sm line-clamp-3">
-                                        {selectedSpace?.description}
-                                    </p>
-                                </div>
-
-                                {/* Event Details */}
-                                <div className="border-t pt-4">
-                                    <h3 className="font-semibold text-gray-900 mb-3">Event Details</h3>
-                                    <div className="space-y-2">
-                                        {selectedRoom?.popup_name && (
-                                            <div className="flex items-start gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm0 2a7 7 0 00-7 7h14a7 7 0 00-7-7z" clipRule="evenodd" />
-                                                </svg>
-                                                <span className="text-sm text-gray-600">{selectedRoom.popup_name}</span>
-                                            </div>
-                                        )}
-
-                                        {selectedRoom?.event_date && (
-                                            <div className="flex items-start gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                                                </svg>
-                                                <span className="text-sm text-gray-600">{selectedRoom.event_date}</span>
-                                            </div>
-                                        )}
-
-                                        {selectedRoom?.guest_count && (
-                                            <div className="flex items-start gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                                                </svg>
-                                                <span className="text-sm text-gray-600">{selectedRoom.guest_count} guests expected</span>
-                                            </div>
-                                        )}
-
-                                        <div className="flex items-start gap-2">
+                                    <div className="flex items-start gap-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                                             </svg>
                                             <span className="text-sm text-gray-600">{selectedSpace?.address}</span>
                                         </div>
-                                    </div>
                                 </div>
+
+                                {/* Booking Request Details */}
+                                {selectedRoom?.booking_request && (
+                                    <div className="pt-4">
+                                        <h3 className="font-semibold text-gray-900 mb-3">Booking Request</h3>
+                                        <div className="space-y-3">
+                                            {/* Status */}
+                                            <div className="flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                </svg>
+                                                <span className="text-sm text-gray-600">Status:</span>
+                                                <span className={`text-sm px-2 py-1 rounded-full ${selectedRoom.booking_request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                        selectedRoom.booking_request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                            'bg-yellow-100 text-yellow-800'
+                                                    }`}>
+                                                    {selectedRoom.booking_request.status}
+                                                </span>
+                                            </div>
+
+                                            {/* Event Date */}
+                                            {selectedRoom.booking_request.selected_date && (
+                                                <div className="flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-sm text-gray-600">Date: {new Date(selectedRoom.booking_request.selected_date).toLocaleDateString('en-US', {
+                                                        timeZone: 'America/New_York',
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}</span>
+                                                </div>
+                                            )}
+
+                                            {selectedRoom.booking_request.selected_time && (
+                                                <div className="flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-sm text-gray-600">Time: {new Date(`1970-01-01T${selectedRoom.booking_request.selected_time}`).toLocaleTimeString('en-US', {
+                                                        timeZone: 'America/New_York',
+                                                        hour: 'numeric',
+                                                        minute: '2-digit',
+                                                        hour12: true
+                                                    })} EST</span>
+                                                </div>
+                                            )}
+
+                                            {selectedRoom?.guest_count && (
+                                                <div className="flex items-start gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                                                    </svg>
+                                                    <span className="text-sm text-gray-600">{selectedRoom.guest_count} guests expected</span>
+                                                </div>
+                                            )}
+
+                                            {/* Action Buttons - Only show if user is venue owner and request is pending */}
+                                            {user && selectedRoom.recipient_id === user.id && selectedRoom.booking_request.status === 'pending' && (
+                                                <div className="flex flex-col gap-2 pt-2">
+                                                    <button
+                                                        onClick={handleApproveRequest}
+                                                        className="w-full bg-green-600 text-white py-2 px-3 rounded-md hover:bg-green-700 transition text-sm"
+                                                    >
+                                                        ✅ Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={handleDeclineRequest}
+                                                        className="w-full bg-red-600 text-white py-2 px-3 rounded-md hover:bg-red-700 transition text-sm"
+                                                    >
+                                                        ❌ Decline
+                                                    </button>
+                                                    <button
+                                                        onClick={handleModifyRequest}
+                                                        className="w-full bg-blue-600 text-white py-2 px-3 rounded-md hover:bg-blue-700 transition text-sm"
+                                                    >
+                                                        📅 Suggest Changes
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Services Requested */}
                                 {selectedRoom?.services && (
                                     <div className="border-t pt-4">
                                         <h3 className="font-semibold text-gray-900 mb-3">Services Requested</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="flex flex-wrap gap-3">
                                             {selectedRoom.services.map((service: string, index: number) => (
                                                 <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
                                                     <div className="bg-blue-500 rounded-full p-1 flex-shrink-0">
@@ -541,12 +731,12 @@ function ChatContent() {
                                 {/* Collaboration Types */}
                                 {selectedRoom?.collaboration_types && selectedRoom.collaboration_types.length > 0 && (
                                     <div className="border-t pt-4">
-                                        <h3 className="font-semibold text-gray-900 mb-3">Collaboration Types</h3>
+                                        <h3 className="font-semibold text-gray-900 mb-3">Open To</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {selectedRoom.collaboration_types.map((type, index) => (
-                                                <span 
-                                                    key={index} 
-                                                    className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
+                                                <span
+                                                    key={index}
+                                                    className="text-sm bg-blue-100 text-blue-800 px-3 py-2 rounded-full"
                                                 >
                                                     {CollaborationTypes[type as keyof typeof CollaborationTypes] || type}
                                                 </span>
@@ -784,7 +974,7 @@ function ChatContent() {
                                                 className="flex-grow p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
                                                 disabled={sendingMessage}
                                             />
-                                            <button 
+                                            <button
                                                 type="submit"
                                                 disabled={sendingMessage || !newMessage.trim()}
                                                 className="ml-2 bg-gray-100 p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -815,6 +1005,59 @@ function ChatContent() {
                     )}
                 </div>
             </div>
+
+            {/* Modify Request Modal */}
+            {showModifyModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-bold mb-4">Suggest Changes</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    New Date
+                                </label>
+                                <input
+                                    type="date"
+                                    value={modifyDate}
+                                    onChange={(e) => setModifyDate(e.target.value)}
+                                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    New Time (optional)
+                                </label>
+                                <input
+                                    type="time"
+                                    value={modifyTime}
+                                    onChange={(e) => setModifyTime(e.target.value)}
+                                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setShowModifyModal(false)}
+                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition"
+                                disabled={modifyingRequest}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSubmitModification}
+                                disabled={modifyingRequest || !modifyDate}
+                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+                            >
+                                {modifyingRequest ? 'Sending...' : 'Send Suggestion'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

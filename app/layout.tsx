@@ -12,8 +12,8 @@ import { PostHogProvider } from "./providers";
 
 
 export const metadata: Metadata = {
-  title: "OFFMENU - Event Booking Platform",
-  description: "Find and book the perfect venue for your event",
+  title: "OFFMENU - Connecting Events to Spaces",
+  description: "Find and book the perfect space for your event",
   icons: {
     icon: [
       {

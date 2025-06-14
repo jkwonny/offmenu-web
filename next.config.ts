@@ -6,22 +6,28 @@ const nextConfig: NextConfig = {
     domains: ['gtohpapexeriihzkoozu.supabase.co', 'itgvobngquppjrbbibis.supabase.co'],
   },
 
-  // Add PostHog rewrites to proxy ingestion requests
+  // Add PostHog rewrites to proxy ingestion requests - only in production
   async rewrites() {
-    return [
-      {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      {
-        source: '/ingest/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
-      },
-      {
-        source: '/ingest/decide',
-        destination: 'https://us.i.posthog.com/decide',
-      },
-    ];
+    // Only set up PostHog rewrites in production
+    if (process.env.NODE_ENV === 'production') {
+      return [
+        {
+          source: '/ingest/static/:path*',
+          destination: 'https://us-assets.i.posthog.com/static/:path*',
+        },
+        {
+          source: '/ingest/:path*',
+          destination: 'https://us.i.posthog.com/:path*',
+        },
+        {
+          source: '/ingest/decide',
+          destination: 'https://us.i.posthog.com/decide',
+        },
+      ];
+    }
+    
+    // Return empty array for development
+    return [];
   },
 
   // This is required to support PostHog trailing slash API requests
