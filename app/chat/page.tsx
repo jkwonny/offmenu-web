@@ -25,6 +25,7 @@ function ChatContent() {
     const [showChatView, setShowChatView] = useState(false); // For mobile view state
     const [waitingForRoom, setWaitingForRoom] = useState(false); // Add state to track if we're waiting for a room to appear
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const mobileMessagesContainerRef = useRef<HTMLDivElement>(null);
     const currentRoomIdRef = useRef<string | null>(null);
     const roomNotFoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -56,13 +57,27 @@ function ChatContent() {
     const { data: selectedSpace, isLoading: venueDetailsLoading } = useVenueDetails(selectedRoom?.venue_id);
 
     const scrollToBottom = () => {
+        // Check desktop ref first
         if (messagesContainerRef.current) {
             const element = messagesContainerRef.current;
+            // Force immediate scroll to bottom using multiple methods
             element.scrollTop = element.scrollHeight;
+            // Also try scrollTo as backup
+            element.scrollTo(0, element.scrollHeight);
         }
+        
+        // Check mobile ref if desktop ref is null
+        if (mobileMessagesContainerRef.current) {
+            const element = mobileMessagesContainerRef.current;
+            // Force immediate scroll to bottom using multiple methods
+            element.scrollTop = element.scrollHeight;
+            // Also try scrollTo as backup
+            element.scrollTo(0, element.scrollHeight);
+        }
+
+        return;
     };
 
-    console.log('selectedRoom', selectedRoom);
     // Handle sending a message
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) {
@@ -402,6 +417,21 @@ function ChatContent() {
         }
     }, [chatMessages]); // Remove selectedRoom from the dependency array
 
+    // Additional effect to ensure scrolling on initial load
+    useEffect(() => {
+        // Only scroll if room is selected, messages are loaded, and loading states are complete
+        if (selectedRoom && 
+            chatMessages.length > 0 && 
+            !messagesLoading && 
+            !venueDetailsLoading &&
+            (messagesContainerRef.current || (showChatView && mobileMessagesContainerRef.current))) {
+            // Scroll to bottom when room is selected and messages are loaded
+            setTimeout(() => {
+                scrollToBottom();
+            }, 200); // Slightly longer delay for initial load
+        }
+    }, [selectedRoom?.id, chatMessages.length, messagesLoading, venueDetailsLoading, showChatView]);
+
     // Set overall loading state based on user loading and chat rooms loading
     const isLoading = userLoading || venuesLoading || requestsLoading || chatRoomsLoading || waitingForRoom;
 
@@ -444,7 +474,7 @@ function ChatContent() {
                 {/* Desktop Layout - Hidden on mobile */}
                 <div className="hidden lg:grid grid-cols-4 gap-4 w-full h-full">
                     {/* Left Sidebar - Messages */}
-                    <div className="col-span-1 bg-white rounded-lg shadow-sm p-4 h-full">
+                    <div className="col-span-1 bg-white rounded-lg shadow-sm p-4 h-full overflow-y-scroll">
                         <div className="flex items-center gap-2">
                             <div className='flex gap-2 items-center'>
                                 <h1 className="text-lg font-semibold">Messages</h1>
@@ -454,7 +484,7 @@ function ChatContent() {
                             </div>
                         </div>
 
-                        <div className="col-span-3 overflow-y-scroll h-full mt-4">
+                        <div className="col-span-3 h-full mt-4">
                             {isLoading ? (
                                 <div className="flex justify-center items-center h-32">
                                     <p>Loading chats...</p>
@@ -592,7 +622,7 @@ function ChatContent() {
                     </div>
 
                     {/* Right Sidebar - Event Info */}
-                    <div className="col-span-1 bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col p-2">
+                    <div className="col-span-1 bg-white rounded-lg shadow-sm overflow-y-scroll h-full flex flex-col p-2">
                         {selectedSpace?.venue_images && selectedSpace.venue_images.length > 0 ? (
                             <div className="relative w-full h-64">
                                 <Image
@@ -922,7 +952,7 @@ function ChatContent() {
                                     </div>
 
                                     {/* Messages */}
-                                    <div className="overflow-y-scroll p-4 space-y-4 flex-grow" ref={messagesContainerRef}>
+                                    <div className="overflow-y-scroll p-4 space-y-4 flex-grow" ref={mobileMessagesContainerRef}>
                                         {chatMessages.length > 0 ? (
                                             chatMessages.map((message) => {
                                                 const isCurrentUser = message.sender_id === user?.id;
