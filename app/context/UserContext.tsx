@@ -9,6 +9,9 @@ import posthog from 'posthog-js';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Check if we're in production
+const isProduction = process.env.NODE_ENV === 'production';
+
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
@@ -22,7 +25,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // Helper function to identify user with PostHog
     const identifyUserWithPostHog = (user: User, userProfile?: UserProfile | null) => {
-        if (typeof window !== 'undefined' && user && posthog) {
+        // Only run PostHog operations in production
+        if (isProduction && typeof window !== 'undefined' && user && posthog) {
             try {
                 // Identify the user with PostHog
                 posthog.identify(user.id, {
@@ -81,8 +85,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 } else {
                     setSession(null);
                     setUser(null);
-                    // Reset PostHog identification for anonymous users
-                    if (typeof window !== 'undefined' && posthog) {
+                    // Reset PostHog identification for anonymous users - only in production
+                    if (isProduction && typeof window !== 'undefined' && posthog) {
                         posthog.reset();
                     }
                 }
@@ -106,8 +110,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     setUser(newSession.user);
                 } else if (event === 'SIGNED_OUT') {
                     setUser(null);
-                    // Reset PostHog identification
-                    if (typeof window !== 'undefined' && posthog) {
+                    // Reset PostHog identification - only in production
+                    if (isProduction && typeof window !== 'undefined' && posthog) {
                         posthog.reset();
                     }
                 }
@@ -222,8 +226,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
             if (error) {
                 console.error('Error signing out:', error);
             } else {
-                // Reset PostHog identification
-                if (typeof window !== 'undefined' && posthog) {
+                // Reset PostHog identification - only in production
+                if (isProduction && typeof window !== 'undefined' && posthog) {
                     posthog.reset();
                 }
             }
