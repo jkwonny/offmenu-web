@@ -45,5 +45,5 @@ export interface Venue {
   description?: string;
   neighborhood?: string;
   image_url?: string;
-  venue_images?: VenueImage[];
+  venue_images: VenueImage[];
 }

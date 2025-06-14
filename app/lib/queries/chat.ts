@@ -150,7 +150,7 @@ export const fetchChatMessages = async (roomId: string) => {
             content,
             created_at,
             sender_id,
-            sender:users!sender_id(name)
+            sender:users!sender_id(name, profile_picture)
         `)
         .eq('room_id', roomId)
         .order('created_at', { ascending: true });
@@ -167,7 +167,12 @@ export const fetchChatMessages = async (roomId: string) => {
             ? (Array.isArray(msg.sender)
                 ? (msg.sender[0] as { name?: string })?.name || 'Unknown'
                 : (msg.sender as { name?: string })?.name || 'Unknown')
-            : 'Unknown'
+            : 'Unknown',
+        sender_profile_picture: msg.sender && typeof msg.sender === 'object'
+            ? (Array.isArray(msg.sender)
+                ? (msg.sender[0] as { profile_picture?: string })?.profile_picture || null
+                : (msg.sender as { profile_picture?: string })?.profile_picture || null)
+            : null
     })) || [];
     
     return processedMessages;

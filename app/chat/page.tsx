@@ -16,6 +16,8 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { CollaborationTypes } from '@/constants/CollaborationTypes';
+import ChatAvatar from '@/app/components/ChatAvatar';
+import Avatar from '@/app/components/Avatar';
 
 function ChatContent() {
     const router = useRouter();
@@ -28,6 +30,7 @@ function ChatContent() {
     const mobileMessagesContainerRef = useRef<HTMLDivElement>(null);
     const currentRoomIdRef = useRef<string | null>(null);
     const roomNotFoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 
     // Message sending state
     const [newMessage, setNewMessage] = useState('');
@@ -315,6 +318,10 @@ function ChatContent() {
                         collaboration_types?: string[];
                         request_id?: string;
                         services?: string[];
+                        venue_images?: {
+                            image_url: string;
+                            sort_order: number;
+                        }[];
                     };
 
                     const typedRoom: ChatRoom = {
@@ -497,9 +504,19 @@ function ChatContent() {
                                         className={`block p-4 hover:bg-gray-50 cursor-pointer border-b border-[#E7E7E7] ${index === 0 ? 'border-t' : ''} ${searchParams.get('chatRoomId') === room.id ? 'bg-gray-100' : ''}`}
                                     >
                                         <div className="flex items-center gap-3 rounded-lg">
-                                            <div className="w-10 h-10 bg-amber-100 rounded-full flex-shrink-0 flex items-center justify-center text-amber-600 uppercase">
-                                                {room.venue_name ? room.venue_name.charAt(0) : '?'}
-                                            </div>
+                                            <ChatAvatar
+                                                recipientProfilePicture={room.recipient_profile_picture}
+                                                senderProfilePicture={room.sender_profile_picture}
+                                                recipientName={room.recipient_name}
+                                                senderName={room.sender_name}
+                                                venueImage={room.venue_image}
+                                                venueName={room.venue_name}
+                                                size="md"
+                                                currentUserId={user?.id}
+                                                senderId={room.sender_id}
+                                                recipientId={room.recipient_id}
+                                                useVenueImage={true}
+                                            />
                                             <div className="flex-grow min-w-0">
                                                 <h3 className="font-medium text-gray-900 truncate">{room.venue_name || 'Unknown Venue'}</h3>
                                                 <p className="text-sm text-gray-500 truncate">
@@ -529,9 +546,18 @@ function ChatContent() {
                             <>
                                 <div className="p-4 border-b border-[#E7E7E7]">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 uppercase">
-                                            {selectedRoom.venue_name ? selectedRoom.venue_name.charAt(0) : '?'}
-                                        </div>
+                                        <ChatAvatar
+                                            recipientProfilePicture={selectedRoom.recipient_profile_picture}
+                                            senderProfilePicture={selectedRoom.sender_profile_picture}
+                                            recipientName={selectedRoom.recipient_name}
+                                            senderName={selectedRoom.sender_name}
+                                            venueImage={selectedSpace?.venue_images[0].image_url}
+                                            venueName={selectedRoom.venue_name}
+                                            size="md"
+                                            currentUserId={user?.id}
+                                            senderId={selectedRoom.sender_id}
+                                            recipientId={selectedRoom.recipient_id}
+                                        />
                                         <div>
                                             <h2 className="font-medium">{selectedRoom.venue_name || 'Unknown Venue'}</h2>
                                             <p className="text-sm text-gray-500">
@@ -551,9 +577,12 @@ function ChatContent() {
                                                     className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                                 >
                                                     {!isCurrentUser && (
-                                                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs mr-2">
-                                                            {message.sender_name.charAt(0)}
-                                                        </div>
+                                                        <Avatar
+                                                            profilePicture={message.sender_profile_picture}
+                                                            name={message.sender_name}
+                                                            size="sm"
+                                                            className="mr-2"
+                                                        />
                                                     )}
                                                     <div className={`max-w-[80%] ${isCurrentUser ? 'bg-[#E2E6F7]' : 'bg-[#EBF1F3] border border-gray-200'} text-gray-800 rounded-lg p-3`}>
                                                         {!isCurrentUser && (
@@ -856,9 +885,19 @@ function ChatContent() {
                                             className={`block p-4 hover:bg-gray-50 cursor-pointer border-b border-[#E7E7E7] ${index === 0 ? 'border-t' : ''}`}
                                         >
                                             <div className="flex items-center gap-3 rounded-lg">
-                                                <div className="w-12 h-12 bg-amber-100 rounded-full flex-shrink-0 flex items-center justify-center text-amber-600 uppercase">
-                                                    {room.venue_name ? room.venue_name.charAt(0) : '?'}
-                                                </div>
+                                                <ChatAvatar
+                                                    recipientProfilePicture={room.recipient_profile_picture}
+                                                    senderProfilePicture={room.sender_profile_picture}
+                                                    recipientName={room.recipient_name}
+                                                    senderName={room.sender_name}
+                                                    venueImage={room.venue_image}
+                                                    venueName={room.venue_name}
+                                                    size="md"
+                                                    currentUserId={user?.id}
+                                                    senderId={room.sender_id}
+                                                    recipientId={room.recipient_id}
+                                                    useVenueImage={true}
+                                                />
                                                 <div className="flex-grow min-w-0">
                                                     <h3 className="font-medium text-gray-900 truncate">{room.venue_name || 'Unknown Venue'}</h3>
                                                     <p className="text-sm text-gray-500 truncate">
@@ -890,31 +929,20 @@ function ChatContent() {
                             ) : selectedRoom ? (
                                 <>
                                     {/* Mobile Chat Header with Back Button and Venue Info */}
-                                    <div className="p-4 border-b border-[#E7E7E7]">
+                                    <div className="p-3 border-b border-[#E7E7E7]">
                                         <div className="flex items-center gap-3 mb-3">
                                             <button
                                                 onClick={handleBackToList}
-                                                className="p-2 hover:bg-gray-100 rounded-full"
+                                                className="hover:bg-gray-100 rounded-full"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
                                                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                                                 </svg>
                                             </button>
-                                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 uppercase">
-                                                {selectedRoom.venue_name ? selectedRoom.venue_name.charAt(0) : '?'}
-                                            </div>
-                                            <div className="flex-grow">
-                                                <h2 className="font-medium">{selectedRoom.venue_name || 'Unknown Venue'}</h2>
-                                                <p className="text-sm text-gray-500">
-                                                    {selectedSpace?.neighborhood}
-                                                </p>
-                                            </div>
-                                        </div>
 
-                                        {/* Venue Info Card - Clickable */}
                                         {selectedSpace && (
-                                            <Link href={`/spaces/${selectedSpace.id}`} className="block">
-                                                <div className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors cursor-pointer">
+                                            <Link href={`/spaces/${selectedSpace.id}`}>
+                                                <div className="bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition-colors cursor-pointer w-full">
                                                     <div className="flex items-center gap-3">
                                                         {selectedSpace?.venue_images && selectedSpace.venue_images.length > 0 ? (
                                                             <div className="relative w-12 h-12 flex-shrink-0">
@@ -949,6 +977,7 @@ function ChatContent() {
                                                 </div>
                                             </Link>
                                         )}
+                                        </div>
                                     </div>
 
                                     {/* Messages */}
@@ -962,9 +991,12 @@ function ChatContent() {
                                                         className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                                     >
                                                         {!isCurrentUser && (
-                                                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs mr-2">
-                                                                {message.sender_name.charAt(0)}
-                                                            </div>
+                                                            <Avatar
+                                                                profilePicture={message.sender_profile_picture}
+                                                                name={message.sender_name}
+                                                                size="sm"
+                                                                className="mr-2"
+                                                            />
                                                         )}
                                                         <div className={`max-w-[80%] ${isCurrentUser ? 'bg-[#E2E6F7]' : 'bg-[#EBF1F3] border border-gray-200'} text-gray-800 rounded-lg p-3`}>
                                                             {!isCurrentUser && (
